@@ -33,7 +33,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 	case "OPTIONS":
 		h.Set("Methods", "RESPMOD")
 		h.Set("Allow", "204")
-		h.Set("Preview", "100")
+		h.Set("Preview", viper.GetString("app.preview_bytes"))
 		h.Set("Transfer-Preview", "*")
 		w.WriteHeader(http.StatusOK, nil, false)
 	case "RESPMOD":

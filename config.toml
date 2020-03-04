@@ -7,6 +7,7 @@ max_filesize = 10000000 #bytes
 scanner_vendor = "virustotal"
 unprocessable_content_types = ["application/gzip" , "text/html" , "image/jpeg" , "image/png"]
 unprocessable_extensions = [".gz" , ".png" , ".jpg" , ".jpeg" , ".html"]
+preview_bytes = "4096" #bytes
 
 
 
