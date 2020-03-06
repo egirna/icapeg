@@ -3,11 +3,12 @@ package dtos
 type (
 	// SampleInfo holds the informations regarding a sample file
 	SampleInfo struct {
-		FileName       string
-		SampleType     string
-		SampleSeverity string
-		VTIScore       string
-		FileSizeStr    string
+		FileName           string
+		SampleType         string
+		SampleSeverity     string
+		VTIScore           string
+		FileSizeStr        string
+		SubmissionFinished bool
 	}
 	// SubmitResponse holds the informations regarding the submit response
 	SubmitResponse struct {

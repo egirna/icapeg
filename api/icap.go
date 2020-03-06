@@ -101,20 +101,37 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 
 		submissionFinished := false
 		statusCheckFinishTime := time.Now().Add(viper.GetDuration(helpers.GetScannerVendorSpecificCfg("status_check_timeout")) * time.Second) // the time after which, the system is to stop checking for submission finish
+		var sampleInfo *dtos.SampleInfo
+		sampleID := submitResp.SubmissionSampleID //"4715575"
 
 		for !submissionFinished && time.Now().Before(statusCheckFinishTime) {
-			submissionID := submitResp.SubmissionID                        //"5651578"
-			submissionStatus, err := svc.GetSubmissionStatus(submissionID) // getting the file submission status by the submission id received by submitting the file
-			if err != nil {
-				log.Printf("Failed to get submission status from %s: %s\n", viper.GetString("app.scanner_vendor"), err.Error())
-				w.WriteHeader(http.StatusNoContent, nil, false)
-				return
-			}
+			submissionID := submitResp.SubmissionID //"5651578"
 
-			if viper.GetBool("app.debug") {
-				spew.Dump("submission status resp", submissionStatus)
+			switch viper.GetBool(helpers.GetScannerVendorSpecificCfg("status_endpoint_exists")) {
+			case true:
+				submissionStatus, err := svc.GetSubmissionStatus(submissionID) // getting the file submission status by the submission id received by submitting the file
+				if err != nil {
+					log.Printf("Failed to get submission status from %s: %s\n", viper.GetString("app.scanner_vendor"), err.Error())
+					w.WriteHeader(http.StatusNoContent, nil, false)
+					return
+				}
+
+				if viper.GetBool("app.debug") {
+					spew.Dump("submission status resp", submissionStatus)
+				}
+				submissionFinished = submissionStatus.SubmissionFinished
+			case false:
+				var err error
+				sampleInfo, err = svc.GetSampleFileInfo(sampleID, fmi)
+				if err != nil {
+					log.Println("Couldn't fetch sample information after submission finish: ", err.Error())
+					w.WriteHeader(http.StatusNoContent, nil, false)
+					return
+				}
+				submissionFinished = sampleInfo.SubmissionFinished
+			default:
+				log.Println("Put the status_endpoint_exists field in the config file under the scanner vendor")
 			}
-			submissionFinished = submissionStatus.SubmissionFinished
 
 			if !submissionFinished { // if the submission is not finished, wait for a certain time and then call again
 				time.Sleep(viper.GetDuration(helpers.GetScannerVendorSpecificCfg("status_check_interval")) * time.Second)
@@ -122,12 +139,14 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 		}
 
 		if submissionFinished {
-			sampleID := submitResp.SubmissionSampleID               //"4715575"
-			sampleInfo, err := svc.GetSampleFileInfo(sampleID, fmi) // getting the results after scanner is done analysing the file
-			if err != nil {
-				log.Println("Couldn't fetch sample information after submission finish: ", err.Error())
-				w.WriteHeader(http.StatusNoContent, nil, false)
-				return
+			if sampleInfo == nil {
+				var err error
+				sampleInfo, err = svc.GetSampleFileInfo(sampleID, fmi) // getting the results after scanner is done analysing the file
+				if err != nil {
+					log.Println("Couldn't fetch sample information after submission finish: ", err.Error())
+					w.WriteHeader(http.StatusNoContent, nil, false)
+					return
+				}
 			}
 
 			if !helpers.InStringSlice(sampleInfo.SampleSeverity, viper.GetStringSlice(helpers.GetScannerVendorSpecificCfg("ok_file_status"))) { // checking is the sample severity is amongst the allowable file status

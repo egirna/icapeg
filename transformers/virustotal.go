@@ -50,12 +50,18 @@ func TransformVirusTotalToSampleInfo(vr *dtos.VirusTotalReportResponse, fmi dtos
 		}
 	}
 
+	submissionFinished := true
+	if vr.ResponseCode < 1 {
+		submissionFinished = false
+	}
+
 	return &dtos.SampleInfo{
-		SampleSeverity: svrty,
-		VTIScore:       vtiScore,
-		FileName:       fmi.FileName,
-		SampleType:     fmi.FileType,
-		FileSizeStr:    fmt.Sprintf("%.2fmb", helpers.ByteToMegaBytes(int(fmi.FileSize))),
+		SampleSeverity:     svrty,
+		VTIScore:           vtiScore,
+		FileName:           fmi.FileName,
+		SampleType:         fmi.FileType,
+		FileSizeStr:        fmt.Sprintf("%.2fmb", helpers.ByteToMegaBytes(int(fmi.FileSize))),
+		SubmissionFinished: submissionFinished,
 	}
 
 }

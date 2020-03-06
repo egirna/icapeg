@@ -22,3 +22,4 @@ status_check_interval = 2 #seconds, the time interval after which the submission
 status_check_timeout = 300 #seconds, the total time duration after which the the status check should be stopped, if not finished
 bad_file_status = ["malicious"]
 ok_file_status = ["ok"]
+status_endpoint_exists = false #this field determines whether the scanner vendor has any status check endpoint or not
