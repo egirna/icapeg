@@ -1,7 +1,7 @@
 # icapeg
 Open Source ICAP server
 
-Scan any file requested over the internet using the icapeg. This project is still in progress. If you don't know about the ICAP protocol, here is a
+Scan any file requested over the internet using the icapeg. If you don't know about the ICAP protocol, here is a
 bit about icap:
 
 ## What is ICAP?
