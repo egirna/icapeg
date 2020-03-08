@@ -25,9 +25,10 @@ type (
 		FileName     string
 		Severity     string
 		RequestedURL string
-		VTIScore     string
+		Score        string
 		FileType     string
 		FileSizeStr  string
+		ResultsBy    string
 	}
 
 	// FileMetaInfo represents the meta data regarding the concerned file

@@ -124,7 +124,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 				var err error
 				sampleInfo, err = svc.GetSampleFileInfo(sampleID, fmi)
 				if err != nil {
-					log.Println("Couldn't fetch sample information after submission finish: ", err.Error())
+					log.Println("Couldn't fetch sample information during status check: ", err.Error())
 					w.WriteHeader(http.StatusNoContent, nil, false)
 					return
 				}
@@ -157,7 +157,8 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 					FileSizeStr:  sampleInfo.FileSizeStr,
 					RequestedURL: helpers.BreakHTTPURL(req.Request.RequestURI),
 					Severity:     sampleInfo.SampleSeverity,
-					VTIScore:     sampleInfo.VTIScore,
+					Score:        sampleInfo.VTIScore,
+					ResultsBy:    viper.GetString("app.scanner_vendor"),
 				})
 				w.WriteHeader(http.StatusOK, newResp, true)
 				w.Write(htmlBuf.Bytes())

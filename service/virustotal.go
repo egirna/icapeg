@@ -114,7 +114,14 @@ func (v *VirusTotal) GetSampleFileInfo(sampleID string, filemetas ...dtos.FileMe
 
 	if resp.StatusCode != http.StatusOK {
 		bdy, _ := ioutil.ReadAll(resp.Body)
-		return nil, errors.New(string(bdy))
+		bdyStr := ""
+		if string(bdy) == "" {
+			bdyStr = fmt.Sprintf("Status code received:%d with no body", resp.StatusCode)
+		} else {
+			bdyStr = string(bdy)
+
+		}
+		return nil, errors.New(bdyStr)
 	}
 
 	sampleResp := dtos.VirusTotalReportResponse{}

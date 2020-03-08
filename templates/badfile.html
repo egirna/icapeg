@@ -66,9 +66,9 @@
        /* details of error */
         .error-info{
 		     margin: 0px auto;
-             width: 410px;
+             width: 450px;
              font-size: 18px;
-             line-height: 10px;
+             line-height: 20px;
 			 text-align: left;
 		}
 		/* footer style*/
@@ -119,7 +119,8 @@
 		   <p><b>File Size:</b>{{.FileSizeStr}}</p>
 		   <p><b>Requested URL:</b>{{.RequestedURL}}</p>
 		   <p><b>Severity:</b>{{.Severity}}</p>
-		   <p><b>File Severity Score:</b>{{.VTIScore}}</p>
+		   <p><b>Total Positive Results:</b>{{.Score}}</p>
+			 <p><b>Results By:</b>{{.ResultsBy}}</p>
 	</div>
 
     <input type="button" name="error-info" class="button" value="Details" onclick="showDiv()" />
