@@ -32,11 +32,13 @@ To turn on the ICAPeg server, proceed with the following steps(assuming you have
     export GO111MODULE=on
 
  ```
+
 1. Add the dependencies in the vendor file by
  ```
    go mod vendor
 
  ```
+
 1. Build the ICAPeg binary  by
   ```
     go build .
@@ -63,6 +65,7 @@ That should do the trick.
   http_port 3128
   cache deny all
 ```
+
 1. Now that you have squid running as well, you can test it out by trying to download/access a file from the internet(through the proxy) and see the magic happen! You'll be able to download/access the file if its alright, but something like a malicious file, you are gonna see something like this:
 ![error_page](img/error_page.png)
 
