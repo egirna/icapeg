@@ -1,7 +1,7 @@
 # icapeg
 Open Source ICAP server
 
-Scan any file requested over the internet using the ICAPeg. ICAPeg currently uses [virustotal](https://www.virustotal.com/gui/home/upload) following the icap protocol. If you don't know about the ICAP protocol, here is a
+Scan any file requested over the internet using the ICAPeg. ICAPeg currently uses [virustotal](https://www.virustotal.com/gui/home/upload) for scanning the files following the icap protocol. If you don't know about the ICAP protocol, here is a
 bit about it:
 
 ## What is ICAP?
