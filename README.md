@@ -6,7 +6,7 @@ Scan files requested via a proxy server using ICAPeg. ICAPeg currently uses [Vir
 
 ## What is ICAP?
 
-**ICAP** stands for **Internet Content Adaptation Protocol**. If a **content**(for example: file) you've requested over the internet
+**ICAP** stands for **Internet Content Adaptation Protocol**. If a **content** (for example: file) you've requested over the internet
 to download or whatever, needs **adaptation**(some kind of modification or analysis), the proxy server sends the content to the ICAP server for adaptation and after performing the required tasks on the content, the ICAP server sends it back to the proxy server so that it may return the adapted content back to the destination. This can occur both during request and response.
 
 To know more about the ICAP protocol, [check this out](https://tools.ietf.org/html/rfc3507).
