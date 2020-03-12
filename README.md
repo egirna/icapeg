@@ -75,7 +75,7 @@ That should do the trick.
 1. Now that you have squid running as well, you can test it out by trying to download/access a file from the internet(through the proxy) and see the magic happen! You'll be able to download/access the file if its alright, but something like a malicious file, you are gonna see something like this:
 ![error_page](img/error_page.png)
 
-Oh, and do not forget to setup your Browser or Machine 's proxy settings according to the squid.
+Oh, and do not forget to setup your browser or machine's proxy settings according to the squid.
 
 ### Contributing
 
