@@ -82,4 +82,4 @@ This project is still a WIP. So you can contribute as well. See the contribution
 
 ### License
 
-ICAPeg is licensed under the [MIT License](LICENSE).
+ICAPeg is licensed under the [Apache License 2.0](LICENSE).
