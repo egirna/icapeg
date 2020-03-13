@@ -1,14 +1,15 @@
 # ICAPeg
+
 Open Source multi-vendor ICAP server
 
-Scan files requested via a proxy server using ICAPeg ICAP server, ICAPeg is an ICAP server connecting web proxies with API based scanning services and more soon!. ICAPeg currently uses [virustotal](https://www.virustotal.com/gui/home/upload) for scanning the files following the icap protocol. If you don't know about the ICAP protocol, here is a bit about it:
+Scan files requested via a proxy server using ICAPeg ICAP server, ICAPeg is an ICAP server connecting web proxies with API based scanning services and more soon!. ICAPeg currently uses [VirusTotal](https://www.virustotal.com/gui/home/upload) for scanning the files following the ICAP protocol. If you don't know about the ICAP protocol, here is a bit about it:
 
 ## What is ICAP?
 
-**ICAP** stands for **Internet Content Adaptation Protocol**. If a **content**(for example: file) you've requested over the internet
-to download or whatever, needs **adaptation**(some kind of modification or analysis), the proxy server sends the content to the icap server for adaptation and after performing the required tasks on the content, the icap server sends it back to the proxy server so that it may return the adapted content back to the destination. This can occur both during request and response.
+**ICAP** stands for **Internet Content Adaptation Protocol**. If a **content** (for example: file) you've requested over the internet
+to download or whatever, needs **adaptation**(some kind of modification or analysis), the proxy server sends the content to the ICAP server for adaptation and after performing the required tasks on the content, the ICAP server sends it back to the proxy server so that it may return the adapted content back to the destination. This can occur both during request and response.
 
-To know more about the icap protocol, [check this out](https://tools.ietf.org/html/rfc3507).
+To know more about the ICAP protocol, [check this out](https://tools.ietf.org/html/rfc3507).
 
 ## Things to have
 
@@ -18,58 +19,62 @@ Before starting to play with ICAPeg, make sure you have the following things in 
 
 1. A **proxy** server
 
-1. And a **virustotal api key**. [Here is how you can get it](VIRUSTOTALAPI.md)
+1. And a **VirusTotal api key**. [Here is how you can get it](VIRUSTOTALAPI.md)
 
-**NOTE**: All the settings of ICAPeg is present in the **config.toml** file in the repo, including where you should put your virustotal api key.
+**NOTE**: All the settings of ICAPeg is present in the **config.toml** file in the repo, including where you should put your VirusTotal api key.
 
-## How do i turn this thing on!!
+## How do I turn this thing on!!
 
-To turn on the ICAPeg server, proceed with the following steps(assuming you have golang installed in you system):
+To turn on the ICAPeg server, proceed with the following steps (assuming you have golang installed in you system):
 
-1. Enable go mod by
- ```
+1. Enable `go mod`
+
+  ```bash
     export GO111MODULE=on
 
- ```
+  ```
 
-1. Add the dependencies in the vendor file by
- ```
+2. Add the dependencies in the vendor file
+
+  ```bash
    go mod vendor
-
- ```
-
-1. Build the ICAPeg binary  by
   ```
+
+3. Build the ICAPeg binary by
+
+  ```bash
     go build .
-
   ```
 
-1. Finally execute the file like you would for any other executable according to your OS, for unix based users though
-  ```
+4. Finally execute the file like you would for any other executable according to your OS, for Unix-based users though
+
+  ```bash
     ./icapeg
-
   ```
-   You should see something like, ```Staring the icap server ...```
+
+   You should see something like, ```Staring the ICAP server ...```
 OR, you can do none of the above and simply execute the **run.sh** shell file provided, by
- ```
+
+  ```bash
   ./run.sh
-```
+  ```
+
 That should do the trick.
 
 1. Now that the server is up and running the next thing to do is setup a proxy server which can send the request body to the ICAPeg server for adaptation. [Squid](http://www.squid-cache.org/) looks like just the thing for the job, go to the site provided and set it up like you want. Here is a sample conf file for squid:
- ```
-  icap_enable on
-  icap_service service_resp respmod_precache icap://127.0.0.1:1344/respmod-icapeg
-  adaptation_access service_resp allow all
-  http_port 3128
-  cache deny all
-```
+
+  ```configuration
+    icap_enable on
+    icap_service service_resp respmod_precache icap://127.0.0.1:1344/respmod-icapeg
+    adaptation_access service_resp allow all
+    http_port 3128
+    cache deny all
+  ```
 
 1. Now that you have squid running as well, you can test it out by trying to download/access a file from the internet(through the proxy) and see the magic happen! You'll be able to download/access the file if its alright, but something like a malicious file, you are gonna see something like this:
 ![error_page](img/error_page.png)
 
-Oh, and do not forget to setup your Browser or Machine 's  proxy settings according to the squid.
-
+Oh, and do not forget to setup your browser or machine's proxy settings according to the squid.
 
 ### Contributing
 
