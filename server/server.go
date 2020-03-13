@@ -17,6 +17,6 @@ func StartServer() error {
 
 	icap.HandleFunc("/respmod-icapeg", api.ToICAPEGResp)
 
-	log.Println("Starting the icap server...")
+	log.Println("Starting the ICAP server...")
 	return icap.ListenAndServe(fmt.Sprintf(":%d", config.App().Port), icap.HandlerFunc(api.ToICAPEGResp))
 }
