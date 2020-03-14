@@ -52,13 +52,12 @@ To turn on the ICAPeg server, proceed with the following steps (assuming you hav
     ./icapeg
   ```
 
-   You should see something like, ```Staring the ICAP server ...```
+   You should see something like, ```ICAP server is running on localhost:1344 ...```. This tells you the ICAP server is up and running
 OR, you can do none of the above and simply execute the **run.sh** shell file provided, by
 
   ```bash
   ./run.sh
   ```
-
 That should do the trick.
 
 1. Now that the server is up and running the next thing to do is setup a proxy server which can send the request body to the ICAPeg server for adaptation. [Squid](http://www.squid-cache.org/) looks like just the thing for the job, go to the site provided and set it up like you want. Here is a sample conf file for squid:
@@ -74,7 +73,23 @@ That should do the trick.
 1. Now that you have squid running as well, you can test it out by trying to download/access a file from the internet(through the proxy) and see the magic happen! You'll be able to download/access the file if its alright, but something like a malicious file, you are gonna see something like this:
 ![error_page](img/error_page.png)
 
-Oh, and do not forget to setup your browser or machine's proxy settings according to the squid.
+Oh, and do not forget to setup your Browser or Machine 's  proxy settings according to the squid.
+
+## How do i know its working!
+
+So once you have everything up and running, keep an eye out for the logs on the terminal where the ICAP server is running. If you try and download something not malicious you should see something like this in the logs:
+![fileoklog](img/fileoklog.png)
+Likewise if what you are downloading is malicious, apart from the error page, there will be terminal logs such as:
+![filenotok](img/filenotok.png).
+
+To test properly using malicious files , visit the [Eicar Test File Site](https://www.eicar.org/?page_id=3950), and try to download a malicious file, check the logs.
+
+## Things to keep in mind
+
+1. You will have to restart the ICAP server each time you change anything in the config file.
+
+1. You need to configure your network(or your browser)'s proxy settings to go through squid
+
 
 ### Contributing
 

@@ -44,6 +44,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 		ct := helpers.GetMimeExtension(req.Preview)
 
 		if helpers.InStringSlice(ct, viper.GetStringSlice("app.unprocessable_extensions")) {
+			log.Println("Processing not required")
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
@@ -171,6 +172,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			return
 		}
 
+		log.Printf("The file %s is good to go\n", sampleInfo.FileName)
 		w.WriteHeader(http.StatusNoContent, nil, false) // all ok, show the contents as it is
 	case "ERRDUMMY":
 		w.WriteHeader(http.StatusBadRequest, nil, false)
