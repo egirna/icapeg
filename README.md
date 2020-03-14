@@ -82,7 +82,7 @@ So once you have everything up and running, keep an eye out for the logs on the 
 Likewise if what you are downloading is malicious, apart from the error page, there will be terminal logs such as:
 ![filenotok](img/filenotok.png).
 
-To test properly using malicious files , visit the [Eicar Test File Site](https://www.eicar.org/?page_id=3950), and try to download a malicious file, check the logs.
+To test properly using malicious files , visit the [Eicar Test File Site](https://www.eicar.org/?page_id=3950), and try to download a malicious file, check the logs. If you are still not getting any logs whatsoever, please check your proxy(squid) setup.
 
 ## Things to keep in mind
 
