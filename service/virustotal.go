@@ -80,7 +80,7 @@ func (v *VirusTotal) SubmitFile(f *bytes.Buffer, filename string) (*dtos.SubmitR
 		bdy, _ := ioutil.ReadAll(resp.Body)
 		bdyStr := ""
 		if string(bdy) == "" {
-			bdyStr = fmt.Sprintf("Status code received:%d with no body", resp.StatusCode)
+			bdyStr = http.StatusText(resp.StatusCode)
 		} else {
 			bdyStr = string(bdy)
 
@@ -120,10 +120,14 @@ func (v *VirusTotal) GetSampleFileInfo(sampleID string, filemetas ...dtos.FileMe
 	}
 
 	if resp.StatusCode != http.StatusOK {
+
+		if resp.StatusCode == http.StatusNoContent {
+			return nil, errors.New("Virustotal returned no content, maybe request quota expired")
+		}
 		bdy, _ := ioutil.ReadAll(resp.Body)
 		bdyStr := ""
 		if string(bdy) == "" {
-			bdyStr = fmt.Sprintf("Status code received:%d with no body", resp.StatusCode)
+			bdyStr = http.StatusText(resp.StatusCode)
 		} else {
 			bdyStr = string(bdy)
 

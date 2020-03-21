@@ -71,7 +71,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 
 		if svc == nil {
 			log.Println("No such scanner vendors:", viper.GetString("app.scanner_vendor"))
-			w.WriteHeader(http.StatusNoContent, nil, false)
+			w.WriteHeader(helpers.IfPropagateError(http.StatusBadRequest, http.StatusNoContent), nil, false)
 			return
 		}
 
@@ -86,7 +86,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 		submitResp, err := svc.SubmitFile(buf, filename) // submitting the file for analysing
 		if err != nil {
 			log.Printf("Failed to submit file to %s: %s\n", viper.GetString("app.scanner_vendor"), err.Error())
-			w.WriteHeader(http.StatusNoContent, nil, false)
+			w.WriteHeader(helpers.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 			return
 		}
 
@@ -113,7 +113,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 				submissionStatus, err := svc.GetSubmissionStatus(submissionID) // getting the file submission status by the submission id received by submitting the file
 				if err != nil {
 					log.Printf("Failed to get submission status from %s: %s\n", viper.GetString("app.scanner_vendor"), err.Error())
-					w.WriteHeader(http.StatusNoContent, nil, false)
+					w.WriteHeader(helpers.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 					return
 				}
 
@@ -126,7 +126,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 				sampleInfo, err = svc.GetSampleFileInfo(sampleID, fmi)
 				if err != nil {
 					log.Println("Couldn't fetch sample information during status check: ", err.Error())
-					w.WriteHeader(http.StatusNoContent, nil, false)
+					w.WriteHeader(helpers.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 					return
 				}
 				submissionFinished = sampleInfo.SubmissionFinished
@@ -145,7 +145,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 				sampleInfo, err = svc.GetSampleFileInfo(sampleID, fmi) // getting the results after scanner is done analysing the file
 				if err != nil {
 					log.Println("Couldn't fetch sample information after submission finish: ", err.Error())
-					w.WriteHeader(http.StatusNoContent, nil, false)
+					w.WriteHeader(helpers.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 					return
 				}
 			}
