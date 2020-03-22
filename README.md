@@ -20,7 +20,10 @@ Before starting to play with ICAPeg, make sure you have the following things in 
 ***A sample installation of go version 1.14***:
 
 Prepare the apt packages    
-```sudo apt update```
+  ```bash
+    sudo apt update
+    
+    ```
         
 ```sudo apt upgrade```
         
@@ -33,8 +36,9 @@ Use the command
 
   ```
 untar in /usr/local
-    
-```tar -C /usr/local -xzf go1.14.linux-amd64.tar.gz```
+  ```bash
+    tar -C /usr/local -xzf go1.14.linux-amd64.tar.gz
+    ```
         
 Add /usr/local/go/bin to the PATH environment variable:
     
