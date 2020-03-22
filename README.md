@@ -31,11 +31,11 @@ Use the command
     
 ```tar -C /usr/local -xzf go1.14.linux-amd64.tar.gz```
         
-    Add /usr/local/go/bin to the PATH environment variable:
+Add /usr/local/go/bin to the PATH environment variable:
     
-        ```export PATH=$PATH:/usr/local/go/bin```
+```export PATH=$PATH:/usr/local/go/bin```
         
-        Note: this command adds the PATH temporarily to the environment variables, the path is removed if SSH is broken, or system reboots.
+Note: this command adds the PATH temporarily to the environment variables, the path is removed if SSH is broken, or system reboots.
 
 
 2. A **proxy** server
