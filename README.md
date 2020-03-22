@@ -82,20 +82,31 @@ To turn on the ICAPeg server, proceed with the following steps (assuming you hav
   ```
   In case not using go version 1.14, you could discover your version
   ``` go version```
+  
+  You should use the corresponding export command
+  1.14 ===> export GO114MODULE=on
+  1.13 ===> export GO113MODULE=on
+  etc.
+  
+3.  Change the directory to the repository
 
-2. Add the dependencies in the vendor file
+  ```bash
+    cd icapeg/
+  ```
+
+4. Add the dependencies in the vendor file
 
   ```bash
    go mod vendor
   ```
 
-3. Build the ICAPeg binary by
+5. Build the ICAPeg binary by
 
   ```bash
     go build .
   ```
 
-4. Finally execute the file like you would for any other executable according to your OS, for Unix-based users though
+6. Finally execute the file like you would for any other executable according to your OS, for Unix-based users though
 
   ```bash
     ./icapeg
@@ -109,7 +120,25 @@ OR, you can do none of the above and simply execute the **run.sh** shell file pr
   ```
 That should do the trick.
 
-1. Now that the server is up and running the next thing to do is setup a proxy server which can send the request body to the ICAPeg server for adaptation. [Squid](http://www.squid-cache.org/) looks like just the thing for the job, go to the site provided and set it up like you want. Here is a sample conf file for squid:
+Now that the server is up and running, the next thing to do is setup a proxy server which can send the request body to the ICAPeg server for adaptation. [Squid](http://www.squid-cache.org/) looks like just the thing for the job, go to the site provided and set it up like you want. 
+
+After setting up your proxy server for example squid, change its configuration file:
+
+Open squid.conf file
+
+  ```bash
+    sudo vim /etc/squid/squid.conf
+  ```
+Add the following lines
+
+  ```configuration
+    icap_enable on
+    icap_service service_resp respmod_precache icap://127.0.0.1:1344/respmod-icapeg
+    adaptation_access service_resp allow all
+    cache deny all
+  ```
+  
+Here is a sample conf file for squid:
 
   ```configuration
     icap_enable on
