@@ -161,7 +161,9 @@ Here is a sample conf file for squid:
   ```
 ## How do I know its working!
 
-3. Now that you have squid running as well, you can test it out by trying to download/access a file from the internet(through the proxy) and see the magic happen! You'll be able to download/access the file if its alright, If you try and download something not malicious you should see something like this in the logs:
+3. Now that you have squid running as well, you can test it out by trying to download/access a file from the Internet(through the proxy) and see the magic happens! You'll be able to download/access the file if its alright, 
+
+      If you try and download something not malicious you should see something like this in the logs:
 ![fileoklog](img/fileoklog.png)
 
 
@@ -172,7 +174,7 @@ Here is a sample conf file for squid:
 
    www.eicar.org/download/eicar_com.zip, 
    
-   there will be terminal logs such as:
+   There will be terminal logs such as:
    ![filenotok](img/filenotok.png)
 
    And you are gonna see something like this in the browser:
@@ -188,9 +190,9 @@ If you are still not getting any logs and the file is downloaded whatsoever, ple
 
 1. You will have to restart the ICAP server each time you change anything in the config file.
 
-2. You will have to restart squid whenever you restart the ICAP
+2. You will have to restart squid whenever you restart the ICAP.
 
-3. You need to configure your network(or your browser)'s proxy settings to go through squid
+3. You need to configure your network(or your browser)'s proxy settings to go through squid.
 
 
 ### Contributing
