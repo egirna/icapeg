@@ -26,7 +26,9 @@ Prepare the apt packages
 Link of download of version 1.14
     https://dl.google.com/go/go1.14.linux-amd64.tar.gz
 Use the command
-    wget https://dl.google.com/go/go1.14.linux-amd64.tar.gz
+
+```wget https://dl.google.com/go/go1.14.linux-amd64.tar.gz```
+
     untar in /usr/local
     
 ```tar -C /usr/local -xzf go1.14.linux-amd64.tar.gz```
