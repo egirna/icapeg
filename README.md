@@ -36,8 +36,10 @@ untar in /usr/local
         
 Add /usr/local/go/bin to the PATH environment variable:
     
-```bash export PATH=$PATH:/usr/local/go/bin```
-        
+  ```bash
+    export PATH=$PATH:/usr/local/go/bin
+
+  ```
 Note: this command adds the PATH temporarily to the environment variables, the path is removed if SSH is broken, or system reboots.
 
 
