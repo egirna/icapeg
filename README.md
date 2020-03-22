@@ -179,12 +179,6 @@ www.eicar.org/download/eicar_com.zip
 
 Oh, and do not forget to setup your Browser or Machine 's  proxy settings according to the squid.
 
-
-So once you have everything up and running, keep an eye out for the logs on the terminal where the ICAP server is running. 
-Likewise if what you are downloading is malicious, apart from the error page, 
-
-
-
 If you are still not getting any logs and the file is downloaded whatsoever, please check your proxy(squid) setup.
 
 ## Things to keep in mind
