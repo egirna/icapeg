@@ -89,9 +89,9 @@ To turn on the ICAPeg server, proceed with the following steps (assuming you hav
   
 >           You should use the corresponding export command
   
->           1.14 ===> `export GO114MODULE=on`
+>           1.14 ===> export GO114MODULE=on
   
->           1.13 ===> `export GO113MODULE=on`
+>           1.13 ===> export GO113MODULE=on
   
 >           etc.
   
