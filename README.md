@@ -80,7 +80,7 @@ To turn on the ICAPeg server, proceed with the following steps (assuming you hav
     export GO114MODULE=on
 
   ```
-\     In case not using go version 1.14, you could discover your version
+\ \ \ \ In case not using go version 1.14, you could discover your version
       ``` go version```
   
 \        You should use the corresponding export command
