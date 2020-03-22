@@ -165,7 +165,7 @@ Here is a sample conf file for squid:
 ![fileoklog](img/fileoklog.png)
 
 But something like a malicious file, there will be terminal logs such as:
-![filenotok](img/filenotok.png), 
+![filenotok](img/filenotok.png)
 
 And you are gonna see something like this in the browser:
 ![error_page](img/error_page.png)
