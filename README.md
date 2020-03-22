@@ -178,9 +178,10 @@ Here is a sample conf file for squid:
    ![filenotok](img/filenotok.png)
 
    And you are gonna see something like this in the browser:
-   ![error_page](screenshot-2020-03-22_16-21.png)
+   ![error_page](img/errorpage.png)
 
-
+   And the details of the malicious file is shown by clicking on "details" button:
+   ![error_page](img/details.png)
 
 Oh, and do not forget to setup your Browser or Machine 's  proxy settings according to the squid.
 
