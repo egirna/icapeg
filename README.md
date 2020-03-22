@@ -27,8 +27,8 @@ Prepare the apt packages
         
   ```bash
     sudo apt upgrade
-    
-    ```
+
+  ```
         
 Link of download of version 1.14
     https://dl.google.com/go/go1.14.linux-amd64.tar.gz
@@ -39,9 +39,11 @@ Use the command
 
   ```
 untar in /usr/local
+
   ```bash
     tar -C /usr/local -xzf go1.14.linux-amd64.tar.gz
-    ```
+
+  ```
         
 Add /usr/local/go/bin to the PATH environment variable:
     
@@ -66,8 +68,10 @@ To turn on the ICAPeg server, proceed with the following steps (assuming you hav
 
 1. Clone the ICAPeg repository
 
-```git clone https://github.com/egirna/icapeg.git```
+  ```bash
+    git clone https://github.com/egirna/icapeg.git
 
+  ```
 
 
 2. Enable `go mod`
