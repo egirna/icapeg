@@ -38,7 +38,7 @@ Use the command
     wget https://dl.google.com/go/go1.14.linux-amd64.tar.gz
 
   ```
-untar in /usr/local
+Untar in /usr/local
 
   ```bash
     tar -C /usr/local -xzf go1.14.linux-amd64.tar.gz
@@ -127,7 +127,7 @@ OR, you can do none of the above and simply execute the **run.sh** shell file pr
   ```
 That should do the trick.
 
-Now that the server is up and running, the next thing to do is setup a proxy server which can send the request body to the ICAPeg server for adaptation. [Squid](http://www.squid-cache.org/) looks like just the thing for the job, go to the site provided and set it up like you want. 
+2. Now that the server is up and running, the next thing to do is setup a proxy server which can send the request body to the ICAPeg server for adaptation. [Squid](http://www.squid-cache.org/) looks like just the thing for the job, go to the site provided and set it up like you want. 
 
 After setting up your proxy server for example squid, change its configuration file:
 
@@ -144,7 +144,12 @@ Add the following lines
     adaptation_access service_resp allow all
     cache deny all
   ```
-  
+Restart squid:
+
+  ```bash
+    systemctl restart squid
+  ```
+
 Here is a sample conf file for squid:
 
   ```configuration
@@ -155,7 +160,7 @@ Here is a sample conf file for squid:
     cache deny all
   ```
 
-1. Now that you have squid running as well, you can test it out by trying to download/access a file from the internet(through the proxy) and see the magic happen! You'll be able to download/access the file if its alright, but something like a malicious file, you are gonna see something like this:
+3. Now that you have squid running as well, you can test it out by trying to download/access a file from the internet(through the proxy) and see the magic happen! You'll be able to download/access the file if its alright, but something like a malicious file, you are gonna see something like this:
 ![error_page](img/error_page.png)
 
 Oh, and do not forget to setup your Browser or Machine 's  proxy settings according to the squid.
@@ -167,7 +172,13 @@ So once you have everything up and running, keep an eye out for the logs on the 
 Likewise if what you are downloading is malicious, apart from the error page, there will be terminal logs such as:
 ![filenotok](img/filenotok.png).
 
-To test properly using malicious files , visit the [Eicar Test File Site](https://www.eicar.org/?page_id=3950), and try to download a malicious file, check the logs. If you are still not getting any logs whatsoever, please check your proxy(squid) setup.
+To test properly using malicious files , visit the [Eicar Test File Site](https://www.eicar.org/?page_id=3950), and try to download a malicious file, check the logs. 
+
+For example, open the following link
+
+www.eicar.org/download/eicar_com.zip
+
+If you are still not getting any logs whatsoever, please check your proxy(squid) setup.
 
 ## Things to keep in mind
 
