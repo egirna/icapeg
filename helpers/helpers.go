@@ -107,3 +107,12 @@ func BreakHTTPURL(url string) string {
 func GetScannerVendorSpecificCfg(cfgField string) string {
 	return fmt.Sprintf("%s.%s", viper.GetString("app.scanner_vendor"), cfgField)
 }
+
+// IfPropagateError returns one of the given parameter depending on the propagate error configuration
+func IfPropagateError(thenStatus, elseStatus int) int {
+	if viper.GetBool("app.propagate_error") {
+		return thenStatus
+	}
+
+	return elseStatus
+}
