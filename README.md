@@ -17,7 +17,7 @@ Before starting to play with ICAPeg, make sure you have the following things in 
 
 1. **Golang**(latest enough to be able to use go mod)
 
-***A sample installation of go version 1.14***:
+  ***A sample installation of go version 1.14***:
 
 Prepare the apt packages    
   ```bash
@@ -25,7 +25,10 @@ Prepare the apt packages
     
     ```
         
-```sudo apt upgrade```
+  ```bash
+    sudo apt upgrade
+    
+    ```
         
 Link of download of version 1.14
     https://dl.google.com/go/go1.14.linux-amd64.tar.gz
