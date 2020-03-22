@@ -164,11 +164,11 @@ Here is a sample conf file for squid:
 3. Now that you have squid running as well, you can test it out by trying to download/access a file from the internet(through the proxy) and see the magic happen! You'll be able to download/access the file if its alright, If you try and download something not malicious you should see something like this in the logs:
 ![fileoklog](img/fileoklog.png)
 
-But something like a malicious file, there will be terminal logs such as:
-![filenotok](img/filenotok.png)
+   But something like a malicious file, there will be terminal logs such as:
+   ![filenotok](img/filenotok.png)
 
-And you are gonna see something like this in the browser:
-![error_page](img/error_page.png)
+   And you are gonna see something like this in the browser:
+   ![error_page](img/error_page.png)
 
 To test properly using malicious files , visit the [Eicar Test File Site](https://www.eicar.org/?page_id=3950), and try to download a malicious file, check the logs. 
 
