@@ -22,8 +22,8 @@ Before starting to play with ICAPeg, make sure you have the following things in 
 Prepare the apt packages    
   ```bash
     sudo apt update
-    
-    ```
+
+  ```
         
   ```bash
     sudo apt upgrade
