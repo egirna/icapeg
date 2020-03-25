@@ -30,7 +30,7 @@ func TransformMetaDefenderToSubmitResponse(sr *dtos.MetaDefenderScanFileResponse
 // TransformMetaDefenderToSampleInfo transforms a metadefender report response to generic sample info reponse
 func TransformMetaDefenderToSampleInfo(vr *dtos.MetaDefenderReportResponse, fmi dtos.FileMetaInfo) *dtos.SampleInfo {
 
-	v := reflect.ValueOf(vr.ScanResults)
+	v := reflect.ValueOf(vr.ScanResults.ScanDetails)
 	failThreshold := viper.GetInt("metadefender.fail_threshold")
 
 	failCount := 0
