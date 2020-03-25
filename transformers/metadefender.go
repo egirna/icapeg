@@ -39,8 +39,8 @@ func TransformMetaDefenderToSampleInfo(vr *dtos.MetaDefenderReportResponse, fmi 
 	mtiScore := fmt.Sprintf("%d/%d", vr.ScanResults.TotalAvs-vr.ScanResults.TotalDetectedAvs, vr.ScanResults.TotalAvs)
 
 	for i := 0; i < v.NumField(); i++ {
-		scnr := v.Field(i).Interface().(dtos.Scanner)
-		if scnr.Detected {
+		scnr := v.Field(i).Interface().(dtos.MDScan)
+		if scnr.ThreatFound != "" {
 			failCount++
 		}
 		if failCount > failThreshold {
