@@ -7,7 +7,8 @@ import (
 
 // The service names
 const (
-	SVCVirusTotal = "virustotal"
+	SVCVirusTotal   = "virustotal"
+	SVCMetaDefender = "metadefender"
 )
 
 type (
@@ -24,6 +25,8 @@ func GetService(name string) Service {
 	switch name {
 	case SVCVirusTotal:
 		return NewVirusTotalService()
+	case SVCMetaDefender:
+		return NewMetaDefenderService()
 	}
 
 	return nil
