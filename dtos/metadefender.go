@@ -1,7 +1,7 @@
 package dtos
 
 type (
-	// MetaDefenderScanFileResponse represents the scan file endpoint reponse payload of meta defender
+	// MetaDefenderScanFileResponse represents the scan file endpoint response payload of MetaDefender
 	MetaDefenderScanFileResponse struct {
 		DataID        string `json:"data_id"`
 		Status        string `json:"status"`
@@ -10,21 +10,21 @@ type (
 		Sha1          string `json:"sha1"`
 		Sha256        string `json:"sha256"`
 	}
-	// MetaDefenderErrorResponse represents the error response for the meta defender service
+	// MetaDefenderErrorResponse represents the error response for the MetaDefender service
 	MetaDefenderErrorResponse struct {
 		Error struct {
 			Code     int      `json:"code"`
 			Messages []string `json:"messages"`
 		} `json:"error"`
 	}
-	// MDScan scan detail for meta defender
+	// MDScan scan detail for MetaDefender
 	MDScan struct {
 		ScanTime    int    `json:"scan_time"`
 		DefTime     string `json:"def_time"`
 		ScanResultI int    `json:"scan_result_i"`
 		ThreatFound string `json:"threat_found"`
 	}
-	// MetaDefenderReportResponse represents the report reponse payload of the meta defender service
+	// MetaDefenderReportResponse represents the report response payload of the MetaDefender service
 	MetaDefenderReportResponse struct {
 		DataID      string `json:"data_id"`
 		Status      string `json:"status"`

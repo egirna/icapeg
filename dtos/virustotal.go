@@ -1,7 +1,7 @@
 package dtos
 
 type (
-	// VirusTotalScanFileResponse represents the scan file endpoint reponse payload of virustotal
+	// VirusTotalScanFileResponse represents the scan file endpoint response payload of virustotal
 	VirusTotalScanFileResponse struct {
 		ScanID       string `json:"scan_id"`
 		Sha1         string `json:"sha1"`
@@ -19,7 +19,7 @@ type (
 		Result   string `json:"result"`
 		Update   string `json:"update"`
 	}
-	// VirusTotalReportResponse represents the report reponse payload of the virustotal service
+	// VirusTotalReportResponse represents the report response payload of the virustotal service
 	VirusTotalReportResponse struct {
 		Scans struct {
 			Bkav                  Scanner `json:"Bkav"`

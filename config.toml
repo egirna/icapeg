@@ -4,31 +4,31 @@ title = "ICAPEG configuration file"
 debug = true
 port = 1344
 max_filesize = 10000000 #bytes
-scanner_vendor = "metadefender" # "virustotal" #  "metadefender"
+scanner_vendor = "metadefender" # "virustotal"
 unprocessable_content_types = ["application/gzip" , "text/html" , "image/jpeg" , "image/png"]
 unprocessable_extensions = [".gz" , ".png" , ".jpg" , ".jpeg" , ".html"]
 preview_bytes = "4096" #bytes
 
 
 
-# [virustotal]
-# base_url = "https://www.virustotal.com/vtapi/v2"
-# scan_endpoint = "/file/scan"
-# report_endpoint = "/file/report?apikey=%s&resource=%s"
-# api_key = "<Your Virustotal API KEY here>"
-# timeout  = 10 #seconds
-# fail_threshold = 2
-# status_check_interval = 2 #seconds, the time interval after which the submission status check will be called
-# status_check_timeout = 300 #seconds, the total time duration after which the the status check should be stopped, if not finished
-# bad_file_status = ["malicious"]
-# ok_file_status = ["ok"]
-# status_endpoint_exists = false #this field determines whether the scanner vendor has any status check endpoint or not
+[virustotal]
+base_url = "https://www.virustotal.com/vtapi/v2"
+scan_endpoint = "/file/scan"
+report_endpoint = "/file/report?apikey=%s&resource=%s"
+api_key = "<Your Virustotal API KEY here>"
+timeout  = 10 #seconds
+fail_threshold = 2
+status_check_interval = 2 #seconds, the time interval after which the submission status check will be called
+status_check_timeout = 300 #seconds, the total time duration after which the the status check should be stopped, if not finished
+bad_file_status = ["malicious"]
+ok_file_status = ["ok"]
+status_endpoint_exists = false #this field determines whether the scanner vendor has any status check endpoint or not
 
 [metadefender]
 base_url = "https://api.metadefender.com/v4"
 scan_endpoint = "/file"
 report_endpoint = "/file"
-api_key = "<Your Metadefender API KEY here>"
+api_key = "<Your metadefender API KEY here>"
 timeout  = 10 #seconds
 fail_threshold = 2
 status_check_interval = 2 #seconds, the time interval after which the submission status check will be called

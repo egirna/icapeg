@@ -27,7 +27,7 @@ func TransformMetaDefenderToSubmitResponse(sr *dtos.MetaDefenderScanFileResponse
 	return submitResp
 }
 
-// TransformMetaDefenderToSampleInfo transforms a metadefender report response to generic sample info reponse
+// TransformMetaDefenderToSampleInfo transforms a metadefender report response to generic sample info response
 func TransformMetaDefenderToSampleInfo(vr *dtos.MetaDefenderReportResponse, fmi dtos.FileMetaInfo) *dtos.SampleInfo {
 
 	v := reflect.ValueOf(vr.ScanResults.ScanDetails)
