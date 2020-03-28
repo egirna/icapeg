@@ -27,7 +27,7 @@ func TransformVirusTotalToSubmitResponse(sr *dtos.VirusTotalScanFileResponse) *d
 	return submitResp
 }
 
-// TransformVirusTotalToSampleInfo transforms a virustotal report response to generic sample info reponse
+// TransformVirusTotalToSampleInfo transforms a virustotal report response to generic sample info response
 func TransformVirusTotalToSampleInfo(vr *dtos.VirusTotalReportResponse, fmi dtos.FileMetaInfo) *dtos.SampleInfo {
 
 	v := reflect.ValueOf(vr.Scans)
