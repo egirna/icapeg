@@ -58,9 +58,32 @@ Add /usr/local/go/bin to the PATH environment variable:
 
 squid is an example in this readme
 
-3. And a **VirusTotal api key**. [Here is how you can get it](VIRUSTOTALAPI.md)
+3. A scanner vendor. `ICAPeg` now supports `VirusTotal`, and `MetaDefender` as scanner vendors.
+Make sure that you setup your scanner vendor properly.
 
-**NOTE**: All the settings of ICAPeg is present in the **config.toml** file in the repo, including where you should put your VirusTotal api key.
+Setup **VirusTotal:**
+
+Insert `VirusTotal` as your scanner vendor in the config.toml file
+
+  ```code
+    scanner_vendor = "virustotal"
+  ```
+
+In that same file, add a **VirusTotal API key** in the `api_key` field of the `[virustotal]` section. [Here is how you can get it](VIRUSTOTALAPI.md).
+
+Setup **MetaDefender:**
+
+Insert `MetaDefender` as your scanner vendor in the config.toml file
+
+  ```code
+    scanner_vendor = "metadefender"
+  ```
+
+In that same file, add a **MetaDefender API key** in the `api_key` field of the `[metadefender]` section. [Here is how you can get it](METADEFENDER.md).
+
+
+
+**NOTE**: All the settings of ICAPeg is present in the **config.toml** file in the repo.
 
 ## How do I turn this thing on!!
 
