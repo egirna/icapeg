@@ -107,6 +107,18 @@ To turn on the ICAPeg server, proceed with the following steps (assuming you hav
     go mod vendor
   ```
 
+5. Insert your scanner vendor of choice in the config.toml file
+
+  ```code
+For VirusTotal:
+    scanner_vendor = "virustotal"
+  ```
+
+  ```code
+For MetaDefender:
+    scanner_vendor = "metadefender"
+  ```
+
 5. Build the ICAPeg binary by
 
   ```bash
