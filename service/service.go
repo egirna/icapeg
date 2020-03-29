@@ -9,6 +9,7 @@ import (
 const (
 	SVCVirusTotal   = "virustotal"
 	SVCMetaDefender = "metadefender"
+	SVCVmray        = "vmray"
 )
 
 type (
@@ -27,6 +28,8 @@ func GetService(name string) Service {
 		return NewVirusTotalService()
 	case SVCMetaDefender:
 		return NewMetaDefenderService()
+	case SVCVmray:
+		return NewVmrayService()
 	}
 
 	return nil

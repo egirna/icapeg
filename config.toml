@@ -4,7 +4,7 @@ title = "ICAPEG configuration file"
 debug = true
 port = 1344
 max_filesize = 10000000 #bytes
-scanner_vendor = "<Your scanner vendor goes here>" # Supported vendors "virustotal", "metadefender"
+scanner_vendor = "virustotal" # Supported vendors "virustotal", "metadefender" , "vmray"
 unprocessable_content_types = ["application/gzip" , "text/html" , "image/jpeg" , "image/png"]
 unprocessable_extensions = [".gz" , ".png" , ".jpg" , ".jpeg" , ".html"]
 preview_bytes = "4096" #bytes
@@ -37,3 +37,16 @@ status_check_timeout = 300 #seconds, the total time duration after which the the
 bad_file_status = ["malicious"]
 ok_file_status = ["ok"]
 status_endpoint_exists = false #this field determines whether the scanner vendor has any status check endpoint or not
+
+[vmray]
+base_url = "https://cloud.vmray.com/rest"
+submit_endpoint = "/sample/submit"
+get_sample_endpoint= "/sample"
+submission_status_endpoint = "/submission"
+timeout = 10 #seconds , the timeout duration for all the api calls for vmray
+status_check_interval = 2 #seconds, the time interval after which the submission status check will be called
+status_check_timeout = 300 #seconds, the total time duration after which the the status check should be stopped, if not finished
+bad_file_status = ["malicious", "suspicious", "blacklisted"]
+ok_file_status = ["not_suspicious" , "whitelisted", "unknown"]
+api_key = "<Your vmray API KEY here>"
+status_endpoint_exists = true
