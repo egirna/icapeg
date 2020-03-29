@@ -174,7 +174,8 @@ Add the following line at the end of the file
 
 
 A sample conf file for squid exists in the repository in a file 
-   [squid.conf](https://github.com/mkaram007/icapeg/blob/5c3030c4acd3025d78b4f418f02bc2f07b3370db/squid.conf)
+   [squid.conf](https://github.com/mkaram007/icapeg/blob/fa4ce337b27a2583c93c5dc81d8c7310fdc38e3a/squid.conf)
+
 
 Save and close the file
   Press CTRL + x, then press Y, then Enter
