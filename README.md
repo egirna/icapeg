@@ -161,37 +161,41 @@ OR, you can do none of the above and simply execute the **run.sh** shell file pr
 That should do the trick.
 
 2. Now that the server is up and running, the next thing to do is setup a proxy server which can send the request body to the ICAPeg server for adaptation. [Squid](http://www.squid-cache.org/) looks like just the thing for the job, go to the site provided and set it up like you want.
-
 After setting up your proxy server for example squid, change its configuration file:
 
 Open squid.conf file
 
   ```bash
-    sudo vim /etc/squid/squid.conf
+    sudo nano /etc/squid/squid.conf
   ```
-Add the following lines
+Add the following lines at the bottom of your ACLs configurations
 
   ```configuration
     icap_enable on
     icap_service service_resp respmod_precache icap://127.0.0.1:1344/respmod-icapeg
     adaptation_access service_resp allow all
+  ```
+
+Add the following line at the end of the file
+
+  ```configuration
     cache deny all
   ```
+
+
+A sample conf file for squid exists in the repository in a file
+   [squid.conf](https://github.com/mkaram007/icapeg/blob/fa4ce337b27a2583c93c5dc81d8c7310fdc38e3a/squid.conf)
+
+
+Save and close the file
+  Press CTRL + x, then press Y, then Enter
+
 Restart squid:
 
   ```bash
     systemctl restart squid
   ```
 
-Here is a sample conf file for squid:
-
-  ```configuration
-    icap_enable on
-    icap_service service_resp respmod_precache icap://127.0.0.1:1344/respmod-icapeg
-    adaptation_access service_resp allow all
-    http_port 3128
-    cache deny all
-  ```
 ## How do I know its working!
 
 3. Now that you have squid running as well, you can test it out by trying to download/access a file from the Internet(through the proxy) and see the magic happens! You'll be able to download/access the file if its alright,
