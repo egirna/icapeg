@@ -9,6 +9,7 @@ unprocessable_content_types = ["application/gzip" , "text/html" , "image/jpeg" ,
 unprocessable_extensions = [".gz" , ".png" , ".jpg" , ".jpeg" , ".html"]
 preview_bytes = "4096" #bytes
 propagate_error = true
+local_scanner = true
 
 
 
@@ -50,3 +51,10 @@ bad_file_status = ["malicious", "suspicious", "blacklisted"]
 ok_file_status = ["not_suspicious" , "whitelisted", "unknown"]
 api_key = "<Your vmray API KEY here>"
 status_endpoint_exists = true
+
+
+[clamav]
+socket_path = "/usr/local/var/run/clamav/clamd.sock"
+wait_timeout = 10 #seconds, the time upto which the server will wait for clamav to scan the results
+bad_file_status = ["malicious"]
+ok_file_status = ["ok"]

@@ -65,6 +65,55 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			return
 		}
 
+		// preparing the file meta informations
+		filename := helpers.GetFileName(req.Request)
+		fileExt := helpers.GetFileExtension(req.Request)
+		fmi := dtos.FileMetaInfo{
+			FileName: filename,
+			FileType: fileExt,
+			FileSize: float64(buf.Len()),
+		}
+
+		if viper.GetBool("app.local_scanner") {
+			lsvc := service.GetLocalService(strings.ToLower(viper.GetString("app.scanner_vendor")))
+
+			if lsvc == nil {
+				log.Println("No such scanner vendors:", viper.GetString("app.scanner_vendor"))
+				w.WriteHeader(helpers.IfPropagateError(http.StatusBadRequest, http.StatusNoContent), nil, false)
+				return
+			}
+
+			sampleInfo, err := lsvc.ScanFileStream(buf, fmi)
+			if err != nil {
+				log.Println("Couldn't fetch sample information for local service: ", err.Error())
+				w.WriteHeader(helpers.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
+				return
+			}
+
+			if !helpers.InStringSlice(sampleInfo.SampleSeverity, viper.GetStringSlice(helpers.GetScannerVendorSpecificCfg("ok_file_status"))) { // checking is the sample severity is amongst the allowable file status
+				log.Printf("The file:%s is %s\n", filename, sampleInfo.SampleSeverity)
+				htmlBuf, newResp := helpers.GetTemplateBufferAndResponse(helpers.BadFileTemplate, &dtos.TemplateData{
+					FileName:     sampleInfo.FileName,
+					FileType:     sampleInfo.SampleType,
+					FileSizeStr:  sampleInfo.FileSizeStr,
+					RequestedURL: "N/A",
+					Severity:     sampleInfo.SampleSeverity,
+					Score:        sampleInfo.VTIScore,
+					ResultsBy:    viper.GetString("app.scanner_vendor"),
+				})
+				w.WriteHeader(http.StatusOK, newResp, true)
+				w.Write(htmlBuf.Bytes())
+
+				return
+
+			}
+
+			log.Printf("The file %s is good to go\n", sampleInfo.FileName)
+			w.WriteHeader(http.StatusNoContent, nil, false) // all ok, show the contents as it is
+			return
+
+		}
+
 		// making necessary service api calls
 
 		svc := service.GetService(strings.ToLower(viper.GetString("app.scanner_vendor")))
@@ -75,13 +124,6 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			return
 		}
 
-		filename := helpers.GetFileName(req.Request)
-		fileExt := helpers.GetFileExtension(req.Request)
-		fmi := dtos.FileMetaInfo{
-			FileName: filename,
-			FileType: fileExt,
-			FileSize: float64(buf.Len()),
-		}
 		// The submit file api call is commented out for safety for now
 		submitResp, err := svc.SubmitFile(buf, filename) // submitting the file for analysing
 		if err != nil {
