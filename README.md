@@ -58,7 +58,7 @@ Add /usr/local/go/bin to the PATH environment variable:
 
 squid is an example in this readme
 
-3. A scanner vendor. `ICAPeg` now supports `VirusTotal`,  `MetaDefender` & `VMRay` as scanner vendors.
+3. A scanner vendor. `ICAPeg` now supports `VirusTotal`,  `MetaDefender` , `VMRay` & `Clamav` as scanner vendors.
 Make sure that you setup your scanner vendor properly.
 
 Setup **VirusTotal:**
@@ -91,6 +91,29 @@ Insert `vmray` as your scanner vendor in the config.toml file
 
 In that same file, add a **VMRay API key** in the `api_key` field of the `[vmray]` section. [Get your api key by requesting a free trial](https://www.vmray.com/analyzer-malware-sandbox-free-trial/).
 
+Setup **Clamav:**
+
+Insert `clamav` as your scanner vendor in the config.toml file
+
+  ```code
+    scanner_vendor = "clamav"
+  ```
+
+And also mark the local scanner flag(which indicates the scanner vendor is installed locally in the server) in the config.toml file
+
+  ```code
+    local_scanner = true
+  ```
+
+Keep the ```local_scanner``` flag **false** for any scanners that is not locally installed.
+
+Next, provide the **clamd socket file path**(getting back to this in a bit) in the config.toml file inside the clamav section
+
+  ```code
+    socket_path = "<path to clamd socket file>"
+  ```
+
+[Here is how you setup clamav and generate the socket file](CLAMAVSETUP.md)
 
 
 **NOTE**: All the settings of ICAPeg is present in the **config.toml** file in the repo.
