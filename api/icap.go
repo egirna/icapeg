@@ -43,8 +43,22 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 
 		ct := helpers.GetMimeExtension(req.Preview)
 
+		if ct == "" {
+			ct = "unknown"
+		}
+
+		if !helpers.InStringSlice("*", viper.GetStringSlice("app.processable_extensions")) {
+			if !helpers.InStringSlice(ct, viper.GetStringSlice("app.processable_extensions")) {
+				log.Println("Processing not required for file type-", ct)
+				log.Println("Reason: Doesn't belong to processable extensions")
+				w.WriteHeader(http.StatusNoContent, nil, false)
+				return
+			}
+		}
+
 		if helpers.InStringSlice(ct, viper.GetStringSlice("app.unprocessable_extensions")) {
-			log.Println("Processing not required")
+			log.Println("Processing not required for file type-", ct)
+			log.Println("Reason: Doesn't belong to unprocessable extensions")
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
