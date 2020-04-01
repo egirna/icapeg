@@ -19,15 +19,19 @@ const (
 
 // Clamav represents the informations regarding the clamav service
 type Clamav struct {
-	SocketPath  string
-	WaitTimeOut time.Duration
+	SocketPath    string
+	WaitTimeOut   time.Duration
+	badFileStatus []string
+	okFileStatus  []string
 }
 
 // NewClamavService returns a new populated instance of the clamav service
 func NewClamavService() LocalService {
 	return &Clamav{
-		SocketPath:  viper.GetString("clamav.socket_path"),
-		WaitTimeOut: viper.GetDuration("clamav.wait_timeout") * time.Second,
+		SocketPath:    viper.GetString("clamav.socket_path"),
+		WaitTimeOut:   viper.GetDuration("clamav.wait_timeout") * time.Second,
+		badFileStatus: viper.GetStringSlice("clamav.bad_file_status"),
+		okFileStatus:  viper.GetStringSlice("clamav.ok_file_status"),
 	}
 }
 
@@ -76,4 +80,14 @@ func (c *Clamav) ScanFileStream(file io.Reader, fileMetaInfo dtos.FileMetaInfo) 
 	}
 
 	return si, nil
+}
+
+// GetBadFileStatus returns the bad_file_status slice of the service
+func (c *Clamav) GetBadFileStatus() []string {
+	return c.badFileStatus
+}
+
+// GetOkFileStatus returns the ok_file_status slice of the service
+func (c *Clamav) GetOkFileStatus() []string {
+	return c.okFileStatus
 }

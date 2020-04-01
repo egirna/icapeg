@@ -22,18 +22,28 @@ type (
 
 	// Vmray represents the vmray service
 	Vmray struct {
-		BaseURL string
-		Timeout time.Duration
-		APIKey  string
+		BaseURL              string
+		Timeout              time.Duration
+		APIKey               string
+		statusCheckInterval  time.Duration
+		statusCheckTimeout   time.Duration
+		badFileStatus        []string
+		okFileStatus         []string
+		statusEndPointExists bool
 	}
 )
 
 // NewVmrayService populates a new vmray instance as a service
 func NewVmrayService() Service {
 	return &Vmray{
-		BaseURL: viper.GetString("vmray.base_url"),
-		Timeout: viper.GetDuration("vmray.timeout") * time.Second,
-		APIKey:  viper.GetString("vmray.api_key"),
+		BaseURL:              viper.GetString("vmray.base_url"),
+		Timeout:              viper.GetDuration("vmray.timeout") * time.Second,
+		APIKey:               viper.GetString("vmray.api_key"),
+		statusCheckInterval:  viper.GetDuration("vmray.status_check_interval") * time.Second,
+		statusCheckTimeout:   viper.GetDuration("vmray.status_check_timeout") * time.Second,
+		badFileStatus:        viper.GetStringSlice("vmray.bad_file_status"),
+		okFileStatus:         viper.GetStringSlice("vmray.ok_file_status"),
+		statusEndPointExists: viper.GetBool("vmray.status_endpoint_exists"),
 	}
 }
 
@@ -170,4 +180,29 @@ func (v *Vmray) GetSubmissionStatus(submissionID string) (*dtos.SubmissionStatus
 	}
 
 	return transformers.TransformVmrayToSubmissionStatusResponse(&ssResp), nil
+}
+
+// GetStatusCheckInterval returns the status_check_interval duration of the service
+func (v *Vmray) GetStatusCheckInterval() time.Duration {
+	return v.statusCheckInterval
+}
+
+// GetStatusCheckTimeout returns the status_check_timeout duraion of the service
+func (v *Vmray) GetStatusCheckTimeout() time.Duration {
+	return v.statusCheckTimeout
+}
+
+// GetBadFileStatus returns the bad_file_status slice of the service
+func (v *Vmray) GetBadFileStatus() []string {
+	return v.badFileStatus
+}
+
+// GetOkFileStatus returns the ok_file_status slice of the service
+func (v *Vmray) GetOkFileStatus() []string {
+	return v.okFileStatus
+}
+
+// StatusEndpointExists returns the status_endpoint_exists boolean value of the service
+func (v *Vmray) StatusEndpointExists() bool {
+	return v.statusEndPointExists
 }

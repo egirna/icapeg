@@ -43,8 +43,22 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 
 		ct := helpers.GetMimeExtension(req.Preview)
 
+		if ct == "" {
+			ct = "unknown"
+		}
+
+		if !helpers.InStringSlice("*", viper.GetStringSlice("app.processable_extensions")) {
+			if !helpers.InStringSlice(ct, viper.GetStringSlice("app.processable_extensions")) {
+				log.Println("Processing not required for file type-", ct)
+				log.Println("Reason: Doesn't belong to processable extensions")
+				w.WriteHeader(http.StatusNoContent, nil, false)
+				return
+			}
+		}
+
 		if helpers.InStringSlice(ct, viper.GetStringSlice("app.unprocessable_extensions")) {
-			log.Println("Processing not required")
+			log.Println("Processing not required for file type-", ct)
+			log.Println("Reason: Doesn't belong to unprocessable extensions")
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
@@ -90,13 +104,13 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 				return
 			}
 
-			if !helpers.InStringSlice(sampleInfo.SampleSeverity, viper.GetStringSlice(helpers.GetScannerVendorSpecificCfg("ok_file_status"))) { // checking is the sample severity is amongst the allowable file status
+			if !helpers.InStringSlice(sampleInfo.SampleSeverity, lsvc.GetOkFileStatus()) { // checking is the sample severity is amongst the allowable file status
 				log.Printf("The file:%s is %s\n", filename, sampleInfo.SampleSeverity)
 				htmlBuf, newResp := helpers.GetTemplateBufferAndResponse(helpers.BadFileTemplate, &dtos.TemplateData{
 					FileName:     sampleInfo.FileName,
 					FileType:     sampleInfo.SampleType,
 					FileSizeStr:  sampleInfo.FileSizeStr,
-					RequestedURL: "N/A",
+					RequestedURL: helpers.BreakHTTPURL(req.Request.RequestURI),
 					Severity:     sampleInfo.SampleSeverity,
 					Score:        sampleInfo.VTIScore,
 					ResultsBy:    viper.GetString("app.scanner_vendor"),
@@ -143,14 +157,14 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 		}
 
 		submissionFinished := false
-		statusCheckFinishTime := time.Now().Add(viper.GetDuration(helpers.GetScannerVendorSpecificCfg("status_check_timeout")) * time.Second) // the time after which, the system is to stop checking for submission finish
+		statusCheckFinishTime := time.Now().Add(svc.GetStatusCheckTimeout()) // the time after which, the system is to stop checking for submission finish
 		var sampleInfo *dtos.SampleInfo
 		sampleID := submitResp.SubmissionSampleID //"4715575"
 
 		for !submissionFinished && time.Now().Before(statusCheckFinishTime) {
 			submissionID := submitResp.SubmissionID //"5651578"
 
-			switch viper.GetBool(helpers.GetScannerVendorSpecificCfg("status_endpoint_exists")) {
+			switch svc.StatusEndpointExists() {
 			case true:
 				submissionStatus, err := svc.GetSubmissionStatus(submissionID) // getting the file submission status by the submission id received by submitting the file
 				if err != nil {
@@ -177,7 +191,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			}
 
 			if !submissionFinished { // if the submission is not finished, wait for a certain time and then call again
-				time.Sleep(viper.GetDuration(helpers.GetScannerVendorSpecificCfg("status_check_interval")) * time.Second)
+				time.Sleep(svc.GetStatusCheckInterval())
 			}
 		}
 
@@ -192,7 +206,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 				}
 			}
 
-			if !helpers.InStringSlice(sampleInfo.SampleSeverity, viper.GetStringSlice(helpers.GetScannerVendorSpecificCfg("ok_file_status"))) { // checking is the sample severity is amongst the allowable file status
+			if !helpers.InStringSlice(sampleInfo.SampleSeverity, svc.GetOkFileStatus()) { // checking is the sample severity is amongst the allowable file status
 				log.Printf("The file:%s is %s\n", filename, sampleInfo.SampleSeverity)
 				htmlBuf, newResp := helpers.GetTemplateBufferAndResponse(helpers.BadFileTemplate, &dtos.TemplateData{
 					FileName:     sampleInfo.FileName,

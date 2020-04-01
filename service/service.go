@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"icapeg/dtos"
 	"io"
+	"time"
 )
 
 // The service names
@@ -20,11 +21,18 @@ type (
 		SubmitFile(*bytes.Buffer, string) (*dtos.SubmitResponse, error)
 		GetSubmissionStatus(string) (*dtos.SubmissionStatusResponse, error)
 		GetSampleFileInfo(string, ...dtos.FileMetaInfo) (*dtos.SampleInfo, error)
+		GetStatusCheckInterval() time.Duration
+		GetStatusCheckTimeout() time.Duration
+		GetBadFileStatus() []string
+		GetOkFileStatus() []string
+		StatusEndpointExists() bool
 	}
 
 	// LocalService holds the blueprint of a local service
 	LocalService interface {
 		ScanFileStream(io.Reader, dtos.FileMetaInfo) (*dtos.SampleInfo, error)
+		GetBadFileStatus() []string
+		GetOkFileStatus() []string
 	}
 )
 

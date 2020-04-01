@@ -20,17 +20,27 @@ import (
 
 // VirusTotal represents the informations regarding the virustotal service
 type VirusTotal struct {
-	BaseURL string
-	Timeout time.Duration
-	APIKey  string
+	BaseURL              string
+	Timeout              time.Duration
+	APIKey               string
+	statusCheckInterval  time.Duration
+	statusCheckTimeout   time.Duration
+	badFileStatus        []string
+	okFileStatus         []string
+	statusEndPointExists bool
 }
 
 // NewVirusTotalService returns a new populated instance of the virustotal service
 func NewVirusTotalService() Service {
 	return &VirusTotal{
-		BaseURL: viper.GetString("virustotal.base_url"),
-		Timeout: viper.GetDuration("virustotal.timeout") * time.Second,
-		APIKey:  viper.GetString("virustotal.api_key"),
+		BaseURL:              viper.GetString("virustotal.base_url"),
+		Timeout:              viper.GetDuration("virustotal.timeout") * time.Second,
+		APIKey:               viper.GetString("virustotal.api_key"),
+		statusCheckInterval:  viper.GetDuration("virustotal.status_check_interval") * time.Second,
+		statusCheckTimeout:   viper.GetDuration("virustotal.status_check_timeout") * time.Second,
+		badFileStatus:        viper.GetStringSlice("virustotal.bad_file_status"),
+		okFileStatus:         viper.GetStringSlice("virustotal.ok_file_status"),
+		statusEndPointExists: viper.GetBool("virustotal.status_endpoint_exists"),
 	}
 }
 
@@ -188,4 +198,29 @@ func (v *VirusTotal) GetSubmissionStatus(submissionID string) (*dtos.SubmissionS
 	}
 
 	return transformers.TransformVirusTotalToSubmissionStatusResponse(&sampleResp), nil
+}
+
+// GetStatusCheckInterval returns the status_check_interval duration of the service
+func (v *VirusTotal) GetStatusCheckInterval() time.Duration {
+	return v.statusCheckInterval
+}
+
+// GetStatusCheckTimeout returns the status_check_timeout duraion of the service
+func (v *VirusTotal) GetStatusCheckTimeout() time.Duration {
+	return v.statusCheckTimeout
+}
+
+// GetBadFileStatus returns the bad_file_status slice of the service
+func (v *VirusTotal) GetBadFileStatus() []string {
+	return v.badFileStatus
+}
+
+// GetOkFileStatus returns the ok_file_status slice of the service
+func (v *VirusTotal) GetOkFileStatus() []string {
+	return v.okFileStatus
+}
+
+// StatusEndpointExists returns the status_endpoint_exists boolean value of the service
+func (v *VirusTotal) StatusEndpointExists() bool {
+	return v.statusEndPointExists
 }

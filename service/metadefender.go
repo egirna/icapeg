@@ -18,24 +18,34 @@ import (
 
 // MetaDefender represents the informations regarding the MetaDefender service
 type MetaDefender struct {
-	BaseURL string
-	Timeout time.Duration
-	APIKey  string
+	BaseURL              string
+	Timeout              time.Duration
+	APIKey               string
+	statusCheckInterval  time.Duration
+	statusCheckTimeout   time.Duration
+	badFileStatus        []string
+	okFileStatus         []string
+	statusEndPointExists bool
 }
 
-// NewMetaDefenderService returns a new populated instance of the virustotal service
+// NewMetaDefenderService returns a new populated instance of the metadefender service
 func NewMetaDefenderService() Service {
 	return &MetaDefender{
-		BaseURL: viper.GetString("metadefender.base_url"),
-		Timeout: viper.GetDuration("metadefender.timeout") * time.Second,
-		APIKey:  viper.GetString("metadefender.api_key"),
+		BaseURL:              viper.GetString("metadefender.base_url"),
+		Timeout:              viper.GetDuration("metadefender.timeout") * time.Second,
+		APIKey:               viper.GetString("metadefender.api_key"),
+		statusCheckInterval:  viper.GetDuration("metadefender.status_check_interval") * time.Second,
+		statusCheckTimeout:   viper.GetDuration("metadefender.status_check_timeout") * time.Second,
+		badFileStatus:        viper.GetStringSlice("metadefender.bad_file_status"),
+		okFileStatus:         viper.GetStringSlice("metadefender.ok_file_status"),
+		statusEndPointExists: viper.GetBool("metadefender.status_endpoint_exists"),
 	}
 }
 
 // SubmitFile calls the submission api for metadefender
-func (v *MetaDefender) SubmitFile(f *bytes.Buffer, filename string) (*dtos.SubmitResponse, error) {
+func (m *MetaDefender) SubmitFile(f *bytes.Buffer, filename string) (*dtos.SubmitResponse, error) {
 
-	urlStr := v.BaseURL + viper.GetString("metadefender.scan_endpoint")
+	urlStr := m.BaseURL + viper.GetString("metadefender.scan_endpoint")
 
 	//bodyBuf := &bytes.Buffer{}
 
@@ -60,10 +70,10 @@ func (v *MetaDefender) SubmitFile(f *bytes.Buffer, filename string) (*dtos.Submi
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Apikey", v.APIKey)
+	req.Header.Set("Apikey", m.APIKey)
 	req.Header.Set("Content-Type", "application/octet-stream")
 	client := http.Client{}
-	ctx, cancel := context.WithTimeout(context.Background(), v.Timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), m.Timeout)
 	defer cancel()
 	req = req.WithContext(ctx)
 
@@ -88,9 +98,9 @@ func (v *MetaDefender) SubmitFile(f *bytes.Buffer, filename string) (*dtos.Submi
 }
 
 // GetSampleFileInfo returns the submitted sample file's info
-func (v *MetaDefender) GetSampleFileInfo(sampleID string, filemetas ...dtos.FileMetaInfo) (*dtos.SampleInfo, error) {
+func (m *MetaDefender) GetSampleFileInfo(sampleID string, filemetas ...dtos.FileMetaInfo) (*dtos.SampleInfo, error) {
 
-	urlStr := v.BaseURL + fmt.Sprintf(viper.GetString("metadefender.report_endpoint")+"/"+sampleID)
+	urlStr := m.BaseURL + fmt.Sprintf(viper.GetString("metadefender.report_endpoint")+"/"+sampleID)
 	//urlStr := v.BaseURL + fmt.Sprintf(viper.GetString("metadefender.report_endpoint"), viper.GetString("metadefender.api_key"), sampleID)
 
 	req, err := http.NewRequest(http.MethodGet, urlStr, nil)
@@ -100,7 +110,7 @@ func (v *MetaDefender) GetSampleFileInfo(sampleID string, filemetas ...dtos.File
 	}
 	req.Header.Add("apikey", viper.GetString("metadefender.api_key"))
 	client := http.Client{}
-	ctx, cancel := context.WithTimeout(context.Background(), v.Timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), m.Timeout)
 	defer cancel()
 	req = req.WithContext(ctx)
 
@@ -138,9 +148,9 @@ func (v *MetaDefender) GetSampleFileInfo(sampleID string, filemetas ...dtos.File
 }
 
 // GetSubmissionStatus returns the submission status of a submitted sample
-func (v *MetaDefender) GetSubmissionStatus(submissionID string) (*dtos.SubmissionStatusResponse, error) {
+func (m *MetaDefender) GetSubmissionStatus(submissionID string) (*dtos.SubmissionStatusResponse, error) {
 
-	urlStr := v.BaseURL + fmt.Sprintf(viper.GetString("metadefender.report_endpoint")+"/"+submissionID)
+	urlStr := m.BaseURL + fmt.Sprintf(viper.GetString("metadefender.report_endpoint")+"/"+submissionID)
 
 	req, err := http.NewRequest(http.MethodGet, urlStr, nil)
 
@@ -149,7 +159,7 @@ func (v *MetaDefender) GetSubmissionStatus(submissionID string) (*dtos.Submissio
 	}
 	req.Header.Add("apikey", viper.GetString("metadefender.api_key"))
 	client := http.Client{}
-	ctx, cancel := context.WithTimeout(context.Background(), v.Timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), m.Timeout)
 	defer cancel()
 	req = req.WithContext(ctx)
 
@@ -174,4 +184,29 @@ func (v *MetaDefender) GetSubmissionStatus(submissionID string) (*dtos.Submissio
 	}
 
 	return transformers.TransformMetaDefenderToSubmissionStatusResponse(&sampleResp), nil
+}
+
+// GetStatusCheckInterval returns the status_check_interval duration of the service
+func (m *MetaDefender) GetStatusCheckInterval() time.Duration {
+	return m.statusCheckInterval
+}
+
+// GetStatusCheckTimeout returns the status_check_timeout duraion of the service
+func (m *MetaDefender) GetStatusCheckTimeout() time.Duration {
+	return m.statusCheckTimeout
+}
+
+// GetBadFileStatus returns the bad_file_status slice of the service
+func (m *MetaDefender) GetBadFileStatus() []string {
+	return m.badFileStatus
+}
+
+// GetOkFileStatus returns the ok_file_status slice of the service
+func (m *MetaDefender) GetOkFileStatus() []string {
+	return m.okFileStatus
+}
+
+// StatusEndpointExists returns the status_endpoint_exists boolean value of the service
+func (m *MetaDefender) StatusEndpointExists() bool {
+	return m.statusEndPointExists
 }
