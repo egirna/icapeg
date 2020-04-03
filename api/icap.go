@@ -223,11 +223,71 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 
 		log.Printf("The file %s is good to go\n", filename)
 		w.WriteHeader(http.StatusNoContent, nil, false) // all ok, show the contents as it is
+
 	case "ERRDUMMY":
 		w.WriteHeader(http.StatusBadRequest, nil, false)
 		fmt.Println("Malformed request")
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed, nil, false)
-		fmt.Println("Invalid request method - respmod")
+		log.Printf("Invalid request method %s- respmod\n", req.Method)
+	}
+}
+
+// ToICAPEGReq is the ICAP request Mode Handler:
+func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
+	h := w.Header()
+	h.Set("ISTag", utils.ISTag)
+	h.Set("Service", "Egirna ICAP-EG")
+
+	log.Printf("Request received---> METHOD:%s URL:%s\n", req.Method, req.RawURL)
+
+	switch req.Method {
+	case utils.ICAPModeOptions:
+		h.Set("Methods", utils.ICAPModeReq)
+		h.Set("Allow", "204")
+		h.Set("Preview", "0")
+		h.Set("Transfer-Preview", utils.Any)
+		w.WriteHeader(http.StatusOK, nil, false)
+	case utils.ICAPModeReq:
+
+		ext := utils.GetFileExtension(req.Request)
+
+		if ext == "" {
+			ext = utils.Unknown
+		}
+
+		ext = "." + ext
+
+		spew.Dump(ext)
+
+		if !utils.InStringSlice(utils.Any, viper.GetStringSlice("app.processable_extensions")) {
+			if !utils.InStringSlice(ext, viper.GetStringSlice("app.processable_extensions")) {
+				log.Println("Processing not required for file type-", ext)
+				log.Println("Reason: Doesn't belong to processable extensions")
+				w.WriteHeader(http.StatusNoContent, nil, false)
+				return
+			}
+		}
+
+		if utils.InStringSlice(ext, viper.GetStringSlice("app.unprocessable_extensions")) {
+			log.Println("Processing not required for file type-", ext)
+			log.Println("Reason: Doesn't belong to unprocessable extensions")
+			w.WriteHeader(http.StatusNoContent, nil, false)
+			return
+		}
+
+		fileURL := req.Request.RequestURI
+
+		spew.Dump(fileURL)
+
+		w.WriteHeader(http.StatusNoContent, nil, false)
+
+	case "ERRDUMMY":
+		w.WriteHeader(http.StatusBadRequest, nil, false)
+		fmt.Println("Malformed request")
+	default:
+		w.WriteHeader(http.StatusMethodNotAllowed, nil, false)
+		log.Printf("Invalid request method %s- reqmod\n", req.Method)
+
 	}
 }

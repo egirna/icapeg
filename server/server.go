@@ -16,10 +16,10 @@ import (
 // StartServer starts the icap server
 func StartServer() error {
 
-	//icap.HandleFunc("/reqmod-icapeg", toICAPEGReq)
 	//icap.ListenAndServe(":1344", icap.HandlerFunc(toICAPEGReq))
 
 	icap.HandleFunc("/respmod-icapeg", api.ToICAPEGResp)
+	icap.HandleFunc("/reqmod-icapeg", api.ToICAPEGReq)
 
 	log.Println("Starting the ICAP server...")
 
@@ -27,7 +27,7 @@ func StartServer() error {
 	signal.Notify(stop, syscall.SIGKILL, syscall.SIGINT, syscall.SIGQUIT)
 
 	go func() {
-		if err := icap.ListenAndServe(fmt.Sprintf(":%d", config.App().Port), icap.HandlerFunc(api.ToICAPEGResp)); err != nil {
+		if err := icap.ListenAndServe(fmt.Sprintf(":%d", config.App().Port), nil); err != nil {
 			log.Fatal(err.Error())
 		}
 	}()
