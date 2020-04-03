@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"icapeg/dtos"
-	"icapeg/helpers"
+	"icapeg/utils"
 	"io"
 	"time"
 
@@ -68,7 +68,7 @@ func (c *Clamav) ScanFileStream(file io.Reader, fileMetaInfo dtos.FileMetaInfo) 
 		severity = "malicious"
 	}
 
-	fileSizeStr := fmt.Sprintf("%.2fmb", helpers.ByteToMegaBytes(int(fileMetaInfo.FileSize)))
+	fileSizeStr := fmt.Sprintf("%.2fmb", utils.ByteToMegaBytes(int(fileMetaInfo.FileSize)))
 
 	si := &dtos.SampleInfo{
 		FileName:           fileMetaInfo.FileName,

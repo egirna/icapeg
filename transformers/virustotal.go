@@ -3,7 +3,7 @@ package transformers
 import (
 	"fmt"
 	"icapeg/dtos"
-	"icapeg/helpers"
+	"icapeg/utils"
 	"reflect"
 
 	"github.com/spf13/viper"
@@ -60,7 +60,7 @@ func TransformVirusTotalToSampleInfo(vr *dtos.VirusTotalReportResponse, fmi dtos
 		VTIScore:           vtiScore,
 		FileName:           fmi.FileName,
 		SampleType:         fmi.FileType,
-		FileSizeStr:        fmt.Sprintf("%.2fmb", helpers.ByteToMegaBytes(int(fmi.FileSize))),
+		FileSizeStr:        fmt.Sprintf("%.2fmb", utils.ByteToMegaBytes(int(fmi.FileSize))),
 		SubmissionFinished: submissionFinished,
 	}
 
