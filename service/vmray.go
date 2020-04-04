@@ -182,6 +182,16 @@ func (v *Vmray) GetSubmissionStatus(submissionID string) (*dtos.SubmissionStatus
 	return transformers.TransformVmrayToSubmissionStatusResponse(&ssResp), nil
 }
 
+// SubmitURL calls the submission api for vmray
+func (v *Vmray) SubmitURL(fileURL, filename string) (*dtos.SubmitResponse, error) {
+	return nil, nil
+}
+
+// GetSampleURLInfo returns the submitted sample url's info
+func (v *Vmray) GetSampleURLInfo(sampleID string, filemetas ...dtos.FileMetaInfo) (*dtos.SampleInfo, error) {
+	return nil, nil
+}
+
 // GetStatusCheckInterval returns the status_check_interval duration of the service
 func (v *Vmray) GetStatusCheckInterval() time.Duration {
 	return v.statusCheckInterval

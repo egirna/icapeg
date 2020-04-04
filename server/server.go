@@ -5,6 +5,7 @@ import (
 	"icapeg/api"
 	"icapeg/config"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -21,6 +22,8 @@ func StartServer() error {
 	icap.HandleFunc("/respmod-icapeg", api.ToICAPEGResp)
 	icap.HandleFunc("/reqmod-icapeg", api.ToICAPEGReq)
 
+	http.HandleFunc("/error", api.ErrorPageHanlder)
+
 	log.Println("Starting the ICAP server...")
 
 	stop := make(chan os.Signal, 1)
@@ -31,6 +34,13 @@ func StartServer() error {
 			log.Fatal(err.Error())
 		}
 	}()
+
+	go func() {
+		if err := http.ListenAndServe(fmt.Sprintf(":%d", config.App().HTTPPort), nil); err != nil {
+			log.Fatal(err.Error())
+		}
+	}()
+
 	time.Sleep(5 * time.Millisecond)
 
 	log.Printf("ICAP server is running on localhost:%d ...\n", config.App().Port)

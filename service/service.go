@@ -21,6 +21,8 @@ type (
 		SubmitFile(*bytes.Buffer, string) (*dtos.SubmitResponse, error)
 		GetSubmissionStatus(string) (*dtos.SubmissionStatusResponse, error)
 		GetSampleFileInfo(string, ...dtos.FileMetaInfo) (*dtos.SampleInfo, error)
+		GetSampleURLInfo(string, ...dtos.FileMetaInfo) (*dtos.SampleInfo, error)
+		SubmitURL(string, string) (*dtos.SubmitResponse, error)
 		GetStatusCheckInterval() time.Duration
 		GetStatusCheckTimeout() time.Duration
 		GetBadFileStatus() []string

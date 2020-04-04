@@ -22,13 +22,13 @@ type (
 	}
 	// TemplateData represents the data needed to be show in the custom html template
 	TemplateData struct {
-		FileName     string
-		Severity     string
-		RequestedURL string
-		Score        string
-		FileType     string
-		FileSizeStr  string
-		ResultsBy    string
+		FileName     string `json:"file_name"`
+		Severity     string `json:"severity"`
+		RequestedURL string `json:"requested_url"`
+		Score        string `json:"score"`
+		FileType     string `json:"file_type"`
+		FileSizeStr  string `json:"file_size_str"`
+		ResultsBy    string `json:"results_by"`
 	}
 
 	// FileMetaInfo represents the meta data regarding the concerned file

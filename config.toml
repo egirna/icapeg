@@ -3,6 +3,7 @@ title = "ICAPEG configuration file"
 [app]
 debug = true
 port = 1344
+http_port = 8080
 max_filesize = 10000000 #bytes
 scanner_vendor = "virustotal" # Supported vendors "virustotal", "metadefender" , "vmray"
 unprocessable_content_types = ["application/gzip" , "text/html" , "image/jpeg" , "image/png"]
@@ -16,9 +17,11 @@ local_scanner = false
 
 [virustotal]
 base_url = "https://www.virustotal.com/vtapi/v2"
-scan_endpoint = "/file/scan"
-report_endpoint = "/file/report?apikey=%s&resource=%s"
-api_key = "<Your Virustotal API KEY here>"
+file_scan_endpoint = "/file/scan"
+url_scan_endpoint = "/url/scan"
+file_report_endpoint = "/file/report?apikey=%s&resource=%s"
+url_report_endpoint = "/url/report?apikey=%s&resource=%s"
+api_key = "44904fa3f2b4c03295d4e83b3a183f786a542837b120d1c0eddcaa96cf0f42c9"
 timeout  = 10 #seconds
 fail_threshold = 2
 status_check_interval = 2 #seconds, the time interval after which the submission status check will be called

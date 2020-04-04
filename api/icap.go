@@ -2,11 +2,13 @@ package api
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"icapeg/dtos"
 	"icapeg/service"
 	"icapeg/utils"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
@@ -253,12 +255,10 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 		ext := utils.GetFileExtension(req.Request)
 
 		if ext == "" {
-			ext = utils.Unknown
+			ext = "html"
 		}
 
 		ext = "." + ext
-
-		spew.Dump(ext)
 
 		if !utils.InStringSlice(utils.Any, viper.GetStringSlice("app.processable_extensions")) {
 			if !utils.InStringSlice(ext, viper.GetStringSlice("app.processable_extensions")) {
@@ -278,8 +278,124 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 
 		fileURL := req.Request.RequestURI
 
-		spew.Dump(fileURL)
+		// preparing the file meta informations
+		filename := utils.GetFileName(req.Request)
+		fileExt := utils.GetFileExtension(req.Request)
+		fmi := dtos.FileMetaInfo{
+			FileName: filename,
+			FileType: fileExt,
+		}
 
+		svc := service.GetService(strings.ToLower(viper.GetString("app.scanner_vendor")))
+
+		if svc == nil {
+			log.Println("No such scanner vendors:", viper.GetString("app.scanner_vendor"))
+			w.WriteHeader(utils.IfPropagateError(http.StatusBadRequest, http.StatusNoContent), nil, false)
+			return
+		}
+
+		// The submit file api call is commented out for safety for now
+		submitResp, err := svc.SubmitURL(fileURL, filename) // submitting the file for analysing
+		if err != nil {
+			log.Printf("Failed to submit url to %s: %s\n", viper.GetString("app.scanner_vendor"), err.Error())
+			w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
+			return
+		}
+
+		if !submitResp.SubmissionExists {
+			log.Println("No submissions for the file")
+			w.WriteHeader(http.StatusNoContent, nil, false)
+			return
+		}
+
+		if viper.GetBool("app.debug") {
+			spew.Dump("submit response", submitResp)
+		}
+
+		submissionFinished := false
+		statusCheckFinishTime := time.Now().Add(svc.GetStatusCheckTimeout()) // the time after which, the system is to stop checking for submission finish
+		var sampleInfo *dtos.SampleInfo
+		sampleID := submitResp.SubmissionSampleID //"4715575"
+
+		for !submissionFinished && time.Now().Before(statusCheckFinishTime) { // while the time dedicated for status checking has no expired
+			submissionID := submitResp.SubmissionID //"5651578"
+
+			switch svc.StatusEndpointExists() { // this blocks acts depending of the fact that the scanner has a seperate endpoint for checking file scan status or not, somne of them has and some don't
+			case true:
+				submissionStatus, err := svc.GetSubmissionStatus(submissionID) // getting the file submission status by the submission id received by submitting the file
+				if err != nil {
+					log.Printf("Failed to get submission status from %s: %s\n", viper.GetString("app.scanner_vendor"), err.Error())
+					w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
+					return
+				}
+
+				if viper.GetBool("app.debug") {
+					spew.Dump("submission status resp", submissionStatus)
+				}
+				submissionFinished = submissionStatus.SubmissionFinished
+			case false: // if it doesn;t the file report result will contain the information
+				var err error
+				sampleInfo, err = svc.GetSampleURLInfo(sampleID, fmi)
+				if err != nil {
+					log.Println("Couldn't fetch sample information during status check: ", err.Error())
+					w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
+					return
+				}
+				submissionFinished = sampleInfo.SubmissionFinished
+			default:
+				log.Println("Put the status_endpoint_exists field in the config file under the scanner vendor")
+			}
+
+			if !submissionFinished { // if the submission is not finished, wait for a certain time and then call again
+				time.Sleep(svc.GetStatusCheckInterval())
+			}
+		}
+
+		if !submissionFinished {
+			log.Println("File submission is taking too long to finish")
+			w.WriteHeader(http.StatusNoContent, nil, false)
+			return
+		}
+
+		if sampleInfo == nil {
+			var err error
+			sampleInfo, err = svc.GetSampleFileInfo(sampleID, fmi) // getting the results after scanner is done analysing the file
+			if err != nil {
+				log.Println("Couldn't fetch sample information after submission finish: ", err.Error())
+				w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
+				return
+			}
+		}
+
+		if !utils.InStringSlice(sampleInfo.SampleSeverity, svc.GetOkFileStatus()) { // checking is the sample severity is amongst the allowable file status
+			log.Printf("The file:%s is %s\n", filename, sampleInfo.SampleSeverity)
+			data := &dtos.TemplateData{
+				FileName:     sampleInfo.FileName,
+				FileType:     sampleInfo.SampleType,
+				FileSizeStr:  sampleInfo.FileSizeStr,
+				RequestedURL: utils.BreakHTTPURL(req.Request.RequestURI),
+				Severity:     sampleInfo.SampleSeverity,
+				Score:        sampleInfo.VTIScore,
+				ResultsBy:    viper.GetString("app.scanner_vendor"),
+			}
+
+			dataByte, err := json.Marshal(data)
+
+			if err != nil {
+				log.Println("Failed to marshal template data: ", err.Error())
+				w.WriteHeader(utils.IfPropagateError(http.StatusInternalServerError, http.StatusNoContent), nil, false)
+				return
+			}
+
+			req.Request.Host = "localhost:8080/error"
+			req.Request.URL.Host = "localhost:8080/error"
+			req.Request.Body = ioutil.NopCloser(bytes.NewReader(dataByte))
+			w.WriteHeader(200, req.Request, false)
+
+			return
+		}
+
+		log.Printf("The url %s is good to go\n", fileURL)
 		w.WriteHeader(http.StatusNoContent, nil, false)
 
 	case "ERRDUMMY":

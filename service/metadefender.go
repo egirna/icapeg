@@ -186,6 +186,16 @@ func (m *MetaDefender) GetSubmissionStatus(submissionID string) (*dtos.Submissio
 	return transformers.TransformMetaDefenderToSubmissionStatusResponse(&sampleResp), nil
 }
 
+// SubmitURL calls the submission api for metadefender
+func (m *MetaDefender) SubmitURL(fileURL, filename string) (*dtos.SubmitResponse, error) {
+	return nil, nil
+}
+
+// GetSampleURLInfo returns the submitted sample url's info
+func (m *MetaDefender) GetSampleURLInfo(sampleID string, filemetas ...dtos.FileMetaInfo) (*dtos.SampleInfo, error) {
+	return nil, nil
+}
+
 // GetStatusCheckInterval returns the status_check_interval duration of the service
 func (m *MetaDefender) GetStatusCheckInterval() time.Duration {
 	return m.statusCheckInterval
