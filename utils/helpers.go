@@ -50,7 +50,7 @@ func GetFileExtension(req *http.Request) string {
 	if filenameWithExt != "" {
 		ff := strings.Split(filenameWithExt, ".")
 		if len(ff) > 1 {
-			return ff[1]
+			return ff[len(ff)-1]
 		}
 	}
 

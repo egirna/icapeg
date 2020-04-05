@@ -184,12 +184,62 @@ func (v *Vmray) GetSubmissionStatus(submissionID string) (*dtos.SubmissionStatus
 
 // SubmitURL calls the submission api for vmray
 func (v *Vmray) SubmitURL(fileURL, filename string) (*dtos.SubmitResponse, error) {
-	return nil, nil
+
+	urlStr := v.BaseURL + viper.GetString("vmray.submit_endpoint")
+
+	bodyBuf := &bytes.Buffer{}
+
+	bodyWriter := multipart.NewWriter(bodyBuf)
+
+	bodyWriter.WriteField("sample_file", fileURL)
+
+	if err := bodyWriter.Close(); err != nil {
+		log.Println("failed to close writer", err.Error())
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, urlStr, bodyBuf)
+
+	if err != nil {
+		return nil, err
+	}
+
+	client := http.Client{}
+	ctx, cancel := context.WithTimeout(context.Background(), v.Timeout)
+	defer cancel()
+	req = req.WithContext(ctx)
+
+	req.Header.Add("Content-Type", bodyWriter.FormDataContentType())
+	req.Header.Add("Authorization", fmt.Sprintf("api_key %s", v.APIKey))
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Println("service: vmray: failed to do request:", err.Error())
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		bdy, _ := ioutil.ReadAll(resp.Body)
+		return nil, errors.New(string(bdy))
+	}
+
+	sresp := dtos.VmraySubmitResponse{}
+
+	if err := json.NewDecoder(resp.Body).Decode(&sresp); err != nil {
+		return nil, err
+	}
+
+	if len(sresp.Data.Errors) > 0 {
+		errByte, _ := json.Marshal(sresp.Data.Errors)
+		return nil, errors.New(string(errByte))
+	}
+
+	return transformers.TransformVmrayToSubmitResponse(&sresp), nil
 }
 
 // GetSampleURLInfo returns the submitted sample url's info
 func (v *Vmray) GetSampleURLInfo(sampleID string, filemetas ...dtos.FileMetaInfo) (*dtos.SampleInfo, error) {
-	return nil, nil
+	return v.GetSampleFileInfo(sampleID, filemetas...)
 }
 
 // GetStatusCheckInterval returns the status_check_interval duration of the service
