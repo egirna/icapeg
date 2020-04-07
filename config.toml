@@ -5,7 +5,7 @@ debug = true
 port = 1344
 http_port = 8080
 max_filesize = 10000000 #bytes
-scanner_vendor = "virustotal" # Supported vendors "virustotal", "metadefender" , "vmray"
+scanner_vendor = "virustotal" # Supported vendors "virustotal", "metadefender" , "vmray" , "clamav"
 unprocessable_content_types = ["application/gzip" , "text/html" , "image/jpeg" , "image/png"]
 unprocessable_extensions = [".gz" , ".png" , ".jpg" , ".jpeg" , ".html"]
 processable_extensions = ["*"  , ".txt" , ".pdf" , ".dmg" , "unknown"] # * = all extensions, unknown = system couldn't find out the type of the file

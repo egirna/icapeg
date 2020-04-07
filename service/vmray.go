@@ -191,7 +191,7 @@ func (v *Vmray) SubmitURL(fileURL, filename string) (*dtos.SubmitResponse, error
 
 	bodyWriter := multipart.NewWriter(bodyBuf)
 
-	bodyWriter.WriteField("sample_file", fileURL)
+	bodyWriter.WriteField("sample_url", fileURL)
 
 	if err := bodyWriter.Close(); err != nil {
 		log.Println("failed to close writer", err.Error())
