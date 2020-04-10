@@ -87,13 +87,19 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			FileSize: float64(buf.Len()),
 		}
 
-		localScannerCfgFieldName := utils.GetScannerVendorSpecificCfg("local_scanner")
+		localScannerCfgFieldName := utils.GetScannerVendorSpecificCfg(utils.ICAPModeResp, "local_scanner")
 
 		if viper.GetBool(localScannerCfgFieldName) { // if the scanner is installed locally
-			lsvc := service.GetLocalService(strings.ToLower(viper.GetString("app.scanner_vendor")))
+			lsvc := service.GetLocalService(strings.ToLower(viper.GetString("app.resp_scanner_vendor")))
 
 			if lsvc == nil {
-				log.Println("No such scanner vendors:", viper.GetString("app.scanner_vendor"))
+				log.Println("No such scanner vendors:", viper.GetString("app.resp_scanner_vendor"))
+				w.WriteHeader(utils.IfPropagateError(http.StatusBadRequest, http.StatusNoContent), nil, false)
+				return
+			}
+
+			if !lsvc.RespSupported() {
+				log.Printf("The vendor %s does not support respmod of icap\n", viper.GetString("app.resp_scanner_vendor"))
 				w.WriteHeader(utils.IfPropagateError(http.StatusBadRequest, http.StatusNoContent), nil, false)
 				return
 			}
@@ -114,7 +120,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 					RequestedURL: utils.BreakHTTPURL(req.Request.RequestURI),
 					Severity:     sampleInfo.SampleSeverity,
 					Score:        sampleInfo.VTIScore,
-					ResultsBy:    viper.GetString("app.scanner_vendor"),
+					ResultsBy:    viper.GetString("app.resp_scanner_vendor"),
 				})
 				w.WriteHeader(http.StatusOK, newResp, true)
 				w.Write(htmlBuf.Bytes())
@@ -126,10 +132,22 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 		if !viper.GetBool(localScannerCfgFieldName) { // if the scanner is an external service requiring API calls.
 			// making necessary service api calls
 
-			svc := service.GetService(strings.ToLower(viper.GetString("app.scanner_vendor")))
+			svc := service.GetService(strings.ToLower(viper.GetString("app.resp_scanner_vendor")))
 
 			if svc == nil {
-				log.Println("No such scanner vendors:", viper.GetString("app.scanner_vendor"))
+				log.Println("No such scanner vendors:", viper.GetString("app.resp_scanner_vendor"))
+				w.WriteHeader(utils.IfPropagateError(http.StatusBadRequest, http.StatusNoContent), nil, false)
+				return
+			}
+
+			if svc == nil {
+				log.Println("No such scanner vendors:", viper.GetString("app.resp_scanner_vendor"))
+				w.WriteHeader(utils.IfPropagateError(http.StatusBadRequest, http.StatusNoContent), nil, false)
+				return
+			}
+
+			if !svc.RespSupported() {
+				log.Printf("The vendor %s does not support respmod of icap\n", viper.GetString("app.resp_scanner_vendor"))
 				w.WriteHeader(utils.IfPropagateError(http.StatusBadRequest, http.StatusNoContent), nil, false)
 				return
 			}
@@ -137,7 +155,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			// The submit file api call is commented out for safety for now
 			submitResp, err := svc.SubmitFile(buf, filename) // submitting the file for analysing
 			if err != nil {
-				log.Printf("Failed to submit file to %s: %s\n", viper.GetString("app.scanner_vendor"), err.Error())
+				log.Printf("Failed to submit file to %s: %s\n", viper.GetString("app.resp_scanner_vendor"), err.Error())
 				w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 				return
 			}
@@ -164,7 +182,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 				case true:
 					submissionStatus, err := svc.GetSubmissionStatus(submissionID) // getting the file submission status by the submission id received by submitting the file
 					if err != nil {
-						log.Printf("Failed to get submission status from %s: %s\n", viper.GetString("app.scanner_vendor"), err.Error())
+						log.Printf("Failed to get submission status from %s: %s\n", viper.GetString("app.resp_scanner_vendor"), err.Error())
 						w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 						return
 					}
@@ -216,7 +234,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 					RequestedURL: utils.BreakHTTPURL(req.Request.RequestURI),
 					Severity:     sampleInfo.SampleSeverity,
 					Score:        sampleInfo.VTIScore,
-					ResultsBy:    viper.GetString("app.scanner_vendor"),
+					ResultsBy:    viper.GetString("app.resp_scanner_vendor"),
 				})
 				w.WriteHeader(http.StatusOK, newResp, true)
 				w.Write(htmlBuf.Bytes())
@@ -254,6 +272,8 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 		w.WriteHeader(http.StatusOK, nil, false)
 	case utils.ICAPModeReq:
 
+		spew.Dump(req.Request.URL)
+
 		ext := utils.GetFileExtension(req.Request)
 
 		if ext == "" {
@@ -288,10 +308,16 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 			FileType: fileExt,
 		}
 
-		svc := service.GetService(strings.ToLower(viper.GetString("app.scanner_vendor")))
+		svc := service.GetService(strings.ToLower(viper.GetString("app.req_scanner_vendor")))
 
 		if svc == nil {
-			log.Println("No such scanner vendors:", viper.GetString("app.scanner_vendor"))
+			log.Println("No such scanner vendors:", viper.GetString("app.req_scanner_vendor"))
+			w.WriteHeader(utils.IfPropagateError(http.StatusBadRequest, http.StatusNoContent), nil, false)
+			return
+		}
+
+		if !svc.ReqSupported() {
+			log.Printf("The vendor %s does not support reqmod of icap\n", viper.GetString("app.req_scanner_vendor"))
 			w.WriteHeader(utils.IfPropagateError(http.StatusBadRequest, http.StatusNoContent), nil, false)
 			return
 		}
@@ -299,7 +325,7 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 		// The submit file api call is commented out for safety for now
 		submitResp, err := svc.SubmitURL(fileURL, filename) // submitting the file for analysing
 		if err != nil {
-			log.Printf("Failed to submit url to %s: %s\n", viper.GetString("app.scanner_vendor"), err.Error())
+			log.Printf("Failed to submit url to %s: %s\n", viper.GetString("app.req_scanner_vendor"), err.Error())
 			w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 			return
 		}
@@ -326,7 +352,7 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 			case true:
 				submissionStatus, err := svc.GetSubmissionStatus(submissionID) // getting the file submission status by the submission id received by submitting the file
 				if err != nil {
-					log.Printf("Failed to get submission status from %s: %s\n", viper.GetString("app.scanner_vendor"), err.Error())
+					log.Printf("Failed to get submission status from %s: %s\n", viper.GetString("app.req_scanner_vendor"), err.Error())
 					w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 					return
 				}
@@ -370,7 +396,7 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 		}
 
 		if !utils.InStringSlice(sampleInfo.SampleSeverity, svc.GetOkFileStatus()) { // checking is the sample severity is amongst the allowable file status
-			log.Printf("The file:%s is %s\n", filename, sampleInfo.SampleSeverity)
+			log.Printf("The url:%s is %s\n", filename, sampleInfo.SampleSeverity)
 			data := &dtos.TemplateData{
 				FileName:     sampleInfo.FileName,
 				FileType:     sampleInfo.SampleType,
@@ -378,7 +404,7 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 				RequestedURL: utils.BreakHTTPURL(req.Request.RequestURI),
 				Severity:     sampleInfo.SampleSeverity,
 				Score:        sampleInfo.VTIScore,
-				ResultsBy:    viper.GetString("app.scanner_vendor"),
+				ResultsBy:    viper.GetString("app.req_scanner_vendor"),
 			}
 
 			dataByte, err := json.Marshal(data)
@@ -389,10 +415,9 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 				return
 			}
 
-			req.Request.Host = "localhost:8080/error"
-			req.Request.URL.Host = "localhost:8080/error"
 			req.Request.Body = ioutil.NopCloser(bytes.NewReader(dataByte))
-			w.WriteHeader(200, req.Request, false)
+
+			icap.ServeLocally(w, req)
 
 			return
 		}

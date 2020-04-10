@@ -29,6 +29,8 @@ type (
 		GetOkFileStatus() []string
 		StatusEndpointExists() bool
 		IsLocalScanner() bool
+		RespSupported() bool
+		ReqSupported() bool
 	}
 
 	// LocalService holds the blueprint of a local service
@@ -37,6 +39,8 @@ type (
 		GetBadFileStatus() []string
 		GetOkFileStatus() []string
 		IsLocalScanner() bool
+		RespSupported() bool
+		ReqSupported() bool
 	}
 )
 
