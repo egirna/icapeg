@@ -30,6 +30,7 @@ type (
 		badFileStatus        []string
 		okFileStatus         []string
 		statusEndPointExists bool
+		localScanner         bool
 	}
 )
 
@@ -44,6 +45,7 @@ func NewVmrayService() Service {
 		badFileStatus:        viper.GetStringSlice("vmray.bad_file_status"),
 		okFileStatus:         viper.GetStringSlice("vmray.ok_file_status"),
 		statusEndPointExists: viper.GetBool("vmray.status_endpoint_exists"),
+		localScanner:         viper.GetBool("vmray.local_scanner"),
 	}
 }
 
@@ -265,4 +267,9 @@ func (v *Vmray) GetOkFileStatus() []string {
 // StatusEndpointExists returns the status_endpoint_exists boolean value of the service
 func (v *Vmray) StatusEndpointExists() bool {
 	return v.statusEndPointExists
+}
+
+// IsLocalScanner returns the localScanner boolean field value of the service
+func (v *Vmray) IsLocalScanner() bool {
+	return v.localScanner
 }

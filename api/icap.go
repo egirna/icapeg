@@ -87,7 +87,9 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			FileSize: float64(buf.Len()),
 		}
 
-		if viper.GetBool("app.local_scanner") { // if the scanner is installed locally
+		localScannerCfgFieldName := utils.GetScannerVendorSpecificCfg("local_scanner")
+
+		if viper.GetBool(localScannerCfgFieldName) { // if the scanner is installed locally
 			lsvc := service.GetLocalService(strings.ToLower(viper.GetString("app.scanner_vendor")))
 
 			if lsvc == nil {
@@ -121,7 +123,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 
 		}
 
-		if !viper.GetBool("app.local_scanner") { // if the scanner is an external service requiring API calls.
+		if !viper.GetBool(localScannerCfgFieldName) { // if the scanner is an external service requiring API calls.
 			// making necessary service api calls
 
 			svc := service.GetService(strings.ToLower(viper.GetString("app.scanner_vendor")))

@@ -11,7 +11,6 @@ unprocessable_extensions = [".gz" , ".png" , ".jpg" , ".jpeg" , ".html"]
 processable_extensions = ["*"  , ".txt" , ".pdf" , ".dmg" , "unknown"] # * = all extensions, unknown = system couldn't find out the type of the file
 preview_bytes = "4096" #bytes
 propagate_error = true
-local_scanner = false
 
 
 
@@ -29,6 +28,8 @@ status_check_timeout = 300 #seconds, the total time duration after which the the
 bad_file_status = ["malicious"]
 ok_file_status = ["ok"]
 status_endpoint_exists = false #this field determines whether the scanner vendor has any status check endpoint or not
+local_scanner = false
+
 
 [metadefender]
 base_url = "https://api.metadefender.com/v4"
@@ -42,6 +43,8 @@ status_check_timeout = 300 #seconds, the total time duration after which the the
 bad_file_status = ["malicious"]
 ok_file_status = ["ok"]
 status_endpoint_exists = false #this field determines whether the scanner vendor has any status check endpoint or not
+local_scanner = false
+
 
 [vmray]
 base_url = "https://cloud.vmray.com/rest"
@@ -55,6 +58,8 @@ bad_file_status = ["malicious", "suspicious", "blacklisted"]
 ok_file_status = ["not_suspicious" , "whitelisted", "unknown"]
 api_key = "<Your vmray API KEY here>"
 status_endpoint_exists = true
+local_scanner = false
+
 
 
 [clamav]
@@ -62,3 +67,4 @@ socket_path = "/var/run/clamav/clamd.ctl"
 wait_timeout = 10 #seconds, the time upto which the server will wait for clamav to scan the results
 bad_file_status = ["malicious"]
 ok_file_status = ["ok"]
+local_scanner = true

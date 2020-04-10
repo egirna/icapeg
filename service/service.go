@@ -28,6 +28,7 @@ type (
 		GetBadFileStatus() []string
 		GetOkFileStatus() []string
 		StatusEndpointExists() bool
+		IsLocalScanner() bool
 	}
 
 	// LocalService holds the blueprint of a local service
@@ -35,6 +36,7 @@ type (
 		ScanFileStream(io.Reader, dtos.FileMetaInfo) (*dtos.SampleInfo, error)
 		GetBadFileStatus() []string
 		GetOkFileStatus() []string
+		IsLocalScanner() bool
 	}
 )
 
