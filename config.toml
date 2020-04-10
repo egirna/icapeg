@@ -3,15 +3,14 @@ title = "ICAPEG configuration file"
 [app]
 debug = true
 port = 1344
-http_port = 8080
 max_filesize = 10000000 #bytes
-scanner_vendor = "virustotal" # Supported vendors "virustotal", "metadefender" , "vmray" , "clamav"
+resp_scanner_vendor = "clamav" # Supported vendors for respmod of icap: "virustotal", "metadefender" , "vmray" , "clamav"
+req_scanner_vendor = "virustotal" # Supported vendors for reqmod of icap: "virustotal" , "vmray"
 unprocessable_content_types = ["application/gzip" , "text/html" , "image/jpeg" , "image/png"]
-unprocessable_extensions = [".gz" , ".png" , ".jpg" , ".jpeg" , ".html"]
+unprocessable_extensions = [".gz" , ".png" , ".jpg" , ".jpeg" , ".html" , ".ico"]
 processable_extensions = ["*"  , ".txt" , ".pdf" , ".dmg" , "unknown"] # * = all extensions, unknown = system couldn't find out the type of the file
 preview_bytes = "4096" #bytes
 propagate_error = true
-local_scanner = false
 
 
 
@@ -29,6 +28,10 @@ status_check_timeout = 300 #seconds, the total time duration after which the the
 bad_file_status = ["malicious"]
 ok_file_status = ["ok"]
 status_endpoint_exists = false #this field determines whether the scanner vendor has any status check endpoint or not
+local_scanner = false # this field determines whether the scanner is running locally or not
+resp_supported = true # this indicates that the vendor can process during respmod
+req_supported = true # this indicates that the vendor can process during reqmod
+
 
 [metadefender]
 base_url = "https://api.metadefender.com/v4"
@@ -42,6 +45,10 @@ status_check_timeout = 300 #seconds, the total time duration after which the the
 bad_file_status = ["malicious"]
 ok_file_status = ["ok"]
 status_endpoint_exists = false #this field determines whether the scanner vendor has any status check endpoint or not
+local_scanner = false
+resp_supported = true
+req_supported = false
+
 
 [vmray]
 base_url = "https://cloud.vmray.com/rest"
@@ -55,6 +62,10 @@ bad_file_status = ["malicious", "suspicious", "blacklisted"]
 ok_file_status = ["not_suspicious" , "whitelisted", "unknown"]
 api_key = "<Your vmray API KEY here>"
 status_endpoint_exists = true
+local_scanner = false
+resp_supported = true
+req_supported = true
+
 
 
 [clamav]
@@ -62,3 +73,6 @@ socket_path = "/var/run/clamav/clamd.ctl"
 wait_timeout = 10 #seconds, the time upto which the server will wait for clamav to scan the results
 bad_file_status = ["malicious"]
 ok_file_status = ["ok"]
+local_scanner = true
+resp_supported = true
+req_supported = false

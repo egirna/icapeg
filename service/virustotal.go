@@ -28,6 +28,9 @@ type VirusTotal struct {
 	badFileStatus        []string
 	okFileStatus         []string
 	statusEndPointExists bool
+	localScanner         bool
+	respSupported        bool
+	reqSupported         bool
 }
 
 // NewVirusTotalService returns a new populated instance of the virustotal service
@@ -41,6 +44,9 @@ func NewVirusTotalService() Service {
 		badFileStatus:        viper.GetStringSlice("virustotal.bad_file_status"),
 		okFileStatus:         viper.GetStringSlice("virustotal.ok_file_status"),
 		statusEndPointExists: viper.GetBool("virustotal.status_endpoint_exists"),
+		localScanner:         viper.GetBool("virustotal.local_scanner"),
+		respSupported:        viper.GetBool("virustotal.resp_supported"),
+		reqSupported:         viper.GetBool("virustotal.req_supported"),
 	}
 }
 
@@ -334,4 +340,19 @@ func (v *VirusTotal) GetOkFileStatus() []string {
 // StatusEndpointExists returns the status_endpoint_exists boolean value of the service
 func (v *VirusTotal) StatusEndpointExists() bool {
 	return v.statusEndPointExists
+}
+
+// IsLocalScanner returns the localScanner boolean field value of the service
+func (v *VirusTotal) IsLocalScanner() bool {
+	return v.localScanner
+}
+
+// RespSupported returns the respSupported field of the service
+func (v *VirusTotal) RespSupported() bool {
+	return v.respSupported
+}
+
+// ReqSupported returns the reqSupported field of the service
+func (v *VirusTotal) ReqSupported() bool {
+	return v.reqSupported
 }

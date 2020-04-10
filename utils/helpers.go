@@ -104,8 +104,18 @@ func BreakHTTPURL(url string) string {
 }
 
 // GetScannerVendorSpecificCfg returns the current scanner vendor specific configuration field
-func GetScannerVendorSpecificCfg(cfgField string) string {
-	return fmt.Sprintf("%s.%s", viper.GetString("app.scanner_vendor"), cfgField)
+func GetScannerVendorSpecificCfg(mode, cfgField string) string {
+
+	absoluteCfgField := ""
+
+	switch mode {
+	case ICAPModeResp:
+		absoluteCfgField = fmt.Sprintf("%s.%s", viper.GetString("app.resp_scanner_vendor"), cfgField)
+	case ICAPModeReq:
+		absoluteCfgField = fmt.Sprintf("%s.%s", viper.GetString("app.req_scanner_vendor"), cfgField)
+	}
+
+	return absoluteCfgField
 }
 
 // IfPropagateError returns one of the given parameter depending on the propagate error configuration

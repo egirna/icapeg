@@ -22,7 +22,7 @@ func StartServer() error {
 	icap.HandleFunc("/respmod-icapeg", api.ToICAPEGResp)
 	icap.HandleFunc("/reqmod-icapeg", api.ToICAPEGReq)
 
-	http.HandleFunc("/error", api.ErrorPageHanlder)
+	http.HandleFunc("/", api.ErrorPageHanlder)
 
 	log.Println("Starting the ICAP server...")
 
@@ -31,12 +31,6 @@ func StartServer() error {
 
 	go func() {
 		if err := icap.ListenAndServe(fmt.Sprintf(":%d", config.App().Port), nil); err != nil {
-			log.Fatal(err.Error())
-		}
-	}()
-
-	go func() {
-		if err := http.ListenAndServe(fmt.Sprintf(":%d", config.App().HTTPPort), nil); err != nil {
 			log.Fatal(err.Error())
 		}
 	}()
