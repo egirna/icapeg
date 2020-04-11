@@ -59,14 +59,21 @@ Add /usr/local/go/bin to the PATH environment variable:
 squid is an example in this readme
 
 3. A scanner vendor. `ICAPeg` now supports `VirusTotal`,  `MetaDefender` , `VMRay` & `Clamav` as scanner vendors.
-Make sure that you setup your scanner vendor properly.
+Make sure that you setup your scanner vendor properly. You can setup your scanners for both [RESPMOD](https://tools.ietf.org/html/rfc3507#page-27) & [REQMOD](https://tools.ietf.org/html/rfc3507#page-23).
+
 
 Setup **VirusTotal:**
 
 Insert `VirusTotal` as your scanner vendor in the config.toml file
 
   ```code
-    scanner_vendor = "virustotal"
+    resp_scanner_vendor = "virustotal"
+  ```
+
+  Or,
+
+  ```code
+    req_scanner_vendor = "virustotal"
   ```
 
 In that same file, add a **VirusTotal API key** in the `api_key` field of the `[virustotal]` section. [Here is how you can get it](VIRUSTOTALAPI.md).
@@ -76,7 +83,13 @@ Setup **MetaDefender:**
 Insert `MetaDefender` as your scanner vendor in the config.toml file
 
   ```code
-    scanner_vendor = "metadefender"
+    resp_scanner_vendor = "metadefender"
+  ```
+
+  Or,
+
+  ```code
+    req_scanner_vendor = "metadefender"
   ```
 
 In that same file, add a **MetaDefender API key** in the `api_key` field of the `[metadefender]` section. [Here is how you can get it](METADEFENDER.md).
@@ -86,7 +99,13 @@ Setup **VMRay:**
 Insert `vmray` as your scanner vendor in the config.toml file
 
   ```code
-    scanner_vendor = "vmray"
+    resp_scanner_vendor = "vmray"
+  ```
+
+  Or,
+
+  ```code
+    req_scanner_vendor = "vmray"
   ```
 
 In that same file, add a **VMRay API key** in the `api_key` field of the `[vmray]` section. [Get your api key by requesting a free trial](https://www.vmray.com/analyzer-malware-sandbox-free-trial/).
@@ -96,16 +115,8 @@ Setup **Clamav:**
 Insert `clamav` as your scanner vendor in the config.toml file
 
   ```code
-    scanner_vendor = "clamav"
+    resp_scanner_vendor = "clamav"
   ```
-
-And also mark the local scanner flag(which indicates the scanner vendor is installed locally in the server) in the config.toml file
-
-  ```code
-    local_scanner = true
-  ```
-
-Keep the ```local_scanner``` flag **false** for any scanners that is not locally installed.
 
 Next, provide the **clamd socket file path**(getting back to this in a bit) in the config.toml file inside the clamav section
 
@@ -116,7 +127,7 @@ Next, provide the **clamd socket file path**(getting back to this in a bit) in t
 [Here is how you setup clamav and generate the socket file](CLAMAVSETUP.md)
 
 
-**NOTE**: All the settings of ICAPeg is present in the **config.toml** file in the repo.
+**NOTE**: All the settings of ICAPeg is present in the **config.toml** file in the repo. Also before selecting your vendors as the scanners, keep in mind to check whether that certain vendor supports the modification mode or not. For example, when adding ``virustotal``  as the ``resp_scanner_vendor``, check under the configuration of ``virustotal`` if the ``resp_supported`` flag is true or not. Likewise for ``req_scanner_vendor`` and for any other vendors.
 
 ## How do I turn this thing on!!
 
