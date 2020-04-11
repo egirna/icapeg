@@ -21,11 +21,16 @@ type (
 		SubmitFile(*bytes.Buffer, string) (*dtos.SubmitResponse, error)
 		GetSubmissionStatus(string) (*dtos.SubmissionStatusResponse, error)
 		GetSampleFileInfo(string, ...dtos.FileMetaInfo) (*dtos.SampleInfo, error)
+		GetSampleURLInfo(string, ...dtos.FileMetaInfo) (*dtos.SampleInfo, error)
+		SubmitURL(string, string) (*dtos.SubmitResponse, error)
 		GetStatusCheckInterval() time.Duration
 		GetStatusCheckTimeout() time.Duration
 		GetBadFileStatus() []string
 		GetOkFileStatus() []string
 		StatusEndpointExists() bool
+		IsLocalScanner() bool
+		RespSupported() bool
+		ReqSupported() bool
 	}
 
 	// LocalService holds the blueprint of a local service
@@ -33,6 +38,9 @@ type (
 		ScanFileStream(io.Reader, dtos.FileMetaInfo) (*dtos.SampleInfo, error)
 		GetBadFileStatus() []string
 		GetOkFileStatus() []string
+		IsLocalScanner() bool
+		RespSupported() bool
+		ReqSupported() bool
 	}
 )
 

@@ -26,6 +26,9 @@ type MetaDefender struct {
 	badFileStatus        []string
 	okFileStatus         []string
 	statusEndPointExists bool
+	localScanner         bool
+	respSupported        bool
+	reqSupported         bool
 }
 
 // NewMetaDefenderService returns a new populated instance of the metadefender service
@@ -39,6 +42,9 @@ func NewMetaDefenderService() Service {
 		badFileStatus:        viper.GetStringSlice("metadefender.bad_file_status"),
 		okFileStatus:         viper.GetStringSlice("metadefender.ok_file_status"),
 		statusEndPointExists: viper.GetBool("metadefender.status_endpoint_exists"),
+		localScanner:         viper.GetBool("metadefender.local_scanner"),
+		respSupported:        viper.GetBool("metadefender.resp_supported"),
+		reqSupported:         viper.GetBool("metadefender.req_supported"),
 	}
 }
 
@@ -186,6 +192,16 @@ func (m *MetaDefender) GetSubmissionStatus(submissionID string) (*dtos.Submissio
 	return transformers.TransformMetaDefenderToSubmissionStatusResponse(&sampleResp), nil
 }
 
+// SubmitURL calls the submission api for metadefender
+func (m *MetaDefender) SubmitURL(fileURL, filename string) (*dtos.SubmitResponse, error) {
+	return nil, nil
+}
+
+// GetSampleURLInfo returns the submitted sample url's info
+func (m *MetaDefender) GetSampleURLInfo(sampleID string, filemetas ...dtos.FileMetaInfo) (*dtos.SampleInfo, error) {
+	return nil, nil
+}
+
 // GetStatusCheckInterval returns the status_check_interval duration of the service
 func (m *MetaDefender) GetStatusCheckInterval() time.Duration {
 	return m.statusCheckInterval
@@ -209,4 +225,19 @@ func (m *MetaDefender) GetOkFileStatus() []string {
 // StatusEndpointExists returns the status_endpoint_exists boolean value of the service
 func (m *MetaDefender) StatusEndpointExists() bool {
 	return m.statusEndPointExists
+}
+
+// IsLocalScanner returns the localScanner boolean field value of the service
+func (m *MetaDefender) IsLocalScanner() bool {
+	return m.localScanner
+}
+
+// RespSupported returns the respSupported field of the service
+func (m *MetaDefender) RespSupported() bool {
+	return m.respSupported
+}
+
+// ReqSupported returns the reqSupported field of the service
+func (m *MetaDefender) ReqSupported() bool {
+	return m.reqSupported
 }

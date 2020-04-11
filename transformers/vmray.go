@@ -3,7 +3,7 @@ package transformers
 import (
 	"fmt"
 	"icapeg/dtos"
-	"icapeg/helpers"
+	"icapeg/utils"
 	"strconv"
 )
 
@@ -14,7 +14,7 @@ func TransformVmrayToSampleInfo(sr *dtos.GetVmraySampleResponse) *dtos.SampleInf
 		SampleType:     sr.Data.SampleType,
 		SampleSeverity: sr.Data.SampleSeverity,
 		VTIScore:       fmt.Sprintf("%v/100", sr.Data.SampleVtiScore),
-		FileSizeStr:    fmt.Sprintf("%.2fmb", helpers.ByteToMegaBytes(sr.Data.SampleFilesize)),
+		FileSizeStr:    fmt.Sprintf("%.2fmb", utils.ByteToMegaBytes(sr.Data.SampleFilesize)),
 	}
 }
 

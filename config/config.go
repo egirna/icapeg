@@ -9,6 +9,7 @@ import (
 // AppConfig represents the app configuration
 type AppConfig struct {
 	Port        int
+	HTTPPort    int
 	MaxFileSize int
 }
 
@@ -25,6 +26,7 @@ func init() {
 
 	appCfg = AppConfig{
 		Port:        viper.GetInt("app.port"),
+		HTTPPort:    viper.GetInt("app.http_port"),
 		MaxFileSize: viper.GetInt("app.max_filesize"),
 	}
 }

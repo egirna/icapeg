@@ -28,6 +28,9 @@ type VirusTotal struct {
 	badFileStatus        []string
 	okFileStatus         []string
 	statusEndPointExists bool
+	localScanner         bool
+	respSupported        bool
+	reqSupported         bool
 }
 
 // NewVirusTotalService returns a new populated instance of the virustotal service
@@ -41,13 +44,16 @@ func NewVirusTotalService() Service {
 		badFileStatus:        viper.GetStringSlice("virustotal.bad_file_status"),
 		okFileStatus:         viper.GetStringSlice("virustotal.ok_file_status"),
 		statusEndPointExists: viper.GetBool("virustotal.status_endpoint_exists"),
+		localScanner:         viper.GetBool("virustotal.local_scanner"),
+		respSupported:        viper.GetBool("virustotal.resp_supported"),
+		reqSupported:         viper.GetBool("virustotal.req_supported"),
 	}
 }
 
 // SubmitFile calls the submission api for virustotal
 func (v *VirusTotal) SubmitFile(f *bytes.Buffer, filename string) (*dtos.SubmitResponse, error) {
 
-	urlStr := v.BaseURL + viper.GetString("virustotal.scan_endpoint")
+	urlStr := v.BaseURL + viper.GetString("virustotal.file_scan_endpoint")
 
 	bodyBuf := &bytes.Buffer{}
 
@@ -107,10 +113,121 @@ func (v *VirusTotal) SubmitFile(f *bytes.Buffer, filename string) (*dtos.SubmitR
 	return transformers.TransformVirusTotalToSubmitResponse(&scanResp), nil
 }
 
+// SubmitURL calls the submission api for virustotal
+func (v *VirusTotal) SubmitURL(fileURL, filename string) (*dtos.SubmitResponse, error) {
+
+	urlStr := v.BaseURL + viper.GetString("virustotal.url_scan_endpoint")
+
+	bodyBuf := &bytes.Buffer{}
+
+	bodyWriter := multipart.NewWriter(bodyBuf)
+
+	bodyWriter.WriteField("apikey", v.APIKey)
+	bodyWriter.WriteField("url", fileURL)
+
+	if err := bodyWriter.Close(); err != nil {
+		log.Println("failed to close writer", err.Error())
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, urlStr, bodyBuf)
+
+	if err != nil {
+		return nil, err
+	}
+
+	client := http.Client{}
+	ctx, cancel := context.WithTimeout(context.Background(), v.Timeout)
+	defer cancel()
+	req = req.WithContext(ctx)
+
+	req.Header.Add("Content-Type", bodyWriter.FormDataContentType())
+
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Println("service: virustotal: failed to do request:", err.Error())
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		bdy, _ := ioutil.ReadAll(resp.Body)
+		bdyStr := ""
+		if string(bdy) == "" {
+			bdyStr = http.StatusText(resp.StatusCode)
+		} else {
+			bdyStr = string(bdy)
+
+		}
+		return nil, errors.New(bdyStr)
+	}
+
+	scanResp := dtos.VirusTotalScanFileResponse{}
+
+	if err := json.NewDecoder(resp.Body).Decode(&scanResp); err != nil {
+		return nil, err
+	}
+
+	return transformers.TransformVirusTotalToSubmitResponse(&scanResp), nil
+}
+
 // GetSampleFileInfo returns the submitted sample file's info
 func (v *VirusTotal) GetSampleFileInfo(sampleID string, filemetas ...dtos.FileMetaInfo) (*dtos.SampleInfo, error) {
 
-	urlStr := v.BaseURL + fmt.Sprintf(viper.GetString("virustotal.report_endpoint"), viper.GetString("virustotal.api_key"), sampleID)
+	urlStr := v.BaseURL + fmt.Sprintf(viper.GetString("virustotal.file_report_endpoint"), viper.GetString("virustotal.api_key"), sampleID)
+
+	req, err := http.NewRequest(http.MethodGet, urlStr, nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	client := http.Client{}
+	ctx, cancel := context.WithTimeout(context.Background(), v.Timeout)
+	defer cancel()
+	req = req.WithContext(ctx)
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+
+		if resp.StatusCode == http.StatusNoContent {
+			return nil, errors.New("Virustotal returned no content, maybe request quota expired")
+		}
+		bdy, _ := ioutil.ReadAll(resp.Body)
+		bdyStr := ""
+		if string(bdy) == "" {
+			bdyStr = http.StatusText(resp.StatusCode)
+		} else {
+			bdyStr = string(bdy)
+
+		}
+		return nil, errors.New(bdyStr)
+	}
+
+	sampleResp := dtos.VirusTotalReportResponse{}
+
+	if err := json.NewDecoder(resp.Body).Decode(&sampleResp); err != nil {
+		return nil, err
+	}
+
+	fm := dtos.FileMetaInfo{}
+
+	if len(filemetas) > 0 {
+		fm = filemetas[0]
+	}
+
+	return transformers.TransformVirusTotalToSampleInfo(&sampleResp, fm), nil
+
+}
+
+// GetSampleURLInfo returns the submitted sample url's info
+func (v *VirusTotal) GetSampleURLInfo(sampleID string, filemetas ...dtos.FileMetaInfo) (*dtos.SampleInfo, error) {
+
+	urlStr := v.BaseURL + fmt.Sprintf(viper.GetString("virustotal.url_report_endpoint"), viper.GetString("virustotal.api_key"), sampleID)
 
 	req, err := http.NewRequest(http.MethodGet, urlStr, nil)
 
@@ -223,4 +340,19 @@ func (v *VirusTotal) GetOkFileStatus() []string {
 // StatusEndpointExists returns the status_endpoint_exists boolean value of the service
 func (v *VirusTotal) StatusEndpointExists() bool {
 	return v.statusEndPointExists
+}
+
+// IsLocalScanner returns the localScanner boolean field value of the service
+func (v *VirusTotal) IsLocalScanner() bool {
+	return v.localScanner
+}
+
+// RespSupported returns the respSupported field of the service
+func (v *VirusTotal) RespSupported() bool {
+	return v.respSupported
+}
+
+// ReqSupported returns the reqSupported field of the service
+func (v *VirusTotal) ReqSupported() bool {
+	return v.reqSupported
 }
