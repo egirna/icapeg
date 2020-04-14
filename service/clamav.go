@@ -23,7 +23,6 @@ type Clamav struct {
 	WaitTimeOut   time.Duration
 	badFileStatus []string
 	okFileStatus  []string
-	localScanner  bool
 	respSupported bool
 	reqSupported  bool
 }
@@ -35,7 +34,6 @@ func NewClamavService() LocalService {
 		WaitTimeOut:   viper.GetDuration("clamav.wait_timeout") * time.Second,
 		badFileStatus: viper.GetStringSlice("clamav.bad_file_status"),
 		okFileStatus:  viper.GetStringSlice("clamav.ok_file_status"),
-		localScanner:  viper.GetBool("clamav.local_scanner"),
 		respSupported: viper.GetBool("clamav.resp_supported"),
 		reqSupported:  viper.GetBool("clamav.req_supported"),
 	}
@@ -96,11 +94,6 @@ func (c *Clamav) GetBadFileStatus() []string {
 // GetOkFileStatus returns the ok_file_status slice of the service
 func (c *Clamav) GetOkFileStatus() []string {
 	return c.okFileStatus
-}
-
-// IsLocalScanner returns the localScanner boolean field value of the service
-func (c *Clamav) IsLocalScanner() bool {
-	return c.localScanner
 }
 
 // RespSupported returns the respSupported field of the service
