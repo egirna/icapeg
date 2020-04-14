@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"icapeg/config"
 	"icapeg/dtos"
 	"icapeg/service"
 	"icapeg/utils"
@@ -26,18 +27,20 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 	h.Set("ISTag", utils.ISTag)
 	h.Set("Service", "Egirna ICAP-EG")
 
+	appCfg := config.App()
+
 	log.Printf("Request received---> METHOD:%s URL:%s\n", req.Method, req.RawURL)
 
 	switch req.Method {
 	case utils.ICAPModeOptions:
 		h.Set("Methods", utils.ICAPModeResp)
 		h.Set("Allow", "204")
-		h.Set("Preview", viper.GetString("app.preview_bytes"))
+		h.Set("Preview", appCfg.PreviewBytes)
 		h.Set("Transfer-Preview", utils.Any)
 		w.WriteHeader(http.StatusOK, nil, false)
 	case utils.ICAPModeResp:
 
-		scannerName := strings.ToLower(viper.GetString("app.resp_scanner_vendor")) // the name of the scanner vendor
+		scannerName := strings.ToLower(appCfg.RespScannerVendor) // the name of the scanner vendor
 
 		if scannerName == "" { // if no scanner name provided, then bypass everything
 			w.WriteHeader(http.StatusNoContent, nil, false)
@@ -53,8 +56,11 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			ct = utils.Unknown
 		}
 
-		if !utils.InStringSlice(utils.Any, viper.GetStringSlice("app.processable_extensions")) {
-			if !utils.InStringSlice(ct, viper.GetStringSlice("app.processable_extensions")) {
+		processExts := appCfg.ProcessExtensions
+		bypassExts := appCfg.BypassExtensions
+
+		if !(utils.InStringSlice(utils.Any, processExts) && !utils.InStringSlice(ct, bypassExts)) { // if there is no star in process and the  provided extension is in bypass
+			if !utils.InStringSlice(ct, processExts) { // and its not in processable either, then don't process it
 				log.Println("Processing not required for file type-", ct)
 				log.Println("Reason: Doesn't belong to processable extensions")
 				w.WriteHeader(http.StatusNoContent, nil, false)
@@ -62,7 +68,8 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			}
 		}
 
-		if utils.InStringSlice(ct, viper.GetStringSlice("app.unprocessable_extensions")) {
+		if (utils.InStringSlice(utils.Any, bypassExts) && !utils.InStringSlice(ct, processExts)) ||
+			utils.InStringSlice(ct, viper.GetStringSlice("app.bypass_extensions")) { // if there is start in bypass and there provided extension is not in process or it is in bypass, the don't process it
 			log.Println("Processing not required for file type-", ct)
 			log.Println("Reason: Doesn't belong to unprocessable extensions")
 			w.WriteHeader(http.StatusNoContent, nil, false)
@@ -79,7 +86,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			return
 		}
 
-		if buf.Len() > viper.GetInt("app.max_filesize") {
+		if buf.Len() > appCfg.MaxFileSize {
 			log.Println("File size too large")
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
@@ -173,7 +180,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 				return
 			}
 
-			if viper.GetBool("app.debug") {
+			if appCfg.Debug {
 				spew.Dump("submit response", submitResp)
 			}
 
@@ -194,7 +201,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 						return
 					}
 
-					if viper.GetBool("app.debug") {
+					if appCfg.Debug {
 						spew.Dump("submission status resp", submissionStatus)
 					}
 					submissionFinished = submissionStatus.SubmissionFinished
@@ -268,6 +275,8 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 	h.Set("ISTag", utils.ISTag)
 	h.Set("Service", "Egirna ICAP-EG")
 
+	appCfg := config.App()
+
 	log.Printf("Request received---> METHOD:%s URL:%s\n", req.Method, req.RawURL)
 
 	switch req.Method {
@@ -279,7 +288,7 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 		w.WriteHeader(http.StatusOK, nil, false)
 	case utils.ICAPModeReq:
 
-		scannerName := strings.ToLower(viper.GetString("app.req_scanner_vendor"))
+		scannerName := strings.ToLower(appCfg.ReqScannerVendor)
 
 		if scannerName == "" {
 			w.WriteHeader(http.StatusNotModified, nil, false)
@@ -348,7 +357,7 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 			return
 		}
 
-		if viper.GetBool("app.debug") {
+		if appCfg.Debug {
 			spew.Dump("submit response", submitResp)
 		}
 
@@ -369,7 +378,7 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 					return
 				}
 
-				if viper.GetBool("app.debug") {
+				if appCfg.Debug {
 					spew.Dump("submission status resp", submissionStatus)
 				}
 				submissionFinished = submissionStatus.SubmissionFinished

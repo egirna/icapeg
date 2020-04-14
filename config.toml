@@ -6,9 +6,8 @@ port = 1344
 max_filesize = 10000000 #bytes
 resp_scanner_vendor = "clamav" # Supported vendors for respmod of icap: "virustotal", "metadefender" , "vmray" , "clamav"
 req_scanner_vendor = "virustotal" # Supported vendors for reqmod of icap: "virustotal" , "vmray"
-unprocessable_content_types = ["application/gzip" , "text/html" , "image/jpeg" , "image/png"]
-unprocessable_extensions = [".gz" , ".png" , ".jpg" , ".jpeg" , ".html" , ".ico"]
-processable_extensions = ["*"  , ".txt" , ".pdf" , ".dmg" , "unknown"] # * = all extensions, unknown = system couldn't find out the type of the file
+bypass_extensions = [".gz" , ".png" , ".jpg" , ".jpeg" , ".html" , ".ico"]
+process_extensions = ["*"  , ".txt" , ".pdf" , ".dmg" , "unknown"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
 preview_bytes = "4096" #bytes
 propagate_error = true
 
