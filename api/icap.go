@@ -17,8 +17,6 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/egirna/icap"
-
-	"github.com/spf13/viper"
 )
 
 // ToICAPEGResp is the ICAP Response Mode Handler:
@@ -40,9 +38,14 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 		w.WriteHeader(http.StatusOK, nil, false)
 	case utils.ICAPModeResp:
 
+		// if len(req.Preview) > 100 {
+		// 	spew.Dump("dumping the preview bytes for testing purpose", req.Preview[:100])
+		// }
+
 		scannerName := strings.ToLower(appCfg.RespScannerVendor) // the name of the scanner vendor
 
 		if scannerName == "" { // if no scanner name provided, then bypass everything
+			log.Println("No respmod scanner provided...bypassing everything")
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
@@ -69,7 +72,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 		}
 
 		if (utils.InStringSlice(utils.Any, bypassExts) && !utils.InStringSlice(ct, processExts)) ||
-			utils.InStringSlice(ct, viper.GetStringSlice("app.bypass_extensions")) { // if there is start in bypass and there provided extension is not in process or it is in bypass, the don't process it
+			utils.InStringSlice(ct, bypassExts) { // if there is start in bypass and there provided extension is not in process or it is in bypass, the don't process it
 			log.Println("Processing not required for file type-", ct)
 			log.Println("Reason: Doesn't belong to unprocessable extensions")
 			w.WriteHeader(http.StatusNoContent, nil, false)
@@ -123,6 +126,10 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 				log.Println("Couldn't fetch sample information for local service: ", err.Error())
 				w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 				return
+			}
+
+			if appCfg.Debug {
+				spew.Dump("result", sampleInfo)
 			}
 
 			if !utils.InStringSlice(sampleInfo.SampleSeverity, lsvc.GetOkFileStatus()) { // checking is the sample severity is amongst the allowable file status
@@ -239,6 +246,10 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 				}
 			}
 
+			if appCfg.Debug {
+				spew.Dump("result", sampleInfo)
+			}
+
 			if !utils.InStringSlice(sampleInfo.SampleSeverity, svc.GetOkFileStatus()) { // checking is the sample severity is amongst the allowable file status
 				log.Printf("The file:%s is %s\n", filename, sampleInfo.SampleSeverity)
 				htmlBuf, newResp := utils.GetTemplateBufferAndResponse(utils.BadFileTemplate, &dtos.TemplateData{
@@ -291,7 +302,8 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 		scannerName := strings.ToLower(appCfg.ReqScannerVendor)
 
 		if scannerName == "" {
-			w.WriteHeader(http.StatusNotModified, nil, false)
+			log.Println("No reqmod scanner provided...bypassing everything")
+			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
 
@@ -303,8 +315,11 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 
 		ext = "." + ext
 
-		if !utils.InStringSlice(utils.Any, viper.GetStringSlice("app.processable_extensions")) {
-			if !utils.InStringSlice(ext, viper.GetStringSlice("app.processable_extensions")) {
+		processExts := appCfg.ProcessExtensions
+		bypassExts := appCfg.BypassExtensions
+
+		if !(utils.InStringSlice(utils.Any, processExts) && !utils.InStringSlice(ext, bypassExts)) { // if there is no star in process and the  provided extension is in bypass
+			if !utils.InStringSlice(ext, processExts) { // and its not in processable either, then don't process it
 				log.Println("Processing not required for file type-", ext)
 				log.Println("Reason: Doesn't belong to processable extensions")
 				w.WriteHeader(http.StatusNoContent, nil, false)
@@ -312,7 +327,8 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 			}
 		}
 
-		if utils.InStringSlice(ext, viper.GetStringSlice("app.unprocessable_extensions")) {
+		if (utils.InStringSlice(utils.Any, bypassExts) && !utils.InStringSlice(ext, processExts)) ||
+			utils.InStringSlice(ext, bypassExts) { // if there is start in bypass and there provided extension is not in process or it is in bypass, the don't process it
 			log.Println("Processing not required for file type-", ext)
 			log.Println("Reason: Doesn't belong to unprocessable extensions")
 			w.WriteHeader(http.StatusNoContent, nil, false)
@@ -408,12 +424,16 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 
 		if sampleInfo == nil {
 			var err error
-			sampleInfo, err = svc.GetSampleFileInfo(sampleID, fmi) // getting the results after scanner is done analysing the file
+			sampleInfo, err = svc.GetSampleURLInfo(sampleID, fmi) // getting the results after scanner is done analysing the file
 			if err != nil {
 				log.Println("Couldn't fetch sample information after submission finish: ", err.Error())
 				w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 				return
 			}
+		}
+
+		if appCfg.Debug {
+			spew.Dump("result", sampleInfo)
 		}
 
 		if !utils.InStringSlice(sampleInfo.SampleSeverity, svc.GetOkFileStatus()) { // checking is the sample severity is amongst the allowable file status
