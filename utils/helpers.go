@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gabriel-vasile/mimetype"
+	"github.com/h2non/filetype"
 	"github.com/spf13/viper"
 )
 
@@ -30,8 +30,14 @@ func GetContentType(r *http.Response) string {
 
 // GetMimeExtension returns the mime type extension of the data
 func GetMimeExtension(data []byte) string {
-	mime := mimetype.Detect(data)
-	return mime.Extension()
+	kind, _ := filetype.Match(data)
+
+	if kind == filetype.Unknown {
+		return Unknown
+	}
+
+	return kind.Extension
+
 }
 
 // GetFileName returns the filename from the http request

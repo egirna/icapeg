@@ -28,7 +28,6 @@ type (
 		GetBadFileStatus() []string
 		GetOkFileStatus() []string
 		StatusEndpointExists() bool
-		IsLocalScanner() bool
 		RespSupported() bool
 		ReqSupported() bool
 	}
@@ -38,11 +37,27 @@ type (
 		ScanFileStream(io.Reader, dtos.FileMetaInfo) (*dtos.SampleInfo, error)
 		GetBadFileStatus() []string
 		GetOkFileStatus() []string
-		IsLocalScanner() bool
 		RespSupported() bool
 		ReqSupported() bool
 	}
 )
+
+// IsServiceLocal determines if a service is local or not
+func IsServiceLocal(name string) bool {
+	svc := GetService(name)
+
+	if svc != nil {
+		return false
+	}
+
+	lsvc := GetLocalService(name)
+
+	if lsvc != nil {
+		return true
+	}
+
+	return false
+}
 
 // GetService returns a service based on the service name
 func GetService(name string) Service {

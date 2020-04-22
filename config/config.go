@@ -8,9 +8,15 @@ import (
 
 // AppConfig represents the app configuration
 type AppConfig struct {
-	Port        int
-	HTTPPort    int
-	MaxFileSize int
+	Port              int
+	MaxFileSize       int
+	Debug             bool
+	RespScannerVendor string
+	ReqScannerVendor  string
+	BypassExtensions  []string
+	ProcessExtensions []string
+	PreviewBytes      string
+	PropagateError    bool
 }
 
 var appCfg AppConfig
@@ -25,9 +31,15 @@ func init() {
 	}
 
 	appCfg = AppConfig{
-		Port:        viper.GetInt("app.port"),
-		HTTPPort:    viper.GetInt("app.http_port"),
-		MaxFileSize: viper.GetInt("app.max_filesize"),
+		Port:              viper.GetInt("app.port"),
+		MaxFileSize:       viper.GetInt("app.max_filesize"),
+		Debug:             viper.GetBool("app.debug"),
+		RespScannerVendor: viper.GetString("app.resp_scanner_vendor"),
+		ReqScannerVendor:  viper.GetString("app.req_scanner_vendor"),
+		BypassExtensions:  viper.GetStringSlice("app.bypass_extensions"),
+		ProcessExtensions: viper.GetStringSlice("app.process_extensions"),
+		PreviewBytes:      viper.GetString("app.preview_bytes"),
+		PropagateError:    viper.GetBool("app.propagate_error"),
 	}
 }
 

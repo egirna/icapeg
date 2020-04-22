@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"icapeg/config"
 	"icapeg/dtos"
 	"icapeg/service"
 	"icapeg/utils"
@@ -16,8 +17,6 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/egirna/icap"
-
-	"github.com/spf13/viper"
 )
 
 // ToICAPEGResp is the ICAP Response Mode Handler:
@@ -26,28 +25,43 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 	h.Set("ISTag", utils.ISTag)
 	h.Set("Service", "Egirna ICAP-EG")
 
+	appCfg := config.App()
+
 	log.Printf("Request received---> METHOD:%s URL:%s\n", req.Method, req.RawURL)
 
 	switch req.Method {
 	case utils.ICAPModeOptions:
 		h.Set("Methods", utils.ICAPModeResp)
 		h.Set("Allow", "204")
-		h.Set("Preview", viper.GetString("app.preview_bytes"))
+		h.Set("Preview", appCfg.PreviewBytes)
 		h.Set("Transfer-Preview", utils.Any)
 		w.WriteHeader(http.StatusOK, nil, false)
 	case utils.ICAPModeResp:
+
+		scannerName := strings.ToLower(appCfg.RespScannerVendor) // the name of the scanner vendor
+
+		if scannerName == "" { // if no scanner name provided, then bypass everything
+			log.Println("No respmod scanner provided...bypassing everything")
+			w.WriteHeader(http.StatusNoContent, nil, false)
+			return
+		}
+
+		if val, exist := req.Header["Allow"]; !exist || (len(val) > 0 && val[0] != "204") { // following RFC3507, if the request has Allow: 204 header, it is to be checked and if it doesn't exists, return the request as it is to the ICAP client, https://tools.ietf.org/html/rfc3507#section-4.6
+			log.Println("Processing not required for this request")
+			w.WriteHeader(http.StatusNoContent, nil, false)
+			return
+		}
 
 		// getting the content type to determine if the response is for a file, and if so, if its allowed to be processed
 		// according to the configuration
 
 		ct := utils.GetMimeExtension(req.Preview)
 
-		if ct == "" {
-			ct = utils.Unknown
-		}
+		processExts := appCfg.ProcessExtensions
+		bypassExts := appCfg.BypassExtensions
 
-		if !utils.InStringSlice(utils.Any, viper.GetStringSlice("app.processable_extensions")) {
-			if !utils.InStringSlice(ct, viper.GetStringSlice("app.processable_extensions")) {
+		if !(utils.InStringSlice(utils.Any, processExts) && !utils.InStringSlice(ct, bypassExts)) { // if there is no star in process and the  provided extension is in bypass
+			if !utils.InStringSlice(ct, processExts) { // and its not in processable either, then don't process it
 				log.Println("Processing not required for file type-", ct)
 				log.Println("Reason: Doesn't belong to processable extensions")
 				w.WriteHeader(http.StatusNoContent, nil, false)
@@ -55,7 +69,8 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			}
 		}
 
-		if utils.InStringSlice(ct, viper.GetStringSlice("app.unprocessable_extensions")) {
+		if (utils.InStringSlice(utils.Any, bypassExts) && !utils.InStringSlice(ct, processExts)) ||
+			utils.InStringSlice(ct, bypassExts) { // if there is start in bypass and there provided extension is not in process or it is in bypass, the don't process it
 			log.Println("Processing not required for file type-", ct)
 			log.Println("Reason: Doesn't belong to unprocessable extensions")
 			w.WriteHeader(http.StatusNoContent, nil, false)
@@ -72,7 +87,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			return
 		}
 
-		if buf.Len() > viper.GetInt("app.max_filesize") {
+		if buf.Len() > appCfg.MaxFileSize {
 			log.Println("File size too large")
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
@@ -87,19 +102,19 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			FileSize: float64(buf.Len()),
 		}
 
-		localScannerCfgFieldName := utils.GetScannerVendorSpecificCfg(utils.ICAPModeResp, "local_scanner")
+		localService := service.IsServiceLocal(scannerName)
 
-		if viper.GetBool(localScannerCfgFieldName) { // if the scanner is installed locally
-			lsvc := service.GetLocalService(strings.ToLower(viper.GetString("app.resp_scanner_vendor")))
+		if localService { // if the scanner is installed locally
+			lsvc := service.GetLocalService(scannerName)
 
 			if lsvc == nil {
-				log.Println("No such scanner vendors:", viper.GetString("app.resp_scanner_vendor"))
+				log.Println("No such scanner vendors:", scannerName)
 				w.WriteHeader(utils.IfPropagateError(http.StatusBadRequest, http.StatusNoContent), nil, false)
 				return
 			}
 
 			if !lsvc.RespSupported() {
-				log.Printf("The vendor %s does not support respmod of icap\n", viper.GetString("app.resp_scanner_vendor"))
+				log.Printf("The vendor %s does not support respmod of icap\n", scannerName)
 				w.WriteHeader(utils.IfPropagateError(http.StatusBadRequest, http.StatusNoContent), nil, false)
 				return
 			}
@@ -111,6 +126,10 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 				return
 			}
 
+			if appCfg.Debug {
+				spew.Dump("result", sampleInfo)
+			}
+
 			if !utils.InStringSlice(sampleInfo.SampleSeverity, lsvc.GetOkFileStatus()) { // checking is the sample severity is amongst the allowable file status
 				log.Printf("The file:%s is %s\n", filename, sampleInfo.SampleSeverity)
 				htmlBuf, newResp := utils.GetTemplateBufferAndResponse(utils.BadFileTemplate, &dtos.TemplateData{
@@ -120,7 +139,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 					RequestedURL: utils.BreakHTTPURL(req.Request.RequestURI),
 					Severity:     sampleInfo.SampleSeverity,
 					Score:        sampleInfo.VTIScore,
-					ResultsBy:    viper.GetString("app.resp_scanner_vendor"),
+					ResultsBy:    scannerName,
 				})
 				w.WriteHeader(http.StatusOK, newResp, true)
 				w.Write(htmlBuf.Bytes())
@@ -129,25 +148,25 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 
 		}
 
-		if !viper.GetBool(localScannerCfgFieldName) { // if the scanner is an external service requiring API calls.
+		if !localService { // if the scanner is an external service requiring API calls.
 			// making necessary service api calls
 
-			svc := service.GetService(strings.ToLower(viper.GetString("app.resp_scanner_vendor")))
+			svc := service.GetService(scannerName)
 
 			if svc == nil {
-				log.Println("No such scanner vendors:", viper.GetString("app.resp_scanner_vendor"))
+				log.Println("No such scanner vendors:", scannerName)
 				w.WriteHeader(utils.IfPropagateError(http.StatusBadRequest, http.StatusNoContent), nil, false)
 				return
 			}
 
 			if svc == nil {
-				log.Println("No such scanner vendors:", viper.GetString("app.resp_scanner_vendor"))
+				log.Println("No such scanner vendors:", scannerName)
 				w.WriteHeader(utils.IfPropagateError(http.StatusBadRequest, http.StatusNoContent), nil, false)
 				return
 			}
 
 			if !svc.RespSupported() {
-				log.Printf("The vendor %s does not support respmod of icap\n", viper.GetString("app.resp_scanner_vendor"))
+				log.Printf("The vendor %s does not support respmod of icap\n", scannerName)
 				w.WriteHeader(utils.IfPropagateError(http.StatusBadRequest, http.StatusNoContent), nil, false)
 				return
 			}
@@ -155,7 +174,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			// The submit file api call is commented out for safety for now
 			submitResp, err := svc.SubmitFile(buf, filename) // submitting the file for analysing
 			if err != nil {
-				log.Printf("Failed to submit file to %s: %s\n", viper.GetString("app.resp_scanner_vendor"), err.Error())
+				log.Printf("Failed to submit file to %s: %s\n", scannerName, err.Error())
 				w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 				return
 			}
@@ -166,7 +185,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 				return
 			}
 
-			if viper.GetBool("app.debug") {
+			if appCfg.Debug {
 				spew.Dump("submit response", submitResp)
 			}
 
@@ -182,12 +201,12 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 				case true:
 					submissionStatus, err := svc.GetSubmissionStatus(submissionID) // getting the file submission status by the submission id received by submitting the file
 					if err != nil {
-						log.Printf("Failed to get submission status from %s: %s\n", viper.GetString("app.resp_scanner_vendor"), err.Error())
+						log.Printf("Failed to get submission status from %s: %s\n", scannerName, err.Error())
 						w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 						return
 					}
 
-					if viper.GetBool("app.debug") {
+					if appCfg.Debug {
 						spew.Dump("submission status resp", submissionStatus)
 					}
 					submissionFinished = submissionStatus.SubmissionFinished
@@ -225,6 +244,10 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 				}
 			}
 
+			if appCfg.Debug {
+				spew.Dump("result", sampleInfo)
+			}
+
 			if !utils.InStringSlice(sampleInfo.SampleSeverity, svc.GetOkFileStatus()) { // checking is the sample severity is amongst the allowable file status
 				log.Printf("The file:%s is %s\n", filename, sampleInfo.SampleSeverity)
 				htmlBuf, newResp := utils.GetTemplateBufferAndResponse(utils.BadFileTemplate, &dtos.TemplateData{
@@ -234,7 +257,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 					RequestedURL: utils.BreakHTTPURL(req.Request.RequestURI),
 					Severity:     sampleInfo.SampleSeverity,
 					Score:        sampleInfo.VTIScore,
-					ResultsBy:    viper.GetString("app.resp_scanner_vendor"),
+					ResultsBy:    scannerName,
 				})
 				w.WriteHeader(http.StatusOK, newResp, true)
 				w.Write(htmlBuf.Bytes())
@@ -261,6 +284,8 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 	h.Set("ISTag", utils.ISTag)
 	h.Set("Service", "Egirna ICAP-EG")
 
+	appCfg := config.App()
+
 	log.Printf("Request received---> METHOD:%s URL:%s\n", req.Method, req.RawURL)
 
 	switch req.Method {
@@ -272,7 +297,13 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 		w.WriteHeader(http.StatusOK, nil, false)
 	case utils.ICAPModeReq:
 
-		spew.Dump(req.Request.URL)
+		scannerName := strings.ToLower(appCfg.ReqScannerVendor)
+
+		if scannerName == "" {
+			log.Println("No reqmod scanner provided...bypassing everything")
+			w.WriteHeader(http.StatusNoContent, nil, false)
+			return
+		}
 
 		ext := utils.GetFileExtension(req.Request)
 
@@ -282,8 +313,11 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 
 		ext = "." + ext
 
-		if !utils.InStringSlice(utils.Any, viper.GetStringSlice("app.processable_extensions")) {
-			if !utils.InStringSlice(ext, viper.GetStringSlice("app.processable_extensions")) {
+		processExts := appCfg.ProcessExtensions
+		bypassExts := appCfg.BypassExtensions
+
+		if !(utils.InStringSlice(utils.Any, processExts) && !utils.InStringSlice(ext, bypassExts)) { // if there is no star in process and the  provided extension is in bypass
+			if !utils.InStringSlice(ext, processExts) { // and its not in processable either, then don't process it
 				log.Println("Processing not required for file type-", ext)
 				log.Println("Reason: Doesn't belong to processable extensions")
 				w.WriteHeader(http.StatusNoContent, nil, false)
@@ -291,7 +325,8 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 			}
 		}
 
-		if utils.InStringSlice(ext, viper.GetStringSlice("app.unprocessable_extensions")) {
+		if (utils.InStringSlice(utils.Any, bypassExts) && !utils.InStringSlice(ext, processExts)) ||
+			utils.InStringSlice(ext, bypassExts) { // if there is start in bypass and there provided extension is not in process or it is in bypass, the don't process it
 			log.Println("Processing not required for file type-", ext)
 			log.Println("Reason: Doesn't belong to unprocessable extensions")
 			w.WriteHeader(http.StatusNoContent, nil, false)
@@ -308,16 +343,16 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 			FileType: fileExt,
 		}
 
-		svc := service.GetService(strings.ToLower(viper.GetString("app.req_scanner_vendor")))
+		svc := service.GetService(scannerName)
 
 		if svc == nil {
-			log.Println("No such scanner vendors:", viper.GetString("app.req_scanner_vendor"))
+			log.Println("No such scanner vendors:", scannerName)
 			w.WriteHeader(utils.IfPropagateError(http.StatusBadRequest, http.StatusNoContent), nil, false)
 			return
 		}
 
 		if !svc.ReqSupported() {
-			log.Printf("The vendor %s does not support reqmod of icap\n", viper.GetString("app.req_scanner_vendor"))
+			log.Printf("The vendor %s does not support reqmod of icap\n", scannerName)
 			w.WriteHeader(utils.IfPropagateError(http.StatusBadRequest, http.StatusNoContent), nil, false)
 			return
 		}
@@ -325,7 +360,7 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 		// The submit file api call is commented out for safety for now
 		submitResp, err := svc.SubmitURL(fileURL, filename) // submitting the file for analysing
 		if err != nil {
-			log.Printf("Failed to submit url to %s: %s\n", viper.GetString("app.req_scanner_vendor"), err.Error())
+			log.Printf("Failed to submit url to %s: %s\n", scannerName, err.Error())
 			w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 			return
 		}
@@ -336,7 +371,7 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 			return
 		}
 
-		if viper.GetBool("app.debug") {
+		if appCfg.Debug {
 			spew.Dump("submit response", submitResp)
 		}
 
@@ -352,12 +387,12 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 			case true:
 				submissionStatus, err := svc.GetSubmissionStatus(submissionID) // getting the file submission status by the submission id received by submitting the file
 				if err != nil {
-					log.Printf("Failed to get submission status from %s: %s\n", viper.GetString("app.req_scanner_vendor"), err.Error())
+					log.Printf("Failed to get submission status from %s: %s\n", scannerName, err.Error())
 					w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 					return
 				}
 
-				if viper.GetBool("app.debug") {
+				if appCfg.Debug {
 					spew.Dump("submission status resp", submissionStatus)
 				}
 				submissionFinished = submissionStatus.SubmissionFinished
@@ -387,12 +422,16 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 
 		if sampleInfo == nil {
 			var err error
-			sampleInfo, err = svc.GetSampleFileInfo(sampleID, fmi) // getting the results after scanner is done analysing the file
+			sampleInfo, err = svc.GetSampleURLInfo(sampleID, fmi) // getting the results after scanner is done analysing the file
 			if err != nil {
 				log.Println("Couldn't fetch sample information after submission finish: ", err.Error())
 				w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 				return
 			}
+		}
+
+		if appCfg.Debug {
+			spew.Dump("result", sampleInfo)
 		}
 
 		if !utils.InStringSlice(sampleInfo.SampleSeverity, svc.GetOkFileStatus()) { // checking is the sample severity is amongst the allowable file status
@@ -404,7 +443,7 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 				RequestedURL: utils.BreakHTTPURL(req.Request.RequestURI),
 				Severity:     sampleInfo.SampleSeverity,
 				Score:        sampleInfo.VTIScore,
-				ResultsBy:    viper.GetString("app.req_scanner_vendor"),
+				ResultsBy:    scannerName,
 			}
 
 			dataByte, err := json.Marshal(data)
