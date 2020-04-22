@@ -38,10 +38,6 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 		w.WriteHeader(http.StatusOK, nil, false)
 	case utils.ICAPModeResp:
 
-		// if len(req.Preview) > 100 {
-		// 	spew.Dump("dumping the preview bytes for testing purpose", req.Preview[:100])
-		// }
-
 		scannerName := strings.ToLower(appCfg.RespScannerVendor) // the name of the scanner vendor
 
 		if scannerName == "" { // if no scanner name provided, then bypass everything
@@ -50,14 +46,16 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			return
 		}
 
+		if val, exist := req.Header["Allow"]; !exist || (len(val) > 0 && val[0] != "204") { // following RFC3507, if the request has Allow: 204 header, it is to be checked and if it doesn't exists, return the request as it is to the ICAP client, https://tools.ietf.org/html/rfc3507#section-4.6
+			log.Println("Processing not required for this request")
+			w.WriteHeader(http.StatusNoContent, nil, false)
+			return
+		}
+
 		// getting the content type to determine if the response is for a file, and if so, if its allowed to be processed
 		// according to the configuration
 
 		ct := utils.GetMimeExtension(req.Preview)
-
-		if ct == "" {
-			ct = utils.Unknown
-		}
 
 		processExts := appCfg.ProcessExtensions
 		bypassExts := appCfg.BypassExtensions
