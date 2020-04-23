@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"icapeg/dtos"
 	"icapeg/utils"
-	"reflect"
 
 	"github.com/spf13/viper"
 )
@@ -30,24 +29,13 @@ func TransformVirusTotalToSubmitResponse(sr *dtos.VirusTotalScanFileResponse) *d
 // TransformVirusTotalToSampleInfo transforms a virustotal report response to generic sample info response
 func TransformVirusTotalToSampleInfo(vr *dtos.VirusTotalReportResponse, fmi dtos.FileMetaInfo) *dtos.SampleInfo {
 
-	v := reflect.ValueOf(vr.Scans)
-
 	failThreshold := viper.GetInt("virustotal.fail_threshold")
-
-	failCount := 0
 
 	svrty := VirusTotalSampleSeverityOk
 	vtiScore := fmt.Sprintf("%d/%d", vr.Positives, vr.Total)
 
-	for i := 0; i < v.NumField(); i++ {
-		scnr := v.Field(i).Interface().(dtos.Scanner)
-		if scnr.Detected {
-			failCount++
-		}
-		if failCount > failThreshold {
-			svrty = VirusTotalSampleSeverityMalicious
-			break
-		}
+	if vr.Positives > failThreshold {
+		svrty = VirusTotalSampleSeverityMalicious
 	}
 
 	submissionFinished := true
