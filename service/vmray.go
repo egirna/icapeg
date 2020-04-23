@@ -45,9 +45,9 @@ func NewVmrayService() Service {
 		statusCheckTimeout:   viper.GetDuration("vmray.status_check_timeout") * time.Second,
 		badFileStatus:        viper.GetStringSlice("vmray.bad_file_status"),
 		okFileStatus:         viper.GetStringSlice("vmray.ok_file_status"),
-		statusEndPointExists: viper.GetBool("vmray.status_endpoint_exists"),
-		respSupported:        viper.GetBool("vmray.resp_supported"),
-		reqSupported:         viper.GetBool("vmray.req_supported"),
+		statusEndPointExists: true,
+		respSupported:        true,
+		reqSupported:         true,
 	}
 }
 

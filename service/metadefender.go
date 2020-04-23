@@ -40,9 +40,9 @@ func NewMetaDefenderService() Service {
 		statusCheckTimeout:   viper.GetDuration("metadefender.status_check_timeout") * time.Second,
 		badFileStatus:        viper.GetStringSlice("metadefender.bad_file_status"),
 		okFileStatus:         viper.GetStringSlice("metadefender.ok_file_status"),
-		statusEndPointExists: viper.GetBool("metadefender.status_endpoint_exists"),
-		respSupported:        viper.GetBool("metadefender.resp_supported"),
-		reqSupported:         viper.GetBool("metadefender.req_supported"),
+		statusEndPointExists: false,
+		respSupported:        true,
+		reqSupported:         false,
 	}
 }
 

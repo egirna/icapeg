@@ -26,9 +26,6 @@ status_check_interval = 2 #seconds, the time interval after which the submission
 status_check_timeout = 300 #seconds, the total time duration after which the the status check should be stopped, if not finished
 bad_file_status = ["malicious"]
 ok_file_status = ["ok"]
-status_endpoint_exists = false #this field determines whether the scanner vendor has any status check endpoint or not
-resp_supported = true # this indicates that the vendor can process during respmod
-req_supported = true # this indicates that the vendor can process during reqmod
 
 
 [metadefender]
@@ -42,9 +39,6 @@ status_check_interval = 2 #seconds, the time interval after which the submission
 status_check_timeout = 300 #seconds, the total time duration after which the the status check should be stopped, if not finished
 bad_file_status = ["malicious"]
 ok_file_status = ["ok"]
-status_endpoint_exists = false #this field determines whether the scanner vendor has any status check endpoint or not
-resp_supported = true
-req_supported = false
 
 
 [vmray]
@@ -58,9 +52,6 @@ status_check_timeout = 300 #seconds, the total time duration after which the the
 bad_file_status = ["malicious", "suspicious", "blacklisted"]
 ok_file_status = ["not_suspicious" , "whitelisted", "unknown"]
 api_key = "<Your vmray API KEY here>"
-status_endpoint_exists = true
-resp_supported = true
-req_supported = true
 
 
 
@@ -69,5 +60,3 @@ socket_path = "/var/run/clamav/clamd.ctl"
 wait_timeout = 10 #seconds, the time upto which the server will wait for clamav to scan the results
 bad_file_status = ["malicious"]
 ok_file_status = ["ok"]
-resp_supported = true
-req_supported = false
