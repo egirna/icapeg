@@ -1,4 +1,4 @@
-package helpers
+package utils
 
 import (
 	"bytes"
@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gabriel-vasile/mimetype"
+	"github.com/h2non/filetype"
 	"github.com/spf13/viper"
 )
 
@@ -30,8 +30,14 @@ func GetContentType(r *http.Response) string {
 
 // GetMimeExtension returns the mime type extension of the data
 func GetMimeExtension(data []byte) string {
-	mime := mimetype.Detect(data)
-	return mime.Extension()
+	kind, _ := filetype.Match(data)
+
+	if kind == filetype.Unknown {
+		return Unknown
+	}
+
+	return kind.Extension
+
 }
 
 // GetFileName returns the filename from the http request
@@ -50,7 +56,7 @@ func GetFileExtension(req *http.Request) string {
 	if filenameWithExt != "" {
 		ff := strings.Split(filenameWithExt, ".")
 		if len(ff) > 1 {
-			return ff[1]
+			return ff[len(ff)-1]
 		}
 	}
 
@@ -104,8 +110,18 @@ func BreakHTTPURL(url string) string {
 }
 
 // GetScannerVendorSpecificCfg returns the current scanner vendor specific configuration field
-func GetScannerVendorSpecificCfg(cfgField string) string {
-	return fmt.Sprintf("%s.%s", viper.GetString("app.scanner_vendor"), cfgField)
+func GetScannerVendorSpecificCfg(mode, cfgField string) string {
+
+	absoluteCfgField := ""
+
+	switch mode {
+	case ICAPModeResp:
+		absoluteCfgField = fmt.Sprintf("%s.%s", viper.GetString("app.resp_scanner_vendor"), cfgField)
+	case ICAPModeReq:
+		absoluteCfgField = fmt.Sprintf("%s.%s", viper.GetString("app.req_scanner_vendor"), cfgField)
+	}
+
+	return absoluteCfgField
 }
 
 // IfPropagateError returns one of the given parameter depending on the propagate error configuration

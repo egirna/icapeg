@@ -4,9 +4,10 @@ title = "ICAPEG configuration file"
 debug = true
 port = 1344
 max_filesize = 10000000 #bytes
-scanner_vendor = "virustotal"
-unprocessable_content_types = ["application/gzip" , "text/html" , "image/jpeg" , "image/png"]
-unprocessable_extensions = [".gz" , ".png" , ".jpg" , ".jpeg" , ".html"]
+resp_scanner_vendor = "clamav" # Supported vendors for respmod of ICAP: "virustotal", "metadefender" , "vmray" , "clamav" , ""- empty specifies, respmod will be bypassing everything
+req_scanner_vendor = "" # Supported vendors for reqmod of ICAP: "virustotal" , "vmray",
+bypass_extensions = ["*"]
+process_extensions = ["txt" , "pdf" , "dmg" , "exe" , "com", "rar" , "unknown"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
 preview_bytes = "4096" #bytes
 propagate_error = true
 
@@ -14,13 +15,48 @@ propagate_error = true
 
 [virustotal]
 base_url = "https://www.virustotal.com/vtapi/v2"
-scan_endpoint = "/file/scan"
-report_endpoint = "/file/report?apikey=%s&resource=%s"
-api_key = "<Your Virustotal API KEY here>"
+file_scan_endpoint = "/file/scan"
+url_scan_endpoint = "/url/scan"
+file_report_endpoint = "/file/report?apikey=%s&resource=%s"
+url_report_endpoint = "/url/report?apikey=%s&resource=%s"
+api_key = "<Your virustotal API KEY here>"
 timeout  = 10 #seconds
 fail_threshold = 2
 status_check_interval = 2 #seconds, the time interval after which the submission status check will be called
 status_check_timeout = 300 #seconds, the total time duration after which the the status check should be stopped, if not finished
 bad_file_status = ["malicious"]
 ok_file_status = ["ok"]
-status_endpoint_exists = false #this field determines whether the scanner vendor has any status check endpoint or not
+
+
+[metadefender]
+base_url = "https://api.metadefender.com/v4"
+scan_endpoint = "/file"
+report_endpoint = "/file"
+api_key = "<Your metadefender API KEY here>"
+timeout  = 10 #seconds
+fail_threshold = 2
+status_check_interval = 2 #seconds, the time interval after which the submission status check will be called
+status_check_timeout = 300 #seconds, the total time duration after which the the status check should be stopped, if not finished
+bad_file_status = ["malicious"]
+ok_file_status = ["ok"]
+
+
+[vmray]
+base_url = "https://cloud.vmray.com/rest"
+submit_endpoint = "/sample/submit"
+get_sample_endpoint= "/sample"
+submission_status_endpoint = "/submission"
+timeout = 10 #seconds , the timeout duration for all the api calls for vmray
+status_check_interval = 2 #seconds, the time interval after which the submission status check will be called
+status_check_timeout = 300 #seconds, the total time duration after which the the status check should be stopped, if not finished
+bad_file_status = ["malicious", "suspicious", "blacklisted"]
+ok_file_status = ["not_suspicious" , "whitelisted", "unknown"]
+api_key = "<Your vmray API KEY here>"
+
+
+
+[clamav]
+socket_path = "/var/run/clamav/clamd.ctl"
+wait_timeout = 10 #seconds, the time upto which the server will wait for clamav to scan the results
+bad_file_status = ["malicious"]
+ok_file_status = ["ok"]

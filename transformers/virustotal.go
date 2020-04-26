@@ -3,8 +3,7 @@ package transformers
 import (
 	"fmt"
 	"icapeg/dtos"
-	"icapeg/helpers"
-	"reflect"
+	"icapeg/utils"
 
 	"github.com/spf13/viper"
 )
@@ -27,27 +26,16 @@ func TransformVirusTotalToSubmitResponse(sr *dtos.VirusTotalScanFileResponse) *d
 	return submitResp
 }
 
-// TransformVirusTotalToSampleInfo transforms a virustotal report response to generic sample info reponse
+// TransformVirusTotalToSampleInfo transforms a virustotal report response to generic sample info response
 func TransformVirusTotalToSampleInfo(vr *dtos.VirusTotalReportResponse, fmi dtos.FileMetaInfo) *dtos.SampleInfo {
 
-	v := reflect.ValueOf(vr.Scans)
-
 	failThreshold := viper.GetInt("virustotal.fail_threshold")
-
-	failCount := 0
 
 	svrty := VirusTotalSampleSeverityOk
 	vtiScore := fmt.Sprintf("%d/%d", vr.Positives, vr.Total)
 
-	for i := 0; i < v.NumField(); i++ {
-		scnr := v.Field(i).Interface().(dtos.Scanner)
-		if scnr.Detected {
-			failCount++
-		}
-		if failCount > failThreshold {
-			svrty = VirusTotalSampleSeverityMalicious
-			break
-		}
+	if vr.Positives > failThreshold {
+		svrty = VirusTotalSampleSeverityMalicious
 	}
 
 	submissionFinished := true
@@ -60,7 +48,7 @@ func TransformVirusTotalToSampleInfo(vr *dtos.VirusTotalReportResponse, fmi dtos
 		VTIScore:           vtiScore,
 		FileName:           fmi.FileName,
 		SampleType:         fmi.FileType,
-		FileSizeStr:        fmt.Sprintf("%.2fmb", helpers.ByteToMegaBytes(int(fmi.FileSize))),
+		FileSizeStr:        fmt.Sprintf("%.2fmb", utils.ByteToMegaBytes(int(fmi.FileSize))),
 		SubmissionFinished: submissionFinished,
 	}
 
