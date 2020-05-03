@@ -16,11 +16,16 @@ import (
 	"github.com/spf13/viper"
 )
 
+// scan_endpoint = "/file"
+// report_endpoint = "/file"
+
 // MetaDefender represents the informations regarding the MetaDefender service
 type MetaDefender struct {
 	BaseURL              string
 	Timeout              time.Duration
 	APIKey               string
+	ScanEndpoint         string
+	ReportEndpoint       string
 	statusCheckInterval  time.Duration
 	statusCheckTimeout   time.Duration
 	badFileStatus        []string
@@ -36,6 +41,8 @@ func NewMetaDefenderService() Service {
 		BaseURL:              viper.GetString("metadefender.base_url"),
 		Timeout:              viper.GetDuration("metadefender.timeout") * time.Second,
 		APIKey:               viper.GetString("metadefender.api_key"),
+		ScanEndpoint:         viper.GetString("metadefender.scan_endpoint"),
+		ReportEndpoint:       viper.GetString("metadefender.report_endpoint"),
 		statusCheckInterval:  viper.GetDuration("metadefender.status_check_interval") * time.Second,
 		statusCheckTimeout:   viper.GetDuration("metadefender.status_check_timeout") * time.Second,
 		badFileStatus:        viper.GetStringSlice("metadefender.bad_file_status"),
@@ -49,7 +56,7 @@ func NewMetaDefenderService() Service {
 // SubmitFile calls the submission api for metadefender
 func (m *MetaDefender) SubmitFile(f *bytes.Buffer, filename string) (*dtos.SubmitResponse, error) {
 
-	urlStr := m.BaseURL + viper.GetString("metadefender.scan_endpoint")
+	urlStr := m.BaseURL + m.ScanEndpoint
 
 	//bodyBuf := &bytes.Buffer{}
 
@@ -104,7 +111,7 @@ func (m *MetaDefender) SubmitFile(f *bytes.Buffer, filename string) (*dtos.Submi
 // GetSampleFileInfo returns the submitted sample file's info
 func (m *MetaDefender) GetSampleFileInfo(sampleID string, filemetas ...dtos.FileMetaInfo) (*dtos.SampleInfo, error) {
 
-	urlStr := m.BaseURL + fmt.Sprintf(viper.GetString("metadefender.report_endpoint")+"/"+sampleID)
+	urlStr := m.BaseURL + fmt.Sprintf(m.ReportEndpoint+"/"+sampleID)
 	//urlStr := v.BaseURL + fmt.Sprintf(viper.GetString("metadefender.report_endpoint"), viper.GetString("metadefender.api_key"), sampleID)
 
 	req, err := http.NewRequest(http.MethodGet, urlStr, nil)
@@ -154,7 +161,7 @@ func (m *MetaDefender) GetSampleFileInfo(sampleID string, filemetas ...dtos.File
 // GetSubmissionStatus returns the submission status of a submitted sample
 func (m *MetaDefender) GetSubmissionStatus(submissionID string) (*dtos.SubmissionStatusResponse, error) {
 
-	urlStr := m.BaseURL + fmt.Sprintf(viper.GetString("metadefender.report_endpoint")+"/"+submissionID)
+	urlStr := m.BaseURL + fmt.Sprintf(m.ReportEndpoint+"/"+submissionID)
 
 	req, err := http.NewRequest(http.MethodGet, urlStr, nil)
 

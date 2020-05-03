@@ -4,7 +4,7 @@ title = "ICAPEG configuration file"
 debug = true
 port = 1344
 max_filesize = 10000000 #bytes
-resp_scanner_vendor = "clamav" # Supported vendors for respmod of ICAP: "virustotal", "metadefender" , "vmray" , "clamav" , ""- empty specifies, respmod will be bypassing everything
+resp_scanner_vendor = "virustotal" # Supported vendors for respmod of ICAP: "virustotal", "metadefender" , "vmray" , "clamav" , ""- empty specifies, respmod will be bypassing everything
 req_scanner_vendor = "" # Supported vendors for reqmod of ICAP: "virustotal" , "vmray",
 bypass_extensions = ["*"]
 process_extensions = ["txt" , "pdf" , "dmg" , "exe" , "com", "rar" , "unknown"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
@@ -19,7 +19,7 @@ file_scan_endpoint = "/file/scan"
 url_scan_endpoint = "/url/scan"
 file_report_endpoint = "/file/report?apikey=%s&resource=%s"
 url_report_endpoint = "/url/report?apikey=%s&resource=%s"
-api_key = "<Your virustotal API KEY here>"
+api_key = "44904fa3f2b4c03295d4e83b3a183f786a542837b120d1c0eddcaa96cf0f42c9"
 timeout  = 10 #seconds
 fail_threshold = 2
 status_check_interval = 2 #seconds, the time interval after which the submission status check will be called
