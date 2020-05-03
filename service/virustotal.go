@@ -27,6 +27,7 @@ type VirusTotal struct {
 	URLScanEndpoint      string
 	FileReportEndpoint   string
 	URLReportEndpoint    string
+	FailThreshold        int
 	statusCheckInterval  time.Duration
 	statusCheckTimeout   time.Duration
 	badFileStatus        []string
@@ -46,6 +47,7 @@ func NewVirusTotalService() Service {
 		URLScanEndpoint:      viper.GetString("virustotal.url_scan_endpoint"),
 		FileReportEndpoint:   viper.GetString("virustotal.file_report_endpoint"),
 		URLReportEndpoint:    viper.GetString("virustotal.url_report_endpoint"),
+		FailThreshold:        viper.GetInt("virustotal.fail_threshold"),
 		statusCheckInterval:  viper.GetDuration("virustotal.status_check_interval") * time.Second,
 		statusCheckTimeout:   viper.GetDuration("virustotal.status_check_timeout") * time.Second,
 		badFileStatus:        viper.GetStringSlice("virustotal.bad_file_status"),
@@ -226,7 +228,7 @@ func (v *VirusTotal) GetSampleFileInfo(sampleID string, filemetas ...dtos.FileMe
 		fm = filemetas[0]
 	}
 
-	return transformers.TransformVirusTotalToSampleInfo(&sampleResp, fm), nil
+	return transformers.TransformVirusTotalToSampleInfo(&sampleResp, fm, v.FailThreshold), nil
 
 }
 
@@ -280,7 +282,7 @@ func (v *VirusTotal) GetSampleURLInfo(sampleID string, filemetas ...dtos.FileMet
 		fm = filemetas[0]
 	}
 
-	return transformers.TransformVirusTotalToSampleInfo(&sampleResp, fm), nil
+	return transformers.TransformVirusTotalToSampleInfo(&sampleResp, fm, v.FailThreshold), nil
 
 }
 

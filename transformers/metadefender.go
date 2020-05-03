@@ -5,8 +5,6 @@ import (
 	"icapeg/dtos"
 	"icapeg/utils"
 	"reflect"
-
-	"github.com/spf13/viper"
 )
 
 // the sample severity constants
@@ -28,10 +26,9 @@ func TransformMetaDefenderToSubmitResponse(sr *dtos.MetaDefenderScanFileResponse
 }
 
 // TransformMetaDefenderToSampleInfo transforms a metadefender report response to generic sample info response
-func TransformMetaDefenderToSampleInfo(vr *dtos.MetaDefenderReportResponse, fmi dtos.FileMetaInfo) *dtos.SampleInfo {
+func TransformMetaDefenderToSampleInfo(vr *dtos.MetaDefenderReportResponse, fmi dtos.FileMetaInfo, failThreshold int) *dtos.SampleInfo {
 
 	v := reflect.ValueOf(vr.ScanResults.ScanDetails)
-	failThreshold := viper.GetInt("metadefender.fail_threshold")
 
 	failCount := 0
 

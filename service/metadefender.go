@@ -26,6 +26,7 @@ type MetaDefender struct {
 	APIKey               string
 	ScanEndpoint         string
 	ReportEndpoint       string
+	FailThreshold        int
 	statusCheckInterval  time.Duration
 	statusCheckTimeout   time.Duration
 	badFileStatus        []string
@@ -43,6 +44,7 @@ func NewMetaDefenderService() Service {
 		APIKey:               viper.GetString("metadefender.api_key"),
 		ScanEndpoint:         viper.GetString("metadefender.scan_endpoint"),
 		ReportEndpoint:       viper.GetString("metadefender.report_endpoint"),
+		FailThreshold:        viper.GetInt("metadefender.fail_threshold"),
 		statusCheckInterval:  viper.GetDuration("metadefender.status_check_interval") * time.Second,
 		statusCheckTimeout:   viper.GetDuration("metadefender.status_check_timeout") * time.Second,
 		badFileStatus:        viper.GetStringSlice("metadefender.bad_file_status"),
@@ -154,7 +156,7 @@ func (m *MetaDefender) GetSampleFileInfo(sampleID string, filemetas ...dtos.File
 		fm = filemetas[0]
 	}
 
-	return transformers.TransformMetaDefenderToSampleInfo(&sampleResp, fm), nil
+	return transformers.TransformMetaDefenderToSampleInfo(&sampleResp, fm, m.FailThreshold), nil
 
 }
 
