@@ -59,7 +59,7 @@ Add /usr/local/go/bin to the PATH environment variable:
 squid is an example in this readme
 
 3. A scanner vendor. `ICAPeg` now supports `VirusTotal`,  `MetaDefender` , `VMRay` & `Clamav` as scanner vendors.
-Make sure that you setup your scanner vendor properly. You can setup your scanners for both [RESPMOD](https://tools.ietf.org/html/rfc3507#page-27) & [REQMOD](https://tools.ietf.org/html/rfc3507#page-23).
+Make sure that you setup your scanner vendor properly. You can setup your scanners for both [RESPMOD](https://tools.ietf.org/html/rfc3507#page-27) & [REQMOD](https://tools.ietf.org/html/rfc3507#page-23).  Although, not every scanner supports every mods. [Check this out](MODS.md) to know which scanner supports which mods.
 
 
 Setup **VirusTotal:**

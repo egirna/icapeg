@@ -34,8 +34,8 @@ func NewClamavService() LocalService {
 		WaitTimeOut:   viper.GetDuration("clamav.wait_timeout") * time.Second,
 		badFileStatus: viper.GetStringSlice("clamav.bad_file_status"),
 		okFileStatus:  viper.GetStringSlice("clamav.ok_file_status"),
-		respSupported: viper.GetBool("clamav.resp_supported"),
-		reqSupported:  viper.GetBool("clamav.req_supported"),
+		respSupported: true,
+		reqSupported:  false,
 	}
 }
 

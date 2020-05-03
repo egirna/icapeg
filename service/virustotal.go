@@ -42,9 +42,9 @@ func NewVirusTotalService() Service {
 		statusCheckTimeout:   viper.GetDuration("virustotal.status_check_timeout") * time.Second,
 		badFileStatus:        viper.GetStringSlice("virustotal.bad_file_status"),
 		okFileStatus:         viper.GetStringSlice("virustotal.ok_file_status"),
-		statusEndPointExists: viper.GetBool("virustotal.status_endpoint_exists"),
-		respSupported:        viper.GetBool("virustotal.resp_supported"),
-		reqSupported:         viper.GetBool("virustotal.req_supported"),
+		statusEndPointExists: false,
+		respSupported:        true,
+		reqSupported:         true,
 	}
 }
 
