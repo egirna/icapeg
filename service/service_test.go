@@ -3,9 +3,11 @@ package service
 import (
 	"encoding/json"
 	"icapeg/dtos"
+	"icapeg/utils"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -235,6 +237,157 @@ func getVirusTotalMockServer() *httptest.Server {
 
 			if resource == "abcd12345" {
 				vresp.Positives = 1
+			}
+
+			jsonRep, err = json.Marshal(vresp)
+
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(`{"message":"Somethign went wrong"}`))
+				return
+			}
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Write(jsonRep)
+		return
+	}))
+
+}
+
+func getVmrayMockServer() *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Content-type", "application/json")
+
+		urlStr := r.URL.EscapedPath()
+
+		if _, exists := vmrayEndpointMap[urlStr]; !exists {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte(`{"message":"Route not found"}`))
+			return
+		}
+
+		apikey := r.Header.Get("Authorization")
+
+		if apikey == "" || !utils.InStringSlice("api_key", strings.Split(apikey, " ")) ||
+			len(strings.SplitAfter(apikey, " ")) <= 1 {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte(`{"error_msg": "Authentication required","result": "error"}`))
+			return
+		}
+
+		var jsonRep []byte
+		var err error
+		endpoint := vmrayEndpointMap[urlStr]
+
+		if endpoint == vmraySubmitFile {
+
+			if r.Method != http.MethodPost {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
+
+			if err := r.ParseMultipartForm(1024); err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(`{"message":"Somethign went wrong"}`))
+				return
+			}
+
+			if r.MultipartForm.File["sample_file"] != nil {
+				if r.MultipartForm.File["sample_file"][0].Filename == "" {
+					w.WriteHeader(http.StatusBadRequest)
+					w.Write([]byte(`{
+													"error_msg": "Invalid file parameter \"sample_file\". It seems the way you pass the data is incorrect",
+  												"result": "error"
+						}`))
+					return
+				}
+
+			} else if sampleURL, exists := r.MultipartForm.Value["sample_url"]; !exists || (len(sampleURL) > 0 && sampleURL[0] == "") {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte(`{
+													"error_msg": "Missing parameter: Either \"sample_file\" or \"sample_url\" must be specified.",
+  												"result": "error"
+												}`))
+				return
+			}
+
+			vresp := dtos.VmraySubmitResponse{
+				Data: dtos.VmraySubmitData{
+					Submissions: []dtos.VmraySubmissions{
+						{
+							SubmissionID:       5624736,
+							SubmissionSampleID: 4841630,
+						},
+					},
+				},
+			}
+
+			jsonRep, err = json.Marshal(vresp)
+
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(`{"message":"Somethign went wrong"}`))
+				return
+			}
+
+		}
+
+		if endpoint == vmraySubmissionStatus {
+
+			if r.Method != http.MethodGet {
+				w.WriteHeader(http.StatusForbidden)
+				w.Write([]byte(`{
+  					"error_msg": "Forbidden internal API function \"submission_update\". You must enable the internal API to use this parameter",
+  					"result": "error"
+							}`))
+				return
+			}
+
+			vresp := dtos.VmraySubmissionStatusResponse{
+				Data: dtos.VmraySubmissionData{
+					SubmissionFinished: true,
+				},
+			}
+
+			jsonRep, err = json.Marshal(vresp)
+
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(`{"message":"Somethign went wrong"}`))
+				return
+			}
+
+		}
+
+		if endpoint == vmraySampleFileInfo {
+
+			if r.Method != http.MethodGet {
+				w.WriteHeader(http.StatusForbidden)
+				w.Write([]byte(`{
+  					"error_msg": "Forbidden internal API function \"sample_update\". You must enable the internal API to use this parameter",
+  					"result": "error"
+								}`))
+				return
+			}
+
+			words := strings.Split(r.URL.EscapedPath(), "/")
+
+			sampleID := words[len(words)-1]
+
+			vresp := dtos.GetVmraySampleResponse{
+				Data: dtos.VmraySampleData{
+					SampleFilename: "somefile.exe",
+					SampleType:     "exe",
+					SampleSeverity: "not_suspicious",
+					SampleVtiScore: 0,
+					SampleFilesize: 3028,
+				},
+			}
+
+			if sampleID == "4321" {
+				vresp.Data.SampleSeverity = "malicious"
+				vresp.Data.SampleVtiScore = 20
 			}
 
 			jsonRep, err = json.Marshal(vresp)

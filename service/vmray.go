@@ -72,6 +72,10 @@ func (v *Vmray) SubmitFile(f *bytes.Buffer, filename string) (*dtos.SubmitRespon
 		return nil, err
 	}
 
+	if f == nil {
+		return nil, errors.New("Invalid file")
+	}
+
 	io.Copy(part, bytes.NewReader(f.Bytes()))
 	if err := bodyWriter.Close(); err != nil {
 		log.Println("failed to close writer", err.Error())
