@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"icapeg/dtos"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -42,7 +43,11 @@ func GetMimeExtension(data []byte) string {
 
 // GetFileName returns the filename from the http request
 func GetFileName(req *http.Request) string {
-	uu := strings.Split(req.RequestURI, "/")
+
+	u, _ := url.Parse(req.RequestURI)
+
+	uu := strings.Split(u.EscapedPath(), "/")
+
 	if len(uu) > 0 {
 		return uu[len(uu)-1]
 	}

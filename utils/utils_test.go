@@ -112,7 +112,7 @@ func TestFileExtension(t *testing.T) {
 
 	sampleTable := []testSample{
 		{
-			req: &http.Request{RequestURI: "http://somehost.com/somefile.pdf"},
+			req: &http.Request{RequestURI: "http://somehost.com/somefile.pdf?someparam=someval"},
 			ext: "pdf",
 		},
 		{
@@ -150,7 +150,7 @@ func TestInStringSlice(t *testing.T) {
 			exists:      false,
 		},
 		{
-			stringSlice: []string{"testing", ""},
+			stringSlice: []string{"", "testing", "something else"},
 			str:         "testing",
 			exists:      true,
 		},
