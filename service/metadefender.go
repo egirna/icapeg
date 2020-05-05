@@ -60,25 +60,25 @@ func (m *MetaDefender) SubmitFile(f *bytes.Buffer, filename string) (*dtos.Submi
 
 	urlStr := m.BaseURL + m.ScanEndpoint
 
-	//bodyBuf := &bytes.Buffer{}
-
-	//bodyWriter := multipart.NewWriter(bodyBuf)
-
-	//bodyWriter.WriteField("apikey", v.APIKey)
-
-	//part, err := bodyWriter.CreateFormFile("file", filename)
-
+	// bodyBuf := &bytes.Buffer{}
+	//
+	// bodyWriter := multipart.NewWriter(bodyBuf)
+	//
+	// bodyWriter.WriteField("apikey", m.APIKey)
+	//
+	// part, err := bodyWriter.CreateFormFile("file", filename)
+	//
 	// if err != nil {
 	// 	return nil, err
 	// }
-
+	//
 	// io.Copy(part, bytes.NewReader(f.Bytes()))
 	// if err := bodyWriter.Close(); err != nil {
 	// 	log.Println("failed to close writer", err.Error())
 	// 	return nil, err
 	// }
+	//
 
-	//req, err := http.NewRequest(http.MethodPost, urlStr, bodyBuf)
 	req, err := http.NewRequest(http.MethodPost, urlStr, f)
 	if err != nil {
 		return nil, err
@@ -121,7 +121,7 @@ func (m *MetaDefender) GetSampleFileInfo(sampleID string, filemetas ...dtos.File
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("apikey", viper.GetString("metadefender.api_key"))
+	req.Header.Add("apikey", m.APIKey)
 	client := http.Client{}
 	ctx, cancel := context.WithTimeout(context.Background(), m.Timeout)
 	defer cancel()

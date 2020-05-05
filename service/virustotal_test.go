@@ -67,9 +67,8 @@ func TestVirusTotalSubmitFile(t *testing.T) {
 			return
 		}
 
-		if (sample.sresp == nil && resp != nil) || (resp == nil && sample.sresp != nil) {
-			t.Errorf("Unexpected result for virustotal submit file  , wanted: %v got: %v",
-				sample.sresp, resp)
+		if (sample.sresp == nil && resp != nil) || (err != nil && sample.sresp != nil) {
+			t.Error("Unexpected response from virustotal submit file: ", err.Error())
 			return
 		}
 

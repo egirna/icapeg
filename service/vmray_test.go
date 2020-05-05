@@ -52,7 +52,7 @@ func TestVmraySubmitFile(t *testing.T) {
 				APIKey:         "someapikey",
 				SubmitEndpoint: "/sample/submit",
 			},
-			fileBuffer: &bytes.Buffer{},
+			fileBuffer: bytes.NewBuffer([]byte{0x52, 0x61, 0x72, 0x21, 0x1A, 0x07, 0x00}),
 			filename:   "somefile.exe",
 			sresp: &dtos.SubmitResponse{
 				SubmissionExists:   true,
@@ -70,9 +70,8 @@ func TestVmraySubmitFile(t *testing.T) {
 			return
 		}
 
-		if sample.sresp == nil && resp != nil {
-			t.Errorf("Unexpected result for vmray submit file  , wanted: %v got: %v",
-				sample.sresp, resp)
+		if (sample.sresp == nil && resp != nil) || (sample.sresp != nil && err != nil) {
+			t.Error("Failed to submit file for vmray: ", err.Error())
 			return
 		}
 
@@ -224,7 +223,7 @@ func TestVmraySampleFileInfo(t *testing.T) {
 	}
 
 	for _, sample := range sampleTable {
-		vmrayEndpointMap["/sample"+"/"+sample.sampleID] = vmraySampleFileInfo
+		vmrayEndpointMap["/sample/"+sample.sampleID] = vmraySampleFileInfo
 		resp, err := sample.vr.GetSampleFileInfo(sample.sampleID)
 
 		if err != nil {
@@ -287,7 +286,7 @@ func TestVmraySubmissionStatus(t *testing.T) {
 	}
 
 	for _, sample := range sampleTable {
-		vmrayEndpointMap["/submission"+"/"+sample.submissionID] = vmraySubmissionStatus
+		vmrayEndpointMap["/submission/"+sample.submissionID] = vmraySubmissionStatus
 		resp, err := sample.vr.GetSubmissionStatus(sample.submissionID)
 
 		if err != nil {

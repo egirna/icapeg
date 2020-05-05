@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"icapeg/dtos"
 	"icapeg/utils"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -133,7 +134,7 @@ func getVirusTotalMockServer() *httptest.Server {
 
 			if err := r.ParseMultipartForm(1024); err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(`{"message":"Somethign went wrong"}`))
+				w.Write([]byte(`{"message":"Something went wrong"}`))
 				return
 			}
 
@@ -294,7 +295,7 @@ func getVmrayMockServer() *httptest.Server {
 			}
 
 			if r.MultipartForm.File["sample_file"] != nil {
-				if r.MultipartForm.File["sample_file"][0].Filename == "" {
+				if r.MultipartForm.File["sample_file"][0].Filename == "" || r.MultipartForm.File["sample_file"][0].Size < 1 {
 					w.WriteHeader(http.StatusBadRequest)
 					w.Write([]byte(`{
 													"error_msg": "Invalid file parameter \"sample_file\". It seems the way you pass the data is incorrect",
@@ -404,4 +405,125 @@ func getVmrayMockServer() *httptest.Server {
 		return
 	}))
 
+}
+
+func getMetaDefenderMockServer() *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Content-type", "application/json")
+
+		urlStr := r.URL.EscapedPath()
+
+		if _, exists := metadefenderEndpointMap[urlStr]; !exists {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte(`{"message":"Route not found"}`))
+			return
+		}
+
+		apikey := r.Header.Get("Apikey")
+
+		if apikey == "" {
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte(`{
+											    "error": {
+											        "code": 401001,
+											        "messages": [
+											            "Authentication strategy is invalid"
+											        ]
+											    }
+											}`))
+			return
+		}
+
+		var jsonRep []byte
+		var err error
+		endpoint := metadefenderEndpointMap[urlStr]
+
+		if endpoint == metadefenderScanFile {
+
+			if r.Method != http.MethodPost {
+				w.WriteHeader(http.StatusNotFound)
+				w.Write([]byte(`{
+												    "error": {
+												        "code": 404000,
+												        "messages": [
+												            "Endpoint not found"
+												        ]
+												    }
+												}`))
+				return
+			}
+
+			data, _ := ioutil.ReadAll(r.Body)
+			r.Body.Close()
+
+			if len(data) < 1 {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte(`{
+											    "error": {
+											        "code": 400145,
+											        "messages": [
+											            "Request body is empty. Please send a binary file."
+											        ]
+											    }
+											}`))
+				return
+			}
+
+			mresp := dtos.MetaDefenderScanFileResponse{
+				DataID: "bzIwMDUwNW9Nb2lxOWktcHZkUXhpVVcyS05W",
+			}
+
+			jsonRep, err = json.Marshal(mresp)
+
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(`{"message":"Somethign went wrong"}`))
+				return
+			}
+
+		}
+
+		if endpoint == metadefenderReportFile {
+			if r.Method != http.MethodGet {
+				w.WriteHeader(http.StatusNotFound)
+				w.Write([]byte(`{
+												    "error": {
+												        "code": 404000,
+												        "messages": [
+												            "Endpoint not found"
+												        ]
+												    }
+												}`))
+				return
+			}
+
+			words := strings.Split(r.URL.EscapedPath(), "/")
+
+			dataID := words[len(words)-1]
+
+			mresp := dtos.MetaDefenderReportResponse{
+				ScanResults: dtos.MetaDefenderScanResults{
+					TotalAvs:           38,
+					TotalDetectedAvs:   1,
+					ProgressPercentage: 100,
+				},
+			}
+
+			if dataID == "4321abcd" {
+				mresp.ScanResults.TotalDetectedAvs = 33
+			}
+
+			jsonRep, err = json.Marshal(mresp)
+
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(`{"message":"Somethign went wrong"}`))
+				return
+			}
+
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Write(jsonRep)
+	}))
 }
