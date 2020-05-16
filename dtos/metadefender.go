@@ -24,67 +24,72 @@ type (
 		ScanResultI int    `json:"scan_result_i"`
 		ThreatFound string `json:"threat_found"`
 	}
+
+	// MetaDefenderScanDetails represents the scan_details field of the MetaDefender report response
+	MetaDefenderScanDetails struct {
+		LavaSoft         MDScan `json:"Lavasoft"`
+		STOPzilla        MDScan `json:"STOPzilla"`
+		Zillya           MDScan `json:"Zillya!"`
+		VirusBlokAda     MDScan `json:"VirusBlokAda"`
+		TrendMicro       MDScan `json:"TrendMicro"`
+		SuperAntiSpyware MDScan `json:"SUPERAntiSpyware"`
+		NProtect         MDScan `json:"nProtect"`
+		NANOAV           MDScan `json:"NANOAV"`
+		FSecure          MDScan `json:"F-secure"`
+		Eset             MDScan `json:"ESET"`
+		BitDefender      MDScan `json:"BitDefender"`
+		Baidu            MDScan `json:"Baidu"`
+		Ahnlab           MDScan `json:"Ahnlab"`
+		AegisLab         MDScan `json:"AegisLab"`
+		Zoner            MDScan `json:"Zoner"`
+		ThreatTrack      MDScan `json:"ThreatTrack"`
+		Sophos           MDScan `json:"Sophos"`
+		Preventon        MDScan `json:"Preventon"`
+		Mcafee           MDScan `json:"McAfee"`
+		K7               MDScan `json:"K7"`
+		Jiangmin         MDScan `json:"Jiangmin"`
+		Hauri            MDScan `json:"Hauri"`
+		Fprot            MDScan `json:"F-prot"`
+		Fortinet         MDScan `json:"Fortinet"`
+		Filseclab        MDScan `json:"Filseclab"`
+		Emsisoft         MDScan `json:"Emsisoft"`
+		ClamAV           MDScan `json:"ClamAV"`
+		ByteHero         MDScan `json:"ByteHero"`
+		Avira            MDScan `json:"Avira"`
+		AVG              MDScan `json:"AVG"`
+		Agnitum          MDScan `json:"Agnitum"`
+		Ikarus           MDScan `json:"Ikarus"`
+		Cyren            MDScan `json:"Cyren"`
+		MicrosoftSE      MDScan `json:"Microsoft Security Essentials"`
+		QuickHeal        MDScan `json:"Quick Heal"`
+		TotalDefense     MDScan `json:"Total Defense"`
+		TrendMicroHC     MDScan `json:"TrendMicro House Call"`
+		XvirusPG         MDScan `json:"Xvirus Personal Guard"`
+		DrWebGateway     MDScan `json:"Dr.Web Gateway"`
+		VirITeXplorer    MDScan `json:"Vir.IT eXplorer"`
+	}
+
+	// MetaDefenderScanResults represents the scan_results field of the metadefender report reponse
+	MetaDefenderScanResults struct {
+		ScanDetails        MetaDefenderScanDetails `json:"scan_details"`
+		RescanAvailable    bool                    `json:"rescan_available"`
+		ScanAllResultI     int                     `json:"scan_all_result_i"`
+		StartTime          string                  `json:"start_time"`
+		TotalTime          int64                   `json:"total_time"`
+		TotalAvs           int                     `json:"total_avs"`
+		TotalDetectedAvs   int                     `json:"total_detected_avs"`
+		ProgressPercentage int                     `json:"progress_percentage"`
+		ScanAllRes         string                  `json:"scan_all_result_a"`
+	}
 	// MetaDefenderReportResponse represents the report response payload of the MetaDefender service
 	MetaDefenderReportResponse struct {
-		DataID      string `json:"data_id"`
-		Status      string `json:"status"`
-		InQueue     string `json:"in_queue"`
-		LastUpdated string `json:"last_updated"`
-		FileID      string `json:"file_id"`
-		ScanResults struct {
-			ScanDetails struct {
-				LavaSoft         MDScan `json:"Lavasoft"`
-				STOPzilla        MDScan `json:"STOPzilla"`
-				Zillya           MDScan `json:"Zillya!"`
-				VirusBlokAda     MDScan `json:"VirusBlokAda"`
-				TrendMicro       MDScan `json:"TrendMicro"`
-				SuperAntiSpyware MDScan `json:"SUPERAntiSpyware"`
-				NProtect         MDScan `json:"nProtect"`
-				NANOAV           MDScan `json:"NANOAV"`
-				FSecure          MDScan `json:"F-secure"`
-				Eset             MDScan `json:"ESET"`
-				BitDefender      MDScan `json:"BitDefender"`
-				Baidu            MDScan `json:"Baidu"`
-				Ahnlab           MDScan `json:"Ahnlab"`
-				AegisLab         MDScan `json:"AegisLab"`
-				Zoner            MDScan `json:"Zoner"`
-				ThreatTrack      MDScan `json:"ThreatTrack"`
-				Sophos           MDScan `json:"Sophos"`
-				Preventon        MDScan `json:"Preventon"`
-				Mcafee           MDScan `json:"McAfee"`
-				K7               MDScan `json:"K7"`
-				Jiangmin         MDScan `json:"Jiangmin"`
-				Hauri            MDScan `json:"Hauri"`
-				Fprot            MDScan `json:"F-prot"`
-				Fortinet         MDScan `json:"Fortinet"`
-				Filseclab        MDScan `json:"Filseclab"`
-				Emsisoft         MDScan `json:"Emsisoft"`
-				ClamAV           MDScan `json:"ClamAV"`
-				ByteHero         MDScan `json:"ByteHero"`
-				Avira            MDScan `json:"Avira"`
-				AVG              MDScan `json:"AVG"`
-				Agnitum          MDScan `json:"Agnitum"`
-				Ikarus           MDScan `json:"Ikarus"`
-				Cyren            MDScan `json:"Cyren"`
-				MicrosoftSE      MDScan `json:"Microsoft Security Essentials"`
-				QuickHeal        MDScan `json:"Quick Heal"`
-				TotalDefense     MDScan `json:"Total Defense"`
-				TrendMicroHC     MDScan `json:"TrendMicro House Call"`
-				XvirusPG         MDScan `json:"Xvirus Personal Guard"`
-				DrWebGateway     MDScan `json:"Dr.Web Gateway"`
-				VirITeXplorer    MDScan `json:"Vir.IT eXplorer"`
-			} `json:"scan_details"`
-			RescanAvailable    bool   `json:"rescan_available"`
-			ScanAllResultI     int    `json:"scan_all_result_i"`
-			StartTime          string `json:"start_time"`
-			TotalTime          int64  `json:"total_time"`
-			TotalAvs           int    `json:"total_avs"`
-			TotalDetectedAvs   int    `json:"total_detected_avs"`
-			ProgressPercentage int    `json:"progress_percentage"`
-			ScanAllRes         string `json:"scan_all_result_a"`
-		} `json:"scan_results"`
-
-		FileInfo struct {
+		DataID      string                  `json:"data_id"`
+		Status      string                  `json:"status"`
+		InQueue     string                  `json:"in_queue"`
+		LastUpdated string                  `json:"last_updated"`
+		FileID      string                  `json:"file_id"`
+		ScanResults MetaDefenderScanResults `json:"scan_results"`
+		FileInfo    struct {
 			FileSize        int64  `json:"file_size"`
 			UploadTimeStamp string `json:"upload_timestamp"`
 			MD5             string `json:"md5"`

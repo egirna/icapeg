@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"icapeg/dtos"
 	"icapeg/utils"
-	"reflect"
-
-	"github.com/spf13/viper"
 )
 
 // the sample severity constants
@@ -28,29 +25,17 @@ func TransformMetaDefenderToSubmitResponse(sr *dtos.MetaDefenderScanFileResponse
 }
 
 // TransformMetaDefenderToSampleInfo transforms a metadefender report response to generic sample info response
-func TransformMetaDefenderToSampleInfo(vr *dtos.MetaDefenderReportResponse, fmi dtos.FileMetaInfo) *dtos.SampleInfo {
-
-	v := reflect.ValueOf(vr.ScanResults.ScanDetails)
-	failThreshold := viper.GetInt("metadefender.fail_threshold")
-
-	failCount := 0
+func TransformMetaDefenderToSampleInfo(mr *dtos.MetaDefenderReportResponse, fmi dtos.FileMetaInfo, failThreshold int) *dtos.SampleInfo {
 
 	svrty := MetaDefenderSampleSeverityOk
-	mtiScore := fmt.Sprintf("%d/%d", vr.ScanResults.TotalAvs-vr.ScanResults.TotalDetectedAvs, vr.ScanResults.TotalAvs)
+	mtiScore := fmt.Sprintf("%d/%d", mr.ScanResults.TotalDetectedAvs, mr.ScanResults.TotalAvs)
 
-	for i := 0; i < v.NumField(); i++ {
-		scnr := v.Field(i).Interface().(dtos.MDScan)
-		if scnr.ThreatFound != "" {
-			failCount++
-		}
-		if failCount > failThreshold {
-			svrty = MetaDefenderSampleSeverityMalicious
-			break
-		}
+	if mr.ScanResults.TotalDetectedAvs > failThreshold {
+		svrty = MetaDefenderSampleSeverityMalicious
 	}
 
 	submissionFinished := true
-	if vr.ScanResults.ProgressPercentage < 100 {
+	if mr.ScanResults.ProgressPercentage < 100 {
 		submissionFinished = false
 	}
 
