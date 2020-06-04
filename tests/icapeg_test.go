@@ -254,6 +254,10 @@ func getThirdPartyServers() []*httptest.Server {
 		tss = append(tss, getVmrayMockServer())
 	}
 
+	if respmodService == serviceMetadefender || reqmodService == serviceMetadefender {
+		tss = append(tss, getMetaDefenderMockServer())
+	}
+
 	return tss
 
 }
