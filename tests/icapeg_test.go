@@ -250,6 +250,10 @@ func getThirdPartyServers() []*httptest.Server {
 		tss = append(tss, getVirusTotalMockServer())
 	}
 
+	if respmodService == serviceVmray || reqmodService == serviceVmray {
+		tss = append(tss, getVmrayMockServer())
+	}
+
 	return tss
 
 }
