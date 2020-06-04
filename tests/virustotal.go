@@ -7,8 +7,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-
-	"github.com/spf13/viper"
 )
 
 const (
@@ -24,10 +22,10 @@ func getVirusTotalMockServer() *httptest.Server {
 	ts := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		virustotalEndpointMap := map[string]string{
-			viper.GetString("virustotal.file_scan_endpoint"):   virustotalFileScan,
-			viper.GetString("virustotal.file_report_endpoint"): virustotalFileReport,
-			viper.GetString("virustotal.url_scan_endpoint"):    virustotalURLScan,
-			viper.GetString("virustotal.url_report_endpoint"):  virustotalURReport,
+			"/file/scan":   virustotalFileScan,
+			"/file/report": virustotalFileReport,
+			"/url/scan":    virustotalURLScan,
+			"/url/report":  virustotalURReport,
 		}
 
 		w.Header().Add("Content-type", "application/json")
@@ -43,6 +41,7 @@ func getVirusTotalMockServer() *httptest.Server {
 		var jsonRep []byte
 		var err error
 		endpoint := virustotalEndpointMap[urlStr]
+		goodResource := "abcd1345"
 
 		if endpoint == virustotalFileScan || endpoint == virustotalURLScan {
 
@@ -73,8 +72,20 @@ func getVirusTotalMockServer() *httptest.Server {
 				VerboseMsg:   "Scan request successfully queued, come back later for the report",
 			}
 
+			_, mph, _ := r.FormFile("file")
+			if mph != nil {
+				if mph.Filename != "eicar.com" {
+					vresp.Resource = goodResource
+				}
+			}
+
 			if endpoint == virustotalURLScan {
-				vresp.Resource = "https://www.eicar.org/download/eicar.com"
+				rscrc, exists := r.MultipartForm.Value["url"]
+				if !exists {
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				vresp.Resource = rscrc[0]
 				vresp.Permalink = "https://www.virustotal.com/url/b0088072c305c3ded6bedd90a4cfdd0e6a414116f7e4934622d7493ee0063d58/analysis/1588518740/"
 			}
 
@@ -155,7 +166,7 @@ func getVirusTotalMockServer() *httptest.Server {
 				vresp.Permalink = "https://www.virustotal.com/url/b0088072c305c3ded6bedd90a4cfdd0e6a414116f7e4934622d7493ee0063d58/analysis/1588518740/"
 			}
 
-			if resource == "abcd12345" {
+			if resource == goodFileURL || resource == goodResource {
 				vresp.Positives = 1
 			}
 

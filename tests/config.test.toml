@@ -19,7 +19,7 @@ file_scan_endpoint = "/file/scan"
 url_scan_endpoint = "/url/scan"
 file_report_endpoint = "/file/report?apikey=%s&resource=%s"
 url_report_endpoint = "/url/report?apikey=%s&resource=%s"
-api_key = "<Your virustotal API KEY here>"
+api_key = "12345abcd"
 timeout  = 10 #seconds
 fail_threshold = 2
 status_check_interval = 2 #seconds, the time interval after which the submission status check will be called

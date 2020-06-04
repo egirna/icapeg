@@ -14,6 +14,12 @@ import (
 	"github.com/egirna/icap"
 )
 
+const (
+	badFileURL  = "http://www.eicar.org/download/eicar.com"
+	goodFileURL = "https://file-examples.com/wp-content/uploads/2017/10/file-example_PDF_1MB.pdf"
+	// goodFileURL = "http://localhost:8000/sample.pdf"
+)
+
 // startTestServer starts a test server
 func startTestServer(stop chan os.Signal) error {
 
