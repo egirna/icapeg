@@ -11,6 +11,13 @@ process_extensions = ["txt" , "pdf" , "dmg" , "exe" , "com", "rar" , "unknown"] 
 preview_bytes = "4096" #bytes
 propagate_error = true
 
+[remote_icap]
+enabled = false
+base_url = "icap://localhost:1345"
+reqmod_endpoint = "/reqmod-icapeg"
+respmod_endpoint = "/respmod-icapeg"
+options_endpoint = ""
+timeout = 10# seconds
 
 
 [virustotal]

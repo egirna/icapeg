@@ -43,6 +43,8 @@ func Init() {
 		PropagateError:    viper.GetBool("app.propagate_error"),
 	}
 
+	LoadRemoteICAP()
+
 }
 
 // InitTestConfig initializes the app with the test config file (for integration test)

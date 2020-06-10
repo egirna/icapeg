@@ -285,17 +285,68 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 	h.Set("Service", "Egirna ICAP-EG")
 
 	appCfg := config.App()
+	riCfg := config.RemoteICAP()
+	var riSvc *service.RemoteICAPService
+
+	if riCfg.Enabled {
+		riSvc = &service.RemoteICAPService{
+			URL:     riCfg.BaseURL,
+			Timeout: riCfg.Timeout,
+		}
+	}
 
 	log.Printf("Request received---> METHOD:%s URL:%s\n", req.Method, req.RawURL)
 
 	switch req.Method {
 	case utils.ICAPModeOptions:
+
+		if riSvc != nil && riCfg.ReqmodEndpoint != "" {
+			riSvc.Endpoint = riCfg.ReqmodEndpoint
+			if riCfg.OptionsEndpoint != "" {
+				riSvc.Endpoint = riCfg.OptionsEndpoint
+			}
+
+			resp, err := service.RemoteICAPOptions(*riSvc)
+
+			if err != nil {
+				log.Printf("Failed to make OPTIONS call of remote icap server: %s\n", err.Error())
+				w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
+				return
+			}
+
+			for header, values := range resp.Header {
+				for _, value := range values {
+					h.Set(header, value)
+				}
+			}
+
+			w.WriteHeader(resp.StatusCode, nil, false)
+			return
+
+		}
+
 		h.Set("Methods", utils.ICAPModeReq)
 		h.Set("Allow", "204")
 		h.Set("Preview", "0")
 		h.Set("Transfer-Preview", utils.Any)
 		w.WriteHeader(http.StatusOK, nil, false)
 	case utils.ICAPModeReq:
+
+		if riSvc != nil && riCfg.ReqmodEndpoint != "" {
+			riSvc.Endpoint = riCfg.ReqmodEndpoint
+			riSvc.HTTPRequest = req.Request
+
+			resp, err := service.RemoteICAPReqmod(*riSvc)
+
+			if err != nil {
+				log.Printf("Failed to make OPTIONS call of remote icap server: %s\n", err.Error())
+				w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
+				return
+			}
+
+			w.WriteHeader(utils.IfPropagateError(resp.StatusCode, http.StatusNoContent), nil, false)
+			return
+		}
 
 		scannerName := strings.ToLower(appCfg.ReqScannerVendor)
 
