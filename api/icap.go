@@ -284,6 +284,8 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 	h.Set("ISTag", utils.ISTag)
 	h.Set("Service", "Egirna ICAP-EG")
 
+	log.Printf("Request received---> METHOD:%s URL:%s\n", req.Method, req.RawURL)
+
 	appCfg := config.App()
 	riCfg := config.RemoteICAP()
 	var riSvc *service.RemoteICAPService
@@ -293,14 +295,15 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 			URL:     riCfg.BaseURL,
 			Timeout: riCfg.Timeout,
 		}
-	}
+		log.Println("Passing request to the remote ICAP server...")
 
-	log.Printf("Request received---> METHOD:%s URL:%s\n", req.Method, req.RawURL)
+	}
 
 	switch req.Method {
 	case utils.ICAPModeOptions:
 
 		if riSvc != nil && riCfg.ReqmodEndpoint != "" {
+
 			riSvc.Endpoint = riCfg.ReqmodEndpoint
 			if riCfg.OptionsEndpoint != "" {
 				riSvc.Endpoint = riCfg.OptionsEndpoint
@@ -313,6 +316,8 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 				w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 				return
 			}
+
+			log.Println("Received response from the remote ICAP server...")
 
 			for header, values := range resp.Header {
 				for _, value := range values {
@@ -344,7 +349,26 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 				return
 			}
 
-			w.WriteHeader(utils.IfPropagateError(resp.StatusCode, http.StatusNoContent), nil, false)
+			log.Println("Received response from the remote ICAP server...")
+
+			if resp.StatusCode == http.StatusOK {
+
+				if resp.ContentResponse != nil && resp.ContentResponse.Body != nil {
+					w.WriteHeader(resp.StatusCode, resp.ContentResponse, true)
+
+					bdyByte, err := ioutil.ReadAll(resp.ContentResponse.Body)
+					if err != nil {
+						log.Println("Failed to read body from the remote icap response: ", err.Error())
+						w.WriteHeader(utils.IfPropagateError(http.StatusInternalServerError, http.StatusNoContent), nil, false)
+						return
+					}
+
+					w.Write(bdyByte)
+					return
+				}
+			}
+
+			w.WriteHeader(resp.StatusCode, nil, false)
 			return
 		}
 

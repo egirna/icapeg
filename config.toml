@@ -13,7 +13,7 @@ propagate_error = true
 
 [remote_icap]
 enabled = false
-base_url = "icap://localhost:1345"
+base_url = "icap://127.0.0.1:1345"
 reqmod_endpoint = "/reqmod-icapeg"
 respmod_endpoint = "/respmod-icapeg"
 options_endpoint = ""
