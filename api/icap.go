@@ -25,18 +25,106 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 	h.Set("ISTag", utils.ISTag)
 	h.Set("Service", "Egirna ICAP-EG")
 
-	appCfg := config.App()
-
 	log.Printf("Request received---> METHOD:%s URL:%s\n", req.Method, req.RawURL)
+
+	appCfg := config.App()
+	riCfg := config.RemoteICAP()
+	var riSvc *service.RemoteICAPService
+
+	if riCfg.Enabled {
+		riSvc = &service.RemoteICAPService{
+			URL:     riCfg.BaseURL,
+			Timeout: riCfg.Timeout,
+		}
+		log.Println("Passing request to the remote ICAP server...")
+
+	}
 
 	switch req.Method {
 	case utils.ICAPModeOptions:
+
+		if riSvc != nil && riCfg.RespmodEndpoint != "" {
+
+			riSvc.Endpoint = riCfg.RespmodEndpoint
+			if riCfg.OptionsEndpoint != "" {
+				riSvc.Endpoint = riCfg.OptionsEndpoint
+			}
+
+			resp, err := service.RemoteICAPOptions(*riSvc)
+
+			if err != nil {
+				log.Printf("Failed to make OPTIONS call of remote icap server: %s\n", err.Error())
+				w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
+				return
+			}
+
+			log.Printf("Received response from the remote ICAP server wwith status code: %d...\n", resp.StatusCode)
+
+			for header, values := range resp.Header {
+				if header == "Encapsulated" {
+					continue
+				}
+				for _, value := range values {
+					h.Set(header, value)
+				}
+			}
+
+			w.WriteHeader(resp.StatusCode, nil, false)
+			return
+
+		}
+
 		h.Set("Methods", utils.ICAPModeResp)
 		h.Set("Allow", "204")
 		h.Set("Preview", appCfg.PreviewBytes)
 		h.Set("Transfer-Preview", utils.Any)
 		w.WriteHeader(http.StatusOK, nil, false)
 	case utils.ICAPModeResp:
+
+		if riSvc != nil && riCfg.RespmodEndpoint != "" {
+			riSvc.Endpoint = riCfg.RespmodEndpoint
+			riSvc.HTTPRequest = req.Request
+			riSvc.HTTPResponse = req.Response
+
+			resp, err := service.RemoteICAPRespmod(*riSvc)
+
+			if err != nil {
+				log.Printf("Failed to make RESPMOD call to remote icap server: %s\n", err.Error())
+				w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
+				return
+			}
+
+			log.Printf("Received response from the remote ICAP server with status code: %d...\n", resp.StatusCode)
+
+			if resp.StatusCode == http.StatusOK { // NOTE: this is done to render the error html page, not sure this is the proper way
+
+				if resp.ContentResponse != nil && resp.ContentResponse.Body != nil {
+
+					bdyByte, err := ioutil.ReadAll(resp.ContentResponse.Body)
+					if err != nil && err != io.ErrUnexpectedEOF {
+						log.Println("Failed to read body from the remote icap response: ", err.Error())
+						w.WriteHeader(utils.IfPropagateError(http.StatusInternalServerError, http.StatusNoContent), nil, false)
+						return
+					}
+
+					w.WriteHeader(resp.StatusCode, resp.ContentResponse, true)
+
+					w.Write(bdyByte)
+					return
+				}
+			}
+
+			// var httpMsg interface{}
+			//
+			// if resp.ContentRequest != nil {
+			// 	httpMsg = resp.ContentRequest
+			// } else {
+			// 	httpMsg = nil
+			// }
+			spew.Dump("Eitaaaaaiii", resp.StatusCode)
+			w.WriteHeader(http.StatusNoContent, nil, false)
+			return
+		}
 
 		scannerName := strings.ToLower(appCfg.RespScannerVendor) // the name of the scanner vendor
 
@@ -267,6 +355,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 		}
 
 		log.Printf("The file %s is good to go\n", filename)
+		spew.Dump("heheh headerrsss", w.Header())
 		w.WriteHeader(http.StatusNoContent, nil, false) // all ok, show the contents as it is
 
 	case "ERRDUMMY":
@@ -317,9 +406,12 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 				return
 			}
 
-			log.Println("Received response from the remote ICAP server...")
+			log.Printf("Received response from the remote ICAP server with status code: %d...\n", resp.StatusCode)
 
 			for header, values := range resp.Header {
+				if header == "Encapsulated" {
+					continue
+				}
 				for _, value := range values {
 					h.Set(header, value)
 				}
@@ -344,31 +436,40 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 			resp, err := service.RemoteICAPReqmod(*riSvc)
 
 			if err != nil {
-				log.Printf("Failed to make OPTIONS call of remote icap server: %s\n", err.Error())
+				log.Printf("Failed to make REQMOD call to remote icap server: %s\n", err.Error())
 				w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 				return
 			}
 
-			log.Println("Received response from the remote ICAP server...")
+			log.Printf("Received response from the remote ICAP server with status code: %d...\n", resp.StatusCode)
 
 			if resp.StatusCode == http.StatusOK {
 
 				if resp.ContentResponse != nil && resp.ContentResponse.Body != nil {
-					w.WriteHeader(resp.StatusCode, resp.ContentResponse, true)
 
 					bdyByte, err := ioutil.ReadAll(resp.ContentResponse.Body)
-					if err != nil {
+					if err != nil && err != io.ErrUnexpectedEOF {
 						log.Println("Failed to read body from the remote icap response: ", err.Error())
 						w.WriteHeader(utils.IfPropagateError(http.StatusInternalServerError, http.StatusNoContent), nil, false)
 						return
 					}
+
+					w.WriteHeader(resp.StatusCode, resp.ContentResponse, true)
 
 					w.Write(bdyByte)
 					return
 				}
 			}
 
-			w.WriteHeader(resp.StatusCode, nil, false)
+			var httpMsg interface{}
+
+			if resp.ContentRequest != nil {
+				httpMsg = resp.ContentRequest
+			} else {
+				httpMsg = nil
+			}
+
+			w.WriteHeader(resp.StatusCode, httpMsg, false)
 			return
 		}
 
