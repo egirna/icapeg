@@ -83,45 +83,102 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 
 		if riSvc != nil && riCfg.RespmodEndpoint != "" {
 			riSvc.Endpoint = riCfg.RespmodEndpoint
-			riSvc.HTTPRequest = req.Request
-			riSvc.HTTPResponse = req.Response
+			// riSvc.HTTPRequest = req.Request
+			// riSvc.HTTPResponse = req.Response
 
-			resp, err := service.RemoteICAPRespmod(*riSvc)
+			// resp, err := service.RemoteICAPRespmod(*riSvc)
+			//
+			// if err != nil {
+			// 	log.Printf("Failed to make RESPMOD call to remote icap server: %s\n", err.Error())
+			// 	w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
+			// 	return
+			// }
+			//
+			// log.Printf("Received response from the remote ICAP server with status code: %d...\n", resp.StatusCode)
+			//
+			// if resp.StatusCode == http.StatusOK { // NOTE: this is done to render the error html page, not sure this is the proper way
+			//
+			// 	if resp.ContentResponse != nil && resp.ContentResponse.Body != nil {
+			//
+			// 		bdyByte, err := ioutil.ReadAll(resp.ContentResponse.Body)
+			// 		if err != nil && err != io.ErrUnexpectedEOF {
+			// 			log.Println("Failed to read body from the remote icap response: ", err.Error())
+			// 			w.WriteHeader(utils.IfPropagateError(http.StatusInternalServerError, http.StatusNoContent), nil, false)
+			// 			return
+			// 		}
+			//
+			// 		w.WriteHeader(resp.StatusCode, resp.ContentResponse, true)
+			//
+			// 		w.Write(bdyByte)
+			// 		return
+			// 	}
+			// }
+			//
+			// // var httpMsg interface{}
+			// //
+			// // if resp.ContentRequest != nil {
+			// // 	httpMsg = resp.ContentRequest
+			// // } else {
+			// // 	httpMsg = nil
+			// // }
+			// fmt.Println("fldjshfkdshfkdshfkdshfdsf")
+			// fmt.Println(resp.StatusCode == http.StatusNoContent)
+			// spew.Dump(w.Header())
 
-			if err != nil {
-				log.Printf("Failed to make RESPMOD call to remote icap server: %s\n", err.Error())
-				w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
+			fmt.Println("the preview length")
+			spew.Dump(len(req.Preview))
+
+			ct := utils.GetMimeExtension(req.Preview)
+			spew.Dump(ct)
+
+			fmt.Println("The icap headers before")
+
+			spew.Dump(req.Header)
+
+			fmt.Println("The response headers before:")
+
+			spew.Dump(req.Response.Header)
+
+			buf := &bytes.Buffer{}
+			if _, err := io.Copy(buf, req.Response.Body); err != nil {
+				log.Println("hoho gone gone")
+				w.WriteHeader(utils.IfPropagateError(http.StatusInternalServerError, http.StatusNoContent), nil, false)
 				return
 			}
 
-			log.Printf("Received response from the remote ICAP server with status code: %d...\n", resp.StatusCode)
-
-			if resp.StatusCode == http.StatusOK { // NOTE: this is done to render the error html page, not sure this is the proper way
-
-				if resp.ContentResponse != nil && resp.ContentResponse.Body != nil {
-
-					bdyByte, err := ioutil.ReadAll(resp.ContentResponse.Body)
-					if err != nil && err != io.ErrUnexpectedEOF {
-						log.Println("Failed to read body from the remote icap response: ", err.Error())
-						w.WriteHeader(utils.IfPropagateError(http.StatusInternalServerError, http.StatusNoContent), nil, false)
-						return
-					}
-
-					w.WriteHeader(resp.StatusCode, resp.ContentResponse, true)
-
-					w.Write(bdyByte)
-					return
-				}
-			}
-
-			// var httpMsg interface{}
 			//
-			// if resp.ContentRequest != nil {
-			// 	httpMsg = resp.ContentRequest
-			// } else {
-			// 	httpMsg = nil
+			// fmt.Println("the resp body bytes: ", buf.Len())
+			// copyResp := *req.Response
+			// copyResp.Body = ioutil.NopCloser(buf)
+
+			// if req.Response.Body != nil {
+			// 	spew.Dump("i am iiiinnnnnnn")
+			// 	respBdy, err := ioutil.ReadAll(req.Response.Body)
+			//
+			// 	if err != nil {
+			// 		log.Println("really gone gone")
+			// 		w.WriteHeader(utils.IfPropagateError(http.StatusInternalServerError, http.StatusNoContent), nil, false)
+			// 		return
+			// 	}
+			//
+			// 	copyResp.Body = ioutil.NopCloser(bytes.NewBuffer(respBdy))
+			// 	req.Response.Body = ioutil.NopCloser(bytes.NewBuffer(respBdy))
 			// }
-			spew.Dump("Eitaaaaaiii", resp.StatusCode)
+
+			// _, err := httputil.DumpResponse(&copyResp, true)
+			//
+			// if err != nil {
+			// 	log.Println(err.Error())
+			// 	w.WriteHeader(utils.IfPropagateError(http.StatusInternalServerError, http.StatusNoContent), nil, false)
+			// 	return
+			// }
+
+			fmt.Println("The icap header after")
+			spew.Dump(req.Header)
+
+			fmt.Println("The response header after")
+			spew.Dump(req.Response.Header)
+
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
