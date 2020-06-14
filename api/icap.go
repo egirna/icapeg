@@ -81,105 +81,47 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 		w.WriteHeader(http.StatusOK, nil, false)
 	case utils.ICAPModeResp:
 
+		if val, exist := req.Header["Allow"]; !exist || (len(val) > 0 && val[0] != utils.NoModificationStatusCodeStr) { // following RFC3507, if the request has Allow: 204 header, it is to be checked and if it doesn't exists, return the request as it is to the ICAP client, https://tools.ietf.org/html/rfc3507#section-4.6
+			log.Println("Processing not required for this request")
+			w.WriteHeader(http.StatusNoContent, nil, false)
+			return
+		}
+
 		if riSvc != nil && riCfg.RespmodEndpoint != "" {
+
 			riSvc.Endpoint = riCfg.RespmodEndpoint
-			// riSvc.HTTPRequest = req.Request
-			// riSvc.HTTPResponse = req.Response
+			riSvc.HTTPRequest = req.Request
+			riSvc.HTTPResponse = req.Response
 
-			// resp, err := service.RemoteICAPRespmod(*riSvc)
-			//
-			// if err != nil {
-			// 	log.Printf("Failed to make RESPMOD call to remote icap server: %s\n", err.Error())
-			// 	w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
-			// 	return
-			// }
-			//
-			// log.Printf("Received response from the remote ICAP server with status code: %d...\n", resp.StatusCode)
-			//
-			// if resp.StatusCode == http.StatusOK { // NOTE: this is done to render the error html page, not sure this is the proper way
-			//
-			// 	if resp.ContentResponse != nil && resp.ContentResponse.Body != nil {
-			//
-			// 		bdyByte, err := ioutil.ReadAll(resp.ContentResponse.Body)
-			// 		if err != nil && err != io.ErrUnexpectedEOF {
-			// 			log.Println("Failed to read body from the remote icap response: ", err.Error())
-			// 			w.WriteHeader(utils.IfPropagateError(http.StatusInternalServerError, http.StatusNoContent), nil, false)
-			// 			return
-			// 		}
-			//
-			// 		w.WriteHeader(resp.StatusCode, resp.ContentResponse, true)
-			//
-			// 		w.Write(bdyByte)
-			// 		return
-			// 	}
-			// }
-			//
-			// // var httpMsg interface{}
-			// //
-			// // if resp.ContentRequest != nil {
-			// // 	httpMsg = resp.ContentRequest
-			// // } else {
-			// // 	httpMsg = nil
-			// // }
-			// fmt.Println("fldjshfkdshfkdshfkdshfdsf")
-			// fmt.Println(resp.StatusCode == http.StatusNoContent)
-			// spew.Dump(w.Header())
+			resp, err := service.RemoteICAPRespmod(*riSvc)
 
-			fmt.Println("the preview length")
-			spew.Dump(len(req.Preview))
-
-			ct := utils.GetMimeExtension(req.Preview)
-			spew.Dump(ct)
-
-			fmt.Println("The icap headers before")
-
-			spew.Dump(req.Header)
-
-			fmt.Println("The response headers before:")
-
-			spew.Dump(req.Response.Header)
-
-			buf := &bytes.Buffer{}
-			if _, err := io.Copy(buf, req.Response.Body); err != nil {
-				log.Println("hoho gone gone")
-				w.WriteHeader(utils.IfPropagateError(http.StatusInternalServerError, http.StatusNoContent), nil, false)
+			if err != nil {
+				log.Printf("Failed to make RESPMOD call to remote icap server: %s\n", err.Error())
+				w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 				return
 			}
 
-			//
-			// fmt.Println("the resp body bytes: ", buf.Len())
-			// copyResp := *req.Response
-			// copyResp.Body = ioutil.NopCloser(buf)
+			log.Printf("Received response from the remote ICAP server with status code: %d...\n", resp.StatusCode)
 
-			// if req.Response.Body != nil {
-			// 	spew.Dump("i am iiiinnnnnnn")
-			// 	respBdy, err := ioutil.ReadAll(req.Response.Body)
-			//
-			// 	if err != nil {
-			// 		log.Println("really gone gone")
-			// 		w.WriteHeader(utils.IfPropagateError(http.StatusInternalServerError, http.StatusNoContent), nil, false)
-			// 		return
-			// 	}
-			//
-			// 	copyResp.Body = ioutil.NopCloser(bytes.NewBuffer(respBdy))
-			// 	req.Response.Body = ioutil.NopCloser(bytes.NewBuffer(respBdy))
-			// }
+			if resp.StatusCode == http.StatusOK { // NOTE: this is done to render the error html page, not sure this is the proper way
 
-			// _, err := httputil.DumpResponse(&copyResp, true)
-			//
-			// if err != nil {
-			// 	log.Println(err.Error())
-			// 	w.WriteHeader(utils.IfPropagateError(http.StatusInternalServerError, http.StatusNoContent), nil, false)
-			// 	return
-			// }
+				if resp.ContentResponse != nil && resp.ContentResponse.Body != nil {
 
-			fmt.Println("The icap header after")
-			spew.Dump(req.Header)
+					bdyByte, err := ioutil.ReadAll(resp.ContentResponse.Body)
+					if err != nil && err != io.ErrUnexpectedEOF {
+						log.Println("Failed to read body from the remote icap response: ", err.Error())
+						w.WriteHeader(utils.IfPropagateError(http.StatusInternalServerError, http.StatusNoContent), nil, false)
+						return
+					}
 
-			fmt.Println("The response header after")
-			spew.Dump(req.Response.Header)
+					w.WriteHeader(resp.StatusCode, resp.ContentResponse, true)
 
-			w.WriteHeader(http.StatusNoContent, nil, false)
+					w.Write(bdyByte)
+					return
+				}
+			}
+
+			w.WriteHeader(resp.StatusCode, nil, false)
 			return
 		}
 
@@ -187,12 +129,6 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 
 		if scannerName == "" { // if no scanner name provided, then bypass everything
 			log.Println("No respmod scanner provided...bypassing everything")
-			w.WriteHeader(http.StatusNoContent, nil, false)
-			return
-		}
-
-		if val, exist := req.Header["Allow"]; !exist || (len(val) > 0 && val[0] != "204") { // following RFC3507, if the request has Allow: 204 header, it is to be checked and if it doesn't exists, return the request as it is to the ICAP client, https://tools.ietf.org/html/rfc3507#section-4.6
-			log.Println("Processing not required for this request")
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
@@ -412,7 +348,6 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 		}
 
 		log.Printf("The file %s is good to go\n", filename)
-		spew.Dump("heheh headerrsss", w.Header())
 		w.WriteHeader(http.StatusNoContent, nil, false) // all ok, show the contents as it is
 
 	case "ERRDUMMY":

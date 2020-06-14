@@ -9,7 +9,8 @@ const (
 
 // the common constants
 const (
-	ISTag   = "\"ICAPEG\""
-	Unknown = "unknown"
-	Any     = "*"
+	ISTag                       = "\"ICAPEG\""
+	Unknown                     = "unknown"
+	Any                         = "*"
+	NoModificationStatusCodeStr = "204"
 )
