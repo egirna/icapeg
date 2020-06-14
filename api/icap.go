@@ -421,9 +421,18 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 		w.WriteHeader(http.StatusOK, nil, false)
 	case utils.ICAPModeReq:
 
+		if val, exist := req.Header["Allow"]; !exist || (len(val) > 0 && val[0] != utils.NoModificationStatusCodeStr) { // following RFC3507, if the request has Allow: 204 header, it is to be checked and if it doesn't exists, return the request as it is to the ICAP client, https://tools.ietf.org/html/rfc3507#section-4.6
+			log.Println("Processing not required for this request")
+			w.WriteHeader(http.StatusNoContent, nil, false)
+			return
+		}
+
 		if riSvc != nil && riCfg.ReqmodEndpoint != "" {
 			riSvc.Endpoint = riCfg.ReqmodEndpoint
 			riSvc.HTTPRequest = req.Request
+
+			spew.Dump(riSvc.HTTPRequest.URL.String())
+			spew.Dump(riSvc.HTTPRequest.URL.EscapedPath)
 
 			resp, err := service.RemoteICAPReqmod(*riSvc)
 
@@ -469,12 +478,6 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 
 		if scannerName == "" {
 			log.Println("No reqmod scanner provided...bypassing everything")
-			w.WriteHeader(http.StatusNoContent, nil, false)
-			return
-		}
-
-		if val, exist := req.Header["Allow"]; !exist || (len(val) > 0 && val[0] != "204") { // following RFC3507, if the request has Allow: 204 header, it is to be checked and if it doesn't exists, return the request as it is to the ICAP client, https://tools.ietf.org/html/rfc3507#section-4.6
-			log.Println("Processing not required for this request")
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
