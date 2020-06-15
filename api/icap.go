@@ -431,8 +431,13 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 			riSvc.Endpoint = riCfg.ReqmodEndpoint
 			riSvc.HTTPRequest = req.Request
 
-			spew.Dump(riSvc.HTTPRequest.URL.String())
-			spew.Dump(riSvc.HTTPRequest.URL.EscapedPath)
+			ext := utils.GetFileExtension(req.Request)
+
+			if ext == "" {
+				log.Println("Processing not required...")
+				w.WriteHeader(http.StatusNoContent, nil, false)
+				return
+			}
 
 			resp, err := service.RemoteICAPReqmod(*riSvc)
 
@@ -462,15 +467,7 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 				}
 			}
 
-			var httpMsg interface{}
-
-			if resp.ContentRequest != nil {
-				httpMsg = resp.ContentRequest
-			} else {
-				httpMsg = nil
-			}
-
-			w.WriteHeader(resp.StatusCode, httpMsg, false)
+			w.WriteHeader(resp.StatusCode, nil, false)
 			return
 		}
 
