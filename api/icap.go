@@ -73,7 +73,6 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			return
 
 		}
-
 		h.Set("Methods", utils.ICAPModeResp)
 		h.Set("Allow", "204")
 		h.Set("Preview", appCfg.PreviewBytes)
@@ -101,6 +100,12 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 				return
 			}
 
+			for header, values := range resp.Header {
+				for _, value := range values {
+					h.Set(header, value)
+				}
+			}
+
 			log.Printf("Received response from the remote ICAP server with status code: %d...\n", resp.StatusCode)
 
 			if resp.StatusCode == http.StatusOK { // NOTE: this is done to render the error html page, not sure this is the proper way
@@ -120,7 +125,6 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 					return
 				}
 			}
-
 			w.WriteHeader(resp.StatusCode, nil, false)
 			return
 		}
@@ -413,7 +417,6 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 			return
 
 		}
-
 		h.Set("Methods", utils.ICAPModeReq)
 		h.Set("Allow", "204")
 		h.Set("Preview", "0")
@@ -445,6 +448,12 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 				log.Printf("Failed to make REQMOD call to remote icap server: %s\n", err.Error())
 				w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 				return
+			}
+
+			for header, values := range resp.Header {
+				for _, value := range values {
+					h.Set(header, value)
+				}
 			}
 
 			log.Printf("Received response from the remote ICAP server with status code: %d...\n", resp.StatusCode)

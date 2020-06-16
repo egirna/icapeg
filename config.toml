@@ -12,12 +12,12 @@ preview_bytes = "4096" #bytes
 propagate_error = true
 
 [remote_icap]
-enabled = false
+enabled = true
 base_url = "icap://127.0.0.1:1345"
 reqmod_endpoint = "/reqmod-icapeg"
 respmod_endpoint = "/respmod-icapeg"
 options_endpoint = ""
-timeout = 50# seconds
+timeout = 50# seconds, the whole allowed life span of an ICAP request
 
 
 [virustotal]
