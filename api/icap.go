@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"strings"
 	"time"
@@ -107,33 +108,23 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			spew.Dump(req.Request)
 			spew.Dump(req.Response)
 
-			fmt.Println("Origin server request path:")
-			fmt.Println(req.Request.RequestURI)
-
-			fmt.Println("Origin server request host:")
-			fmt.Println(req.Request.Host)
-
-			fmt.Println("Origin server request url for debugging: ")
-			spew.Dump(*req.Request.URL)
-
-			fmt.Println("scheme: ", req.Request.URL.Scheme)
-			fmt.Println("Host: ", req.Request.URL.Host)
-			fmt.Println("Path: ", req.Request.URL.Path)
-			fmt.Println("RawPath: ", req.Request.URL.RawPath)
-			fmt.Println("RawQuery: ", req.Request.URL.RawQuery)
-
 			if req.Request.URL.Scheme == "" {
 				fmt.Println("Scheme not found, changing the url")
 				u, _ := url.Parse("http://" + req.Request.Host + req.Request.URL.Path)
 				req.Request.URL = u
 			}
 
-			fmt.Println("URL after changing...")
-			fmt.Println("scheme: ", req.Request.URL.Scheme)
-			fmt.Println("Host: ", req.Request.URL.Host)
-			fmt.Println("Path: ", req.Request.URL.Path)
-			fmt.Println("RawPath: ", req.Request.URL.RawPath)
-			fmt.Println("RawQuery: ", req.Request.URL.RawQuery)
+			b, err := httputil.DumpResponse(req.Response, true)
+
+			if err != nil {
+				log.Println("problem duming the resonse: ", err.Error())
+			}
+
+			fmt.Println("The response packet: ")
+			fmt.Println(string(b))
+
+			fmt.Println("The raw version: ")
+			spew.Dump(string(b))
 
 			resp, err := service.RemoteICAPRespmod(*riSvc)
 
