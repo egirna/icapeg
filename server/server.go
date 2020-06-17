@@ -24,7 +24,7 @@ func StartServer() error {
 
 	http.HandleFunc("/", api.ErrorPageHanlder)
 
-	log.Println("Starting the ICAP server...")
+	log.Println("Starting the ICAP server in DEBUG MODE...")
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGKILL, syscall.SIGINT, syscall.SIGQUIT)
