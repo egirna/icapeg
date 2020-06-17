@@ -103,10 +103,6 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			riSvc.HTTPRequest = req.Request
 			riSvc.HTTPResponse = req.Response
 
-			fmt.Println("Origin server request and response for debugging: ")
-			spew.Dump(req.Request)
-			spew.Dump(req.Response)
-
 			if req.Request.URL.Scheme == "" {
 				fmt.Println("Scheme not found, changing the url")
 				u, _ := url.Parse("http://" + req.Request.Host + req.Request.URL.Path)
@@ -125,7 +121,14 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			fmt.Println("the raw version")
 			spew.Dump(string(b))
 
-			req.Response.Body = ioutil.NopCloser(bytes.NewBuffer(b))
+			bdyStr := string(b)
+			if len(b) > int(req.Response.ContentLength) {
+				if strings.HasSuffix(bdyStr, "\n\n") {
+					bdyStr = strings.TrimSuffix(bdyStr, "\n\n")
+				}
+			}
+
+			req.Response.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(bdyStr)))
 
 			resp, err := service.RemoteICAPRespmod(*riSvc)
 
