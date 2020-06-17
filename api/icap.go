@@ -99,6 +99,9 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			fmt.Println("Origin server request path:")
 			fmt.Println(req.Request.RequestURI)
 
+			fmt.Println("Origin server request host:")
+			fmt.Println(req.Request.Host)
+
 			fmt.Println("Origin server request url for debugging: ")
 			spew.Dump(*req.Request.URL)
 
