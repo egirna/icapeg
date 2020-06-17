@@ -12,7 +12,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 	"strings"
 	"time"
@@ -114,17 +113,19 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 				req.Request.URL = u
 			}
 
-			b, err := httputil.DumpResponse(req.Response, true)
+			b, err := ioutil.ReadAll(req.Response.Body)
 
 			if err != nil {
-				log.Println("problem duming the resonse: ", err.Error())
+				log.Println("Error reading the body: ", err.Error())
 			}
 
-			fmt.Println("The response packet: ")
+			fmt.Println("The response body")
 			fmt.Println(string(b))
 
-			fmt.Println("The raw version: ")
+			fmt.Println("the raw version")
 			spew.Dump(string(b))
+
+			req.Response.Body = ioutil.NopCloser(bytes.NewBuffer(b))
 
 			resp, err := service.RemoteICAPRespmod(*riSvc)
 
