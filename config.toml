@@ -19,6 +19,14 @@ respmod_endpoint = "/respmod-icapeg"
 options_endpoint = ""
 timeout = 50# seconds, the whole allowed life span of an ICAP request
 
+[shadow_icap]
+enabled = true
+base_url = "icap://10.0.80.40:1344"
+reqmod_endpoint = "/reqmod-icapeg"
+respmod_endpoint = "/respmod"
+options_endpoint = ""
+timeout = 50# seconds, the whole allowed life span of an ICAP request
+
 
 [virustotal]
 base_url = "https://www.virustotal.com/vtapi/v2"
