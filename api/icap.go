@@ -99,6 +99,12 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			fmt.Println("Origin server request url for debugging: ")
 			spew.Dump(*req.Request.URL)
 
+			fmt.Println("scheme: ", req.Request.URL.Scheme)
+			fmt.Println("Host: ", req.Request.URL.Host)
+			fmt.Println("Path: ", req.Request.URL.Path)
+			fmt.Println("RawPath: ", req.Request.URL.RawPath)
+			fmt.Println("RawQuery: ", req.Request.URL.RawQuery)
+
 			resp, err := service.RemoteICAPRespmod(*riSvc)
 
 			if err != nil {
