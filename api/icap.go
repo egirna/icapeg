@@ -115,12 +115,6 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 				log.Println("Error reading the body: ", err.Error())
 			}
 
-			fmt.Println("The response body")
-			fmt.Println(string(b))
-
-			fmt.Println("the raw version")
-			spew.Dump(string(b))
-
 			bdyStr := string(b)
 			if len(b) > int(req.Response.ContentLength) {
 				if strings.HasSuffix(bdyStr, "\n\n") {

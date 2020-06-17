@@ -17,7 +17,7 @@ base_url = "icap://127.0.0.1:1345"
 reqmod_endpoint = "/reqmod-icapeg"
 respmod_endpoint = "/respmod-icapeg"
 options_endpoint = ""
-timeout = 50# seconds, the whole allowed life span of an ICAP request
+timeout = 50000# seconds, the whole allowed life span of an ICAP request
 
 
 [virustotal]
