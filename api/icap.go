@@ -92,6 +92,10 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			riSvc.HTTPRequest = req.Request
 			riSvc.HTTPResponse = req.Response
 
+			fmt.Println("Origin server request and response for debugging: ")
+			spew.Dump(req.Request)
+			spew.Dump(req.Response)
+
 			resp, err := service.RemoteICAPRespmod(*riSvc)
 
 			if err != nil {
