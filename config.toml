@@ -8,7 +8,7 @@ resp_scanner_vendor = "clamav" # Supported vendors for respmod of ICAP: "virusto
 req_scanner_vendor = "" # Supported vendors for reqmod of ICAP: "virustotal" , "vmray",
 bypass_extensions = ["*"]
 process_extensions = ["txt" , "pdf" , "dmg" , "exe" , "com", "rar" , "unknown"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
-preview_bytes = "4096" #bytes
+preview_bytes = "0" #bytes
 propagate_error = true
 
 [remote_icap]

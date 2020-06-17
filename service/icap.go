@@ -10,11 +10,12 @@ import (
 
 // RemoteICAPService represents the remote icap service informations
 type RemoteICAPService struct {
-	URL          string
-	Endpoint     string
-	HTTPRequest  *http.Request
-	HTTPResponse *http.Response
-	Timeout      time.Duration
+	URL           string
+	Endpoint      string
+	HTTPRequest   *http.Request
+	HTTPResponse  *http.Response
+	RequestHeader http.Header
+	Timeout       time.Duration
 }
 
 // RemoteICAPReqmod calls the remote icap server using REQMOD method
@@ -27,6 +28,8 @@ func RemoteICAPReqmod(rs RemoteICAPService) (*ic.Response, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	req.ExtendHeader(rs.RequestHeader)
 
 	client := &ic.Client{
 		Timeout: rs.Timeout,
@@ -52,6 +55,8 @@ func RemoteICAPRespmod(rs RemoteICAPService) (*ic.Response, error) {
 		return nil, err
 	}
 
+	req.ExtendHeader(rs.RequestHeader)
+
 	client := &ic.Client{
 		Timeout: rs.Timeout,
 	}
@@ -74,6 +79,8 @@ func RemoteICAPOptions(rs RemoteICAPService) (*ic.Response, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	req.ExtendHeader(rs.RequestHeader)
 
 	client := &ic.Client{
 		Timeout: rs.Timeout,
