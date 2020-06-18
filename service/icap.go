@@ -2,11 +2,16 @@ package service
 
 import (
 	"fmt"
+	"icapeg/config"
 	"net/http"
 	"time"
 
 	ic "github.com/egirna/icap-client"
 )
+
+func init() {
+	ic.SetDebugMode(config.App().Debug)
+}
 
 // RemoteICAPService represents the remote icap service informations
 type RemoteICAPService struct {
