@@ -20,6 +20,26 @@ import (
 	"github.com/egirna/icap"
 )
 
+func createRemoteICAPService(icapCfg *config.ICAPCfg) *service.RemoteICAPService {
+	return &service.RemoteICAPService{
+		URL:           icapCfg.BaseURL,
+		Timeout:       icapCfg.Timeout,
+		RequestHeader: http.Header{},
+	}
+}
+
+// setHeaders sets the header values from source to destination
+func setHeaders(source map[string][]string, destination http.Header) {
+	for header, values := range source {
+		if header == "Encapsulated" {
+			continue
+		}
+		for _, value := range values {
+			destination.Set(header, value)
+		}
+	}
+}
+
 // ToICAPEGResp is the ICAP Response Mode Handler:
 func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 	h := w.Header()
@@ -30,25 +50,14 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 
 	appCfg := config.App()
 	riCfg := config.RemoteICAP()
+	// shadowCfg := config.ShadowICAP()
+
 	var riSvc *service.RemoteICAPService
 
 	if riCfg.Enabled {
-		riSvc = &service.RemoteICAPService{
-			URL:           riCfg.BaseURL,
-			Timeout:       riCfg.Timeout,
-			RequestHeader: http.Header{},
-		}
-
-		for header, values := range req.Header {
-			if header == "Encapsulated" {
-				continue
-			}
-			for _, value := range values {
-				riSvc.RequestHeader.Set(header, value)
-			}
-		}
+		riSvc = createRemoteICAPService(riCfg)
+		setHeaders(req.Header, riSvc.RequestHeader)
 		log.Println("Passing request to the remote ICAP server...")
-
 	}
 
 	switch req.Method {
@@ -71,14 +80,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 
 			log.Printf("Received response from the remote ICAP server with status code: %d...\n", resp.StatusCode)
 
-			for header, values := range resp.Header {
-				if header == "Encapsulated" {
-					continue
-				}
-				for _, value := range values {
-					h.Set(header, value)
-				}
-			}
+			setHeaders(resp.Header, h)
 
 			w.WriteHeader(resp.StatusCode, nil, false)
 			return
