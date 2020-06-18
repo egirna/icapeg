@@ -69,7 +69,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 				return
 			}
 
-			log.Printf("Received response from the remote ICAP server wwith status code: %d...\n", resp.StatusCode)
+			log.Printf("Received response from the remote ICAP server with status code: %d...\n", resp.StatusCode)
 
 			for header, values := range resp.Header {
 				if header == "Encapsulated" {
