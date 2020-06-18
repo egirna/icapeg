@@ -6,8 +6,8 @@ import (
 	"github.com/spf13/viper"
 )
 
-// RemoteICAPCfg represents the remote icap configuration settings
-type RemoteICAPCfg struct {
+// ICAPCfg represents the remote icap configuration settings
+type ICAPCfg struct {
 	Enabled         bool
 	BaseURL         string
 	ReqmodEndpoint  string
@@ -16,21 +16,47 @@ type RemoteICAPCfg struct {
 	Timeout         time.Duration
 }
 
-var riCfg RemoteICAPCfg
+var iCfg ICAPCfg
 
-// LoadRemoteICAP populated the remote icap configuration instance with values from the config
-func LoadRemoteICAP() {
-	riCfg = RemoteICAPCfg{
-		Enabled:         viper.GetBool("remote_icap.enabled"),
-		BaseURL:         viper.GetString("remote_icap.base_url"),
-		ReqmodEndpoint:  viper.GetString("remote_icap.reqmod_endpoint"),
-		RespmodEndpoint: viper.GetString("remote_icap.respmod_endpoint"),
-		OptionsEndpoint: viper.GetString("remote_icap.options_endpoint"),
-		Timeout:         viper.GetDuration("remote_icap.timeout") * time.Second,
+type iotaType int
+
+const (
+	remote iotaType = iota
+	shadow
+)
+
+func (i iotaType) toString() string {
+	switch i {
+	case remote:
+		return "remote_icap"
+	case shadow:
+		return "shadow_icap"
+	default:
+		// Default to remote
+		return "remote_icap"
+	}
+}
+
+// loadICAP populated the remote icap configuration instance with values from the config
+func loadICAP(t iotaType) *ICAPCfg {
+	configMap := viper.GetStringMapString(t.toString())
+
+	return &ICAPCfg{
+		Enabled:         viper.GetBool(configMap["enabled"]),
+		BaseURL:         configMap["base_url"],
+		ReqmodEndpoint:  configMap["reqmod_endpoint"],
+		RespmodEndpoint: configMap["respmod_endpoint"],
+		OptionsEndpoint: configMap["options_endpoint"],
+		Timeout:         viper.GetDuration(configMap["timeout"]) * time.Second,
 	}
 }
 
 // RemoteICAP returns the remote icap configuration instance
-func RemoteICAP() RemoteICAPCfg {
-	return riCfg
+func RemoteICAP() *ICAPCfg {
+	return loadICAP(remote)
+}
+
+// ShadowICAP returns the shadow icap configuration instance
+func ShadowICAP() *ICAPCfg {
+	return loadICAP(shadow)
 }

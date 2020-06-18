@@ -43,7 +43,7 @@ func Init() {
 		PropagateError:    viper.GetBool("app.propagate_error"),
 	}
 
-	LoadRemoteICAP()
+	loadICAP(remote)
 
 }
 
