@@ -13,6 +13,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -40,9 +41,6 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 		}
 
 		for header, values := range req.Header {
-			if header == "Encapsulated" {
-				continue
-			}
 			for _, value := range values {
 				riSvc.RequestHeader.Set(header, value)
 			}
@@ -86,10 +84,14 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 		}
 		h.Set("Methods", utils.ICAPModeResp)
 		h.Set("Allow", "204")
-		h.Set("Preview", appCfg.PreviewBytes)
+		if pb, _ := strconv.Atoi(appCfg.PreviewBytes); pb > 0 {
+			h.Set("Preview", appCfg.PreviewBytes)
+		}
 		h.Set("Transfer-Preview", utils.Any)
 		w.WriteHeader(http.StatusOK, nil, false)
 	case utils.ICAPModeResp:
+
+		defer req.Response.Body.Close()
 
 		if val, exist := req.Header["Allow"]; !exist || (len(val) > 0 && val[0] != utils.NoModificationStatusCodeStr) { // following RFC3507, if the request has Allow: 204 header, it is to be checked and if it doesn't exists, return the request as it is to the ICAP client, https://tools.ietf.org/html/rfc3507#section-4.6
 			log.Println("Processing not required for this request")
@@ -150,6 +152,8 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 						w.WriteHeader(utils.IfPropagateError(http.StatusInternalServerError, http.StatusNoContent), nil, false)
 						return
 					}
+
+					defer resp.ContentResponse.Body.Close()
 
 					w.WriteHeader(resp.StatusCode, resp.ContentResponse, true)
 
@@ -500,6 +504,8 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 						w.WriteHeader(utils.IfPropagateError(http.StatusInternalServerError, http.StatusNoContent), nil, false)
 						return
 					}
+
+					defer resp.ContentResponse.Body.Close()
 
 					w.WriteHeader(resp.StatusCode, resp.ContentResponse, true)
 
