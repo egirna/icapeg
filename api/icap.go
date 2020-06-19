@@ -31,7 +31,8 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 
 	appCfg := config.App()
 	riCfg := config.RemoteICAP()
-	var riSvc *service.RemoteICAPService
+	siCfg := config.ShadowICAP()
+	var riSvc, siSvc *service.RemoteICAPService
 
 	if riCfg.Enabled {
 		riSvc = &service.RemoteICAPService{
@@ -49,8 +50,28 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 
 	}
 
+	if siCfg.Enabled && riCfg.Enabled {
+		siSvc = &service.RemoteICAPService{
+			URL:           siCfg.BaseURL,
+			Timeout:       siCfg.Timeout,
+			RequestHeader: http.Header{},
+		}
+
+		for header, values := range req.Header {
+			for _, value := range values {
+				siSvc.RequestHeader.Set(header, value)
+			}
+		}
+
+	}
+
 	switch req.Method {
 	case utils.ICAPModeOptions:
+
+		if siSvc != nil && riSvc != nil && siCfg.RespmodEndpoint != "" {
+			log.Println("Passing request to the shadow ICAP server...")
+			go performShadowOPTIONS(*siSvc)
+		}
 
 		if riSvc != nil && riCfg.RespmodEndpoint != "" {
 
@@ -97,6 +118,12 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			log.Println("Processing not required for this request")
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
+		}
+
+		if siSvc != nil && riSvc != nil && riCfg.RespmodEndpoint != "" {
+			log.Println("Passing request to the shadow ICAP server...")
+			shadowHTTPResp := utils.GetHTTPResponseCopy(req.Response)
+			go performShadowRESPMOD(*siSvc, *req.Request, shadowHTTPResp)
 		}
 
 		if riSvc != nil && riCfg.RespmodEndpoint != "" {
@@ -409,19 +436,47 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 
 	appCfg := config.App()
 	riCfg := config.RemoteICAP()
-	var riSvc *service.RemoteICAPService
+	siCfg := config.ShadowICAP()
+	var riSvc, siSvc *service.RemoteICAPService
 
 	if riCfg.Enabled {
 		riSvc = &service.RemoteICAPService{
-			URL:     riCfg.BaseURL,
-			Timeout: riCfg.Timeout,
+			URL:           riCfg.BaseURL,
+			Timeout:       riCfg.Timeout,
+			RequestHeader: http.Header{},
+		}
+
+		for header, values := range req.Header {
+			for _, value := range values {
+				riSvc.RequestHeader.Set(header, value)
+			}
 		}
 		log.Println("Passing request to the remote ICAP server...")
 
 	}
 
+	if siCfg.Enabled && riCfg.Enabled {
+		siSvc = &service.RemoteICAPService{
+			URL:           siCfg.BaseURL,
+			Timeout:       siCfg.Timeout,
+			RequestHeader: http.Header{},
+		}
+
+		for header, values := range req.Header {
+			for _, value := range values {
+				siSvc.RequestHeader.Set(header, value)
+			}
+		}
+
+	}
+
 	switch req.Method {
 	case utils.ICAPModeOptions:
+
+		if siSvc != nil && riSvc != nil && siCfg.ReqmodEndpoint != "" {
+			log.Println("Passing request to the shadow ICAP server...")
+			go performShadowOPTIONS(*siSvc)
+		}
 
 		if riSvc != nil && riCfg.ReqmodEndpoint != "" {
 
@@ -466,9 +521,20 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 			return
 		}
 
+		if siSvc != nil && riSvc != nil && riCfg.ReqmodEndpoint != "" {
+			log.Println("Passing request to the shadow ICAP server...")
+			go performShadowREQMOD(*siSvc, *req.Request)
+		}
+
 		if riSvc != nil && riCfg.ReqmodEndpoint != "" {
 			riSvc.Endpoint = riCfg.ReqmodEndpoint
 			riSvc.HTTPRequest = req.Request
+
+			if req.Request.URL.Scheme == "" {
+				fmt.Println("Scheme not found, changing the url")
+				u, _ := url.Parse("http://" + req.Request.Host + req.Request.URL.Path)
+				req.Request.URL = u
+			}
 
 			ext := utils.GetFileExtension(req.Request)
 

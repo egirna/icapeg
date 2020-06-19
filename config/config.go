@@ -44,6 +44,7 @@ func Init() {
 	}
 
 	LoadRemoteICAP()
+	LoadShadowICAP()
 
 }
 

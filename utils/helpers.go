@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"icapeg/dtos"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -136,4 +137,13 @@ func IfPropagateError(thenStatus, elseStatus int) int {
 	}
 
 	return elseStatus
+}
+
+// GetHTTPResponseCopy creates a new http.Response for the given one, including the body
+func GetHTTPResponseCopy(resp *http.Response) http.Response {
+	b, _ := ioutil.ReadAll(resp.Body)
+	copyResp := *resp
+	copyResp.Body = ioutil.NopCloser(bytes.NewBuffer(b))
+	resp.Body = ioutil.NopCloser(bytes.NewBuffer(b))
+	return copyResp
 }
