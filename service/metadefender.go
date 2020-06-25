@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"icapeg/dtos"
-	"icapeg/logger"
 	"icapeg/transformers"
 	"io/ioutil"
 	"net/http"
@@ -74,7 +73,7 @@ func (m *MetaDefender) SubmitFile(f *bytes.Buffer, filename string) (*dtos.Submi
 	//
 	// io.Copy(part, bytes.NewReader(f.Bytes()))
 	// if err := bodyWriter.Close(); err != nil {
-	// 	logger.LogToFile("failed to close writer", err.Error())
+	// 	debugLogger.LogToFile("failed to close writer", err.Error())
 	// 	return nil, err
 	// }
 	//
@@ -92,7 +91,7 @@ func (m *MetaDefender) SubmitFile(f *bytes.Buffer, filename string) (*dtos.Submi
 
 	resp, err := client.Do(req)
 	if err != nil {
-		logger.LogToFile("service: metadefender: failed to do request:", err.Error())
+		debugLogger.LogToFile("service: metadefender: failed to do request:", err.Error())
 		return nil, err
 	}
 

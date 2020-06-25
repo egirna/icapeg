@@ -3,6 +3,7 @@ package service
 import (
 	"bytes"
 	"icapeg/dtos"
+	"icapeg/logger"
 	"io"
 	"time"
 )
@@ -40,6 +41,10 @@ type (
 		RespSupported() bool
 		ReqSupported() bool
 	}
+)
+
+var (
+	debugLogger = logger.NewLogger(logger.LogLevelDebug)
 )
 
 // IsServiceLocal determines if a service is local or not

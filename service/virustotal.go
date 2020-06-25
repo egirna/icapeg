@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"icapeg/dtos"
-	"icapeg/logger"
 	"icapeg/transformers"
 	"io"
 	"io/ioutil"
@@ -77,7 +76,7 @@ func (v *VirusTotal) SubmitFile(f *bytes.Buffer, filename string) (*dtos.SubmitR
 
 	io.Copy(part, bytes.NewReader(f.Bytes()))
 	if err := bodyWriter.Close(); err != nil {
-		logger.LogToFile("failed to close writer", err.Error())
+		debugLogger.LogToFile("failed to close writer", err.Error())
 		return nil, err
 	}
 
@@ -96,7 +95,7 @@ func (v *VirusTotal) SubmitFile(f *bytes.Buffer, filename string) (*dtos.SubmitR
 
 	resp, err := client.Do(req)
 	if err != nil {
-		logger.LogToFile("service: virustotal: failed to do request:", err.Error())
+		debugLogger.LogToFile("service: virustotal: failed to do request:", err.Error())
 		return nil, err
 	}
 
@@ -134,7 +133,7 @@ func (v *VirusTotal) SubmitURL(fileURL, filename string) (*dtos.SubmitResponse, 
 	bodyWriter.WriteField("url", fileURL)
 
 	if err := bodyWriter.Close(); err != nil {
-		logger.LogToFile("failed to close writer", err.Error())
+		debugLogger.LogToFile("failed to close writer", err.Error())
 		return nil, err
 	}
 
@@ -153,7 +152,7 @@ func (v *VirusTotal) SubmitURL(fileURL, filename string) (*dtos.SubmitResponse, 
 
 	resp, err := client.Do(req)
 	if err != nil {
-		logger.LogToFile("service: virustotal: failed to do request:", err.Error())
+		debugLogger.LogToFile("service: virustotal: failed to do request:", err.Error())
 		return nil, err
 	}
 

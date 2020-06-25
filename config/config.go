@@ -10,7 +10,7 @@ import (
 type AppConfig struct {
 	Port              int
 	MaxFileSize       int
-	Debug             bool
+	LogLevel          string
 	RespScannerVendor string
 	ReqScannerVendor  string
 	BypassExtensions  []string
@@ -34,7 +34,7 @@ func Init() {
 	appCfg = AppConfig{
 		Port:              viper.GetInt("app.port"),
 		MaxFileSize:       viper.GetInt("app.max_filesize"),
-		Debug:             viper.GetBool("app.debug"),
+		LogLevel:          viper.GetString("app.log_level"),
 		RespScannerVendor: viper.GetString("app.resp_scanner_vendor"),
 		ReqScannerVendor:  viper.GetString("app.req_scanner_vendor"),
 		BypassExtensions:  viper.GetStringSlice("app.bypass_extensions"),
@@ -61,7 +61,7 @@ func InitTestConfig() {
 	appCfg = AppConfig{
 		Port:              viper.GetInt("app.port"),
 		MaxFileSize:       viper.GetInt("app.max_filesize"),
-		Debug:             viper.GetBool("app.debug"),
+		LogLevel:          viper.GetString("app.log_level"),
 		RespScannerVendor: viper.GetString("app.resp_scanner_vendor"),
 		ReqScannerVendor:  viper.GetString("app.req_scanner_vendor"),
 		BypassExtensions:  viper.GetStringSlice("app.bypass_extensions"),

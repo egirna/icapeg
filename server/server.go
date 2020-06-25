@@ -24,16 +24,19 @@ func StartServer() error {
 
 	http.HandleFunc("/", api.ErrorPageHanlder)
 
+	logger.SetLogLevel(config.App().LogLevel)
+	logr := logger.NewLogger()
+
 	if err := logger.SetLogFile("logs.txt"); err != nil {
-		logger.LogToScreen("Failed to prepare log file: ", err.Error())
+		logr.LogToScreen("Failed to prepare log file: ", err.Error())
 	} else {
 		defer logger.LogFile().Close()
 	}
 
-	if config.App().Debug {
-		logger.LogToAll("Starting the ICAP server in DEBUG MODE...")
+	if config.App().LogLevel == logger.LogLevelDebug {
+		logr.LogToAll("Starting the ICAP server in DEBUG mode...")
 	} else {
-		logger.LogToAll("Starting the ICAP server...")
+		logr.LogToAll("Starting the ICAP server...")
 	}
 
 	stop := make(chan os.Signal, 1)
@@ -47,11 +50,11 @@ func StartServer() error {
 
 	time.Sleep(5 * time.Millisecond)
 
-	logger.LogfToAll("ICAP server is running on localhost:%d ...\n", config.App().Port)
+	logr.LogfToAll("ICAP server is running on localhost:%d ...\n", config.App().Port)
 
 	<-stop
 
-	logger.LogToAll("ICAP server gracefully shut down")
+	logr.LogToAll("ICAP server gracefully shut down")
 
 	return nil
 }

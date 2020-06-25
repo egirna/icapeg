@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-	"icapeg/config"
 	"net/http"
 	"time"
 
@@ -10,7 +9,7 @@ import (
 )
 
 func init() {
-	ic.SetDebugMode(config.App().Debug)
+	ic.SetDebugMode(false)
 }
 
 // RemoteICAPService represents the remote icap service informations

@@ -3,7 +3,6 @@ package api
 import (
 	"bytes"
 	"icapeg/config"
-	"icapeg/logger"
 	"icapeg/service"
 	"icapeg/utils"
 	"io/ioutil"
@@ -22,16 +21,16 @@ func performShadowOPTIONS(svc service.RemoteICAPService) {
 	resp, err := service.RemoteICAPOptions(svc)
 
 	if err != nil {
-		logger.LogfToFile("Failed to make OPTIONS call of shadow icap server: %s\n", err.Error())
+		debugLogger.LogfToFile("Failed to make OPTIONS call of shadow icap server: %s\n", err.Error())
 		return
 	}
 
-	logger.LogToFile("Received response from the shadow ICAP server with the following info:")
-	logger.LogToFile("Status Code: ", resp.StatusCode)
-	logger.LogToFile("Headers:")
-	logger.LogToFile("---------")
+	infoLogger.LogToFile("Received response from the shadow ICAP server with the following info:")
+	infoLogger.LogToFile("Status Code: ", resp.StatusCode)
+	infoLogger.LogToFile("Headers:")
+	infoLogger.LogToFile("---------")
 	for header, values := range resp.Header {
-		logger.LogfToFile("%s: %v\n", header, values)
+		infoLogger.LogfToFile("%s: %v\n", header, values)
 	}
 }
 
@@ -42,7 +41,7 @@ func performShadowRESPMOD(svc service.RemoteICAPService, httpReq http.Request, h
 	svc.HTTPResponse = &httpResp
 
 	if httpReq.URL.Scheme == "" {
-		logger.LogToFile("Scheme not found, changing the url")
+		debugLogger.LogToFile("Scheme not found, changing the url")
 		u, _ := url.Parse("http://" + httpReq.Host + httpReq.URL.Path)
 		httpReq.URL = u
 	}
@@ -50,7 +49,7 @@ func performShadowRESPMOD(svc service.RemoteICAPService, httpReq http.Request, h
 	b, err := ioutil.ReadAll(httpResp.Body)
 
 	if err != nil {
-		logger.LogToFile("Error reading the body: ", err.Error())
+		debugLogger.LogToFile("Error reading the body: ", err.Error())
 	}
 
 	bdyStr := string(b)
@@ -65,22 +64,22 @@ func performShadowRESPMOD(svc service.RemoteICAPService, httpReq http.Request, h
 	resp, err := service.RemoteICAPRespmod(svc)
 
 	if err != nil {
-		logger.LogfToFile("Failed to make RESPMOD call to shadow icap server: %s\n", err.Error())
+		debugLogger.LogfToFile("Failed to make RESPMOD call to shadow icap server: %s\n", err.Error())
 		return
 	}
 
-	logger.LogToFile("Received response from the shadow ICAP server with the following info:")
-	logger.LogToFile("Status Code: ", resp.StatusCode)
-	logger.LogToFile("Headers:")
-	logger.LogToFile("---------")
+	infoLogger.LogToFile("Received response from the shadow ICAP server with the following info:")
+	infoLogger.LogToFile("Status Code: ", resp.StatusCode)
+	infoLogger.LogToFile("Headers:")
+	infoLogger.LogToFile("---------")
 	for header, values := range resp.Header {
-		logger.LogfToFile("%s: %v\n", header, values)
+		infoLogger.LogfToFile("%s: %v\n", header, values)
 	}
 	if resp.ContentResponse != nil {
-		logger.LogToFile("HTTP Response Headers:")
-		logger.LogToFile("----------------------")
+		infoLogger.LogToFile("HTTP Response Headers:")
+		infoLogger.LogToFile("----------------------")
 		for header, values := range resp.ContentResponse.Header {
-			logger.LogfToFile("%s: %v\n", header, values)
+			infoLogger.LogfToFile("%s: %v\n", header, values)
 		}
 	}
 }
@@ -91,7 +90,7 @@ func performShadowREQMOD(svc service.RemoteICAPService, httpReq http.Request) {
 	svc.HTTPRequest = &httpReq
 
 	if httpReq.URL.Scheme == "" {
-		logger.LogToFile("Scheme not found, changing the url")
+		debugLogger.LogToFile("Scheme not found, changing the url")
 		u, _ := url.Parse("http://" + httpReq.Host + httpReq.URL.Path)
 		httpReq.URL = u
 	}
@@ -99,29 +98,29 @@ func performShadowREQMOD(svc service.RemoteICAPService, httpReq http.Request) {
 	ext := utils.GetFileExtension(&httpReq)
 
 	if ext == "" {
-		logger.LogToFile("Processing not required...")
+		debugLogger.LogToFile("Processing not required...")
 		return
 	}
 
 	resp, err := service.RemoteICAPReqmod(svc)
 
 	if err != nil {
-		logger.LogfToFile("Failed to make REQMOD call to shadow icap server: %s\n", err.Error())
+		debugLogger.LogfToFile("Failed to make REQMOD call to shadow icap server: %s\n", err.Error())
 		return
 	}
 
-	logger.LogToFile("Received response from the shadow ICAP server with the following info:")
-	logger.LogToFile("Status Code: ", resp.StatusCode)
-	logger.LogToFile("Headers:")
-	logger.LogToFile("---------")
+	infoLogger.LogToFile("Received response from the shadow ICAP server with the following info:")
+	infoLogger.LogToFile("Status Code: ", resp.StatusCode)
+	infoLogger.LogToFile("Headers:")
+	infoLogger.LogToFile("---------")
 	for header, values := range resp.Header {
-		logger.LogfToFile("%s: %v\n", header, values)
+		infoLogger.LogfToFile("%s: %v\n", header, values)
 	}
 	if resp.ContentResponse != nil {
-		logger.LogToFile("HTTP Response Headers:")
-		logger.LogToFile("----------------------")
+		infoLogger.LogToFile("HTTP Response Headers:")
+		infoLogger.LogToFile("----------------------")
 		for header, values := range resp.ContentResponse.Header {
-			logger.LogfToFile("%s: %v\n", header, values)
+			infoLogger.LogfToFile("%s: %v\n", header, values)
 		}
 	}
 

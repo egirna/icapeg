@@ -16,8 +16,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/egirna/icap"
+)
+
+var (
+	infoLogger  = logger.NewLogger(logger.LogLevelInfo, logger.LogLevelDebug)
+	debugLogger = logger.NewLogger(logger.LogLevelDebug)
 )
 
 // ToICAPEGResp is the ICAP Response Mode Handler:
@@ -26,7 +30,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 	h.Set("ISTag", utils.ISTag)
 	h.Set("Service", "Egirna ICAP-EG")
 
-	logger.LogfToFile("Request received---> METHOD:%s URL:%s\n", req.Method, req.RawURL)
+	infoLogger.LogfToFile("Request received---> METHOD:%s URL:%s\n", req.Method, req.RawURL)
 
 	appCfg := config.App()
 	riCfg := config.RemoteICAP()
@@ -45,7 +49,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 				riSvc.RequestHeader.Set(header, value)
 			}
 		}
-		logger.LogToFile("Passing request to the remote ICAP server...")
+		infoLogger.LogToFile("Passing request to the remote ICAP server...")
 
 	}
 
@@ -68,7 +72,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 	case utils.ICAPModeOptions:
 
 		if siSvc != nil && riSvc != nil && siCfg.RespmodEndpoint != "" {
-			logger.LogToFile("Passing request to the shadow ICAP server...")
+			infoLogger.LogToFile("Passing request to the shadow ICAP server...")
 			go performShadowOPTIONS(*siSvc)
 		}
 
@@ -82,12 +86,12 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			resp, err := service.RemoteICAPOptions(*riSvc)
 
 			if err != nil {
-				logger.LogfToFile("Failed to make OPTIONS call of remote icap server: %s\n", err.Error())
+				debugLogger.LogfToFile("Failed to make OPTIONS call of remote icap server: %s\n", err.Error())
 				w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 				return
 			}
 
-			logger.LogfToFile("Received response from the remote ICAP server wwith status code: %d...\n", resp.StatusCode)
+			infoLogger.LogfToFile("Received response from the remote ICAP server wwith status code: %d...\n", resp.StatusCode)
 
 			for header, values := range resp.Header {
 				if header == "Encapsulated" {
@@ -114,13 +118,13 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 		defer req.Response.Body.Close()
 
 		if val, exist := req.Header["Allow"]; !exist || (len(val) > 0 && val[0] != utils.NoModificationStatusCodeStr) { // following RFC3507, if the request has Allow: 204 header, it is to be checked and if it doesn't exists, return the request as it is to the ICAP client, https://tools.ietf.org/html/rfc3507#section-4.6
-			logger.LogToFile("Processing not required for this request")
+			debugLogger.LogToFile("Processing not required for this request")
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
 
 		if siSvc != nil && riSvc != nil && riCfg.RespmodEndpoint != "" {
-			logger.LogToFile("Passing request to the shadow ICAP server...")
+			debugLogger.LogToFile("Passing request to the shadow ICAP server...")
 			shadowHTTPResp := utils.GetHTTPResponseCopy(req.Response)
 			go performShadowRESPMOD(*siSvc, *req.Request, shadowHTTPResp)
 		}
@@ -132,7 +136,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			riSvc.HTTPResponse = req.Response
 
 			if req.Request.URL.Scheme == "" {
-				logger.LogToFile("Scheme not found, changing the url")
+				debugLogger.LogToFile("Scheme not found, changing the url")
 				u, _ := url.Parse("http://" + req.Request.Host + req.Request.URL.Path)
 				req.Request.URL = u
 			}
@@ -140,7 +144,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			b, err := ioutil.ReadAll(req.Response.Body)
 
 			if err != nil {
-				logger.LogToFile("Error reading the body: ", err.Error())
+				debugLogger.LogToFile("Error reading the body: ", err.Error())
 			}
 
 			bdyStr := string(b)
@@ -155,7 +159,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			resp, err := service.RemoteICAPRespmod(*riSvc)
 
 			if err != nil {
-				logger.LogfToFile("Failed to make RESPMOD call to remote icap server: %s\n", err.Error())
+				debugLogger.LogfToFile("Failed to make RESPMOD call to remote icap server: %s\n", err.Error())
 				w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 				return
 			}
@@ -166,7 +170,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 				}
 			}
 
-			logger.LogfToFile("Received response from the remote ICAP server with status code: %d...\n", resp.StatusCode)
+			infoLogger.LogfToFile("Received response from the remote ICAP server with status code: %d...\n", resp.StatusCode)
 
 			if resp.StatusCode == http.StatusOK { // NOTE: this is done to render the error html page, not sure this is the proper way
 
@@ -174,7 +178,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 
 					bdyByte, err := ioutil.ReadAll(resp.ContentResponse.Body)
 					if err != nil && err != io.ErrUnexpectedEOF {
-						logger.LogToFile("Failed to read body from the remote icap response: ", err.Error())
+						debugLogger.LogToFile("Failed to read body from the remote icap response: ", err.Error())
 						w.WriteHeader(utils.IfPropagateError(http.StatusInternalServerError, http.StatusNoContent), nil, false)
 						return
 					}
@@ -194,7 +198,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 		scannerName := strings.ToLower(appCfg.RespScannerVendor) // the name of the scanner vendor
 
 		if scannerName == "" { // if no scanner name provided, then bypass everything
-			logger.LogToFile("No respmod scanner provided...bypassing everything")
+			debugLogger.LogToFile("No respmod scanner provided...bypassing everything")
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
@@ -209,8 +213,8 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 
 		if !(utils.InStringSlice(utils.Any, processExts) && !utils.InStringSlice(ct, bypassExts)) { // if there is no star in process and the  provided extension is in bypass
 			if !utils.InStringSlice(ct, processExts) { // and its not in processable either, then don't process it
-				logger.LogToFile("Processing not required for file type-", ct)
-				logger.LogToFile("Reason: Doesn't belong to processable extensions")
+				debugLogger.LogToFile("Processing not required for file type-", ct)
+				debugLogger.LogToFile("Reason: Doesn't belong to processable extensions")
 				w.WriteHeader(http.StatusNoContent, nil, false)
 				return
 			}
@@ -218,8 +222,8 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 
 		if (utils.InStringSlice(utils.Any, bypassExts) && !utils.InStringSlice(ct, processExts)) ||
 			utils.InStringSlice(ct, bypassExts) { // if there is start in bypass and there provided extension is not in process or it is in bypass, the don't process it
-			logger.LogToFile("Processing not required for file type-", ct)
-			logger.LogToFile("Reason: Doesn't belong to unprocessable extensions")
+			debugLogger.LogToFile("Processing not required for file type-", ct)
+			debugLogger.LogToFile("Reason: Doesn't belong to unprocessable extensions")
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
@@ -229,13 +233,13 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 		buf := &bytes.Buffer{}
 
 		if _, err := io.Copy(buf, req.Response.Body); err != nil {
-			logger.LogToFile("Failed to copy the response body to buffer: ", err.Error())
+			debugLogger.LogToFile("Failed to copy the response body to buffer: ", err.Error())
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
 
 		if buf.Len() > appCfg.MaxFileSize {
-			logger.LogToFile("File size too large")
+			debugLogger.LogToFile("File size too large")
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
@@ -255,30 +259,28 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			lsvc := service.GetLocalService(scannerName)
 
 			if lsvc == nil {
-				logger.LogToFile("No such scanner vendors:", scannerName)
+				debugLogger.LogToFile("No such scanner vendors:", scannerName)
 				w.WriteHeader(utils.IfPropagateError(http.StatusBadRequest, http.StatusNoContent), nil, false)
 				return
 			}
 
 			if !lsvc.RespSupported() {
-				logger.LogfToFile("The vendor %s does not support respmod of icap\n", scannerName)
+				debugLogger.LogfToFile("The vendor %s does not support respmod of icap\n", scannerName)
 				w.WriteHeader(utils.IfPropagateError(http.StatusBadRequest, http.StatusNoContent), nil, false)
 				return
 			}
 
 			sampleInfo, err := lsvc.ScanFileStream(buf, fmi)
 			if err != nil {
-				logger.LogToFile("Couldn't fetch sample information for local service: ", err.Error())
+				debugLogger.LogToFile("Couldn't fetch sample information for local service: ", err.Error())
 				w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 				return
 			}
 
-			if appCfg.Debug {
-				spew.Fdump(logger.LogFile(), "result", sampleInfo)
-			}
+			debugLogger.DumpToFile("result", sampleInfo)
 
 			if !utils.InStringSlice(sampleInfo.SampleSeverity, lsvc.GetOkFileStatus()) { // checking is the sample severity is amongst the allowable file status
-				logger.LogfToFile("The file:%s is %s\n", filename, sampleInfo.SampleSeverity)
+				debugLogger.LogfToFile("The file:%s is %s\n", filename, sampleInfo.SampleSeverity)
 				htmlBuf, newResp := utils.GetTemplateBufferAndResponse(utils.BadFileTemplate, &dtos.TemplateData{
 					FileName:     sampleInfo.FileName,
 					FileType:     sampleInfo.SampleType,
@@ -301,19 +303,19 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			svc := service.GetService(scannerName)
 
 			if svc == nil {
-				logger.LogToFile("No such scanner vendors:", scannerName)
+				debugLogger.LogToFile("No such scanner vendors:", scannerName)
 				w.WriteHeader(utils.IfPropagateError(http.StatusBadRequest, http.StatusNoContent), nil, false)
 				return
 			}
 
 			if svc == nil {
-				logger.LogToFile("No such scanner vendors:", scannerName)
+				debugLogger.LogToFile("No such scanner vendors:", scannerName)
 				w.WriteHeader(utils.IfPropagateError(http.StatusBadRequest, http.StatusNoContent), nil, false)
 				return
 			}
 
 			if !svc.RespSupported() {
-				logger.LogfToFile("The vendor %s does not support respmod of icap\n", scannerName)
+				debugLogger.LogfToFile("The vendor %s does not support respmod of icap\n", scannerName)
 				w.WriteHeader(utils.IfPropagateError(http.StatusBadRequest, http.StatusNoContent), nil, false)
 				return
 			}
@@ -321,20 +323,18 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			// The submit file api call is commented out for safety for now
 			submitResp, err := svc.SubmitFile(buf, filename) // submitting the file for analysing
 			if err != nil {
-				logger.LogfToFile("Failed to submit file to %s: %s\n", scannerName, err.Error())
+				debugLogger.LogfToFile("Failed to submit file to %s: %s\n", scannerName, err.Error())
 				w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 				return
 			}
 
 			if !submitResp.SubmissionExists {
-				logger.LogToFile("No submissions for the file")
+				debugLogger.LogToFile("No submissions for the file")
 				w.WriteHeader(http.StatusNoContent, nil, false)
 				return
 			}
 
-			if appCfg.Debug {
-				spew.Fdump(logger.LogFile(), "submit response", submitResp)
-			}
+			debugLogger.DumpToFile("submit response", submitResp)
 
 			submissionFinished := false
 			statusCheckFinishTime := time.Now().Add(svc.GetStatusCheckTimeout()) // the time after which, the system is to stop checking for submission finish
@@ -348,26 +348,25 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 				case true:
 					submissionStatus, err := svc.GetSubmissionStatus(submissionID) // getting the file submission status by the submission id received by submitting the file
 					if err != nil {
-						logger.LogfToFile("Failed to get submission status from %s: %s\n", scannerName, err.Error())
+						debugLogger.LogfToFile("Failed to get submission status from %s: %s\n", scannerName, err.Error())
 						w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 						return
 					}
 
-					if appCfg.Debug {
-						spew.Fdump(logger.LogFile(), "submission status resp", submissionStatus)
-					}
+					debugLogger.DumpToFile("submission status resp", submissionStatus)
+
 					submissionFinished = submissionStatus.SubmissionFinished
 				case false: // if it doesn;t the file report result will contain the information
 					var err error
 					sampleInfo, err = svc.GetSampleFileInfo(sampleID, fmi)
 					if err != nil {
-						logger.LogToFile("Couldn't fetch sample information during status check: ", err.Error())
+						debugLogger.LogToFile("Couldn't fetch sample information during status check: ", err.Error())
 						w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 						return
 					}
 					submissionFinished = sampleInfo.SubmissionFinished
 				default:
-					logger.LogToFile("Put the status_endpoint_exists field in the config file under the scanner vendor")
+					debugLogger.LogToFile("Put the status_endpoint_exists field in the config file under the scanner vendor")
 				}
 
 				if !submissionFinished { // if the submission is not finished, wait for a certain time and then call again
@@ -376,7 +375,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			}
 
 			if !submissionFinished {
-				logger.LogToFile("File submission is taking too long to finish")
+				debugLogger.LogToFile("File submission is taking too long to finish")
 				w.WriteHeader(http.StatusNoContent, nil, false)
 				return
 			}
@@ -385,18 +384,16 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 				var err error
 				sampleInfo, err = svc.GetSampleFileInfo(sampleID, fmi) // getting the results after scanner is done analysing the file
 				if err != nil {
-					logger.LogToFile("Couldn't fetch sample information after submission finish: ", err.Error())
+					debugLogger.LogToFile("Couldn't fetch sample information after submission finish: ", err.Error())
 					w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 					return
 				}
 			}
 
-			if appCfg.Debug {
-				spew.Fdump(logger.LogFile(), "result", sampleInfo)
-			}
+			debugLogger.DumpToFile("result", sampleInfo)
 
 			if !utils.InStringSlice(sampleInfo.SampleSeverity, svc.GetOkFileStatus()) { // checking is the sample severity is amongst the allowable file status
-				logger.LogfToFile("The file:%s is %s\n", filename, sampleInfo.SampleSeverity)
+				infoLogger.LogfToFile("The file:%s is %s\n", filename, sampleInfo.SampleSeverity)
 				htmlBuf, newResp := utils.GetTemplateBufferAndResponse(utils.BadFileTemplate, &dtos.TemplateData{
 					FileName:     sampleInfo.FileName,
 					FileType:     sampleInfo.SampleType,
@@ -413,15 +410,15 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			}
 		}
 
-		logger.LogfToFile("The file %s is good to go\n", filename)
+		infoLogger.LogfToFile("The file %s is good to go\n", filename)
 		w.WriteHeader(http.StatusNoContent, nil, false) // all ok, show the contents as it is
 
 	case "ERRDUMMY":
 		w.WriteHeader(http.StatusBadRequest, nil, false)
-		logger.LogToFile("Malformed request")
+		debugLogger.LogToFile("Malformed request")
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed, nil, false)
-		logger.LogfToFile("Invalid request method %s- respmod\n", req.Method)
+		debugLogger.LogfToFile("Invalid request method %s- respmod\n", req.Method)
 	}
 }
 
@@ -431,7 +428,7 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 	h.Set("ISTag", utils.ISTag)
 	h.Set("Service", "Egirna ICAP-EG")
 
-	logger.LogfToFile("Request received---> METHOD:%s URL:%s\n", req.Method, req.RawURL)
+	infoLogger.LogfToFile("Request received---> METHOD:%s URL:%s\n", req.Method, req.RawURL)
 
 	appCfg := config.App()
 	riCfg := config.RemoteICAP()
@@ -450,7 +447,7 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 				riSvc.RequestHeader.Set(header, value)
 			}
 		}
-		logger.LogToFile("Passing request to the remote ICAP server...")
+		infoLogger.LogToFile("Passing request to the remote ICAP server...")
 
 	}
 
@@ -473,7 +470,7 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 	case utils.ICAPModeOptions:
 
 		if siSvc != nil && riSvc != nil && siCfg.ReqmodEndpoint != "" {
-			logger.LogToFile("Passing request to the shadow ICAP server...")
+			infoLogger.LogToFile("Passing request to the shadow ICAP server...")
 			go performShadowOPTIONS(*siSvc)
 		}
 
@@ -487,12 +484,12 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 			resp, err := service.RemoteICAPOptions(*riSvc)
 
 			if err != nil {
-				logger.LogfToFile("Failed to make OPTIONS call of remote icap server: %s\n", err.Error())
+				debugLogger.LogfToFile("Failed to make OPTIONS call of remote icap server: %s\n", err.Error())
 				w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 				return
 			}
 
-			logger.LogfToFile("Received response from the remote ICAP server with status code: %d...\n", resp.StatusCode)
+			infoLogger.LogfToFile("Received response from the remote ICAP server with status code: %d...\n", resp.StatusCode)
 
 			for header, values := range resp.Header {
 				if header == "Encapsulated" {
@@ -515,13 +512,13 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 	case utils.ICAPModeReq:
 
 		if val, exist := req.Header["Allow"]; !exist || (len(val) > 0 && val[0] != utils.NoModificationStatusCodeStr) { // following RFC3507, if the request has Allow: 204 header, it is to be checked and if it doesn't exists, return the request as it is to the ICAP client, https://tools.ietf.org/html/rfc3507#section-4.6
-			logger.LogToFile("Processing not required for this request")
+			debugLogger.LogToFile("Processing not required for this request")
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
 
 		if siSvc != nil && riSvc != nil && riCfg.ReqmodEndpoint != "" {
-			logger.LogToFile("Passing request to the shadow ICAP server...")
+			infoLogger.LogToFile("Passing request to the shadow ICAP server...")
 			go performShadowREQMOD(*siSvc, *req.Request)
 		}
 
@@ -530,7 +527,7 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 			riSvc.HTTPRequest = req.Request
 
 			if req.Request.URL.Scheme == "" {
-				logger.LogToFile("Scheme not found, changing the url")
+				debugLogger.LogToFile("Scheme not found, changing the url")
 				u, _ := url.Parse("http://" + req.Request.Host + req.Request.URL.Path)
 				req.Request.URL = u
 			}
@@ -538,7 +535,7 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 			ext := utils.GetFileExtension(req.Request)
 
 			if ext == "" {
-				logger.LogToFile("Processing not required...")
+				debugLogger.LogToFile("Processing not required...")
 				w.WriteHeader(http.StatusNoContent, nil, false)
 				return
 			}
@@ -546,7 +543,7 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 			resp, err := service.RemoteICAPReqmod(*riSvc)
 
 			if err != nil {
-				logger.LogfToFile("Failed to make REQMOD call to remote icap server: %s\n", err.Error())
+				debugLogger.LogfToFile("Failed to make REQMOD call to remote icap server: %s\n", err.Error())
 				w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 				return
 			}
@@ -557,7 +554,7 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 				}
 			}
 
-			logger.LogfToFile("Received response from the remote ICAP server with status code: %d...\n", resp.StatusCode)
+			infoLogger.LogfToFile("Received response from the remote ICAP server with status code: %d...\n", resp.StatusCode)
 
 			if resp.StatusCode == http.StatusOK {
 
@@ -565,7 +562,7 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 
 					bdyByte, err := ioutil.ReadAll(resp.ContentResponse.Body)
 					if err != nil && err != io.ErrUnexpectedEOF {
-						logger.LogToFile("Failed to read body from the remote icap response: ", err.Error())
+						debugLogger.LogToFile("Failed to read body from the remote icap response: ", err.Error())
 						w.WriteHeader(utils.IfPropagateError(http.StatusInternalServerError, http.StatusNoContent), nil, false)
 						return
 					}
@@ -586,7 +583,7 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 		scannerName := strings.ToLower(appCfg.ReqScannerVendor)
 
 		if scannerName == "" {
-			logger.LogToFile("No reqmod scanner provided...bypassing everything")
+			debugLogger.LogToFile("No reqmod scanner provided...bypassing everything")
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
@@ -602,8 +599,8 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 
 		if !(utils.InStringSlice(utils.Any, processExts) && !utils.InStringSlice(ext, bypassExts)) { // if there is no star in process and the  provided extension is in bypass
 			if !utils.InStringSlice(ext, processExts) { // and its not in processable either, then don't process it
-				logger.LogToFile("Processing not required for file type-", ext)
-				logger.LogToFile("Reason: Doesn't belong to processable extensions")
+				debugLogger.LogToFile("Processing not required for file type-", ext)
+				debugLogger.LogToFile("Reason: Doesn't belong to processable extensions")
 				w.WriteHeader(http.StatusNoContent, nil, false)
 				return
 			}
@@ -611,8 +608,8 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 
 		if (utils.InStringSlice(utils.Any, bypassExts) && !utils.InStringSlice(ext, processExts)) ||
 			utils.InStringSlice(ext, bypassExts) { // if there is start in bypass and there provided extension is not in process or it is in bypass, the don't process it
-			logger.LogToFile("Processing not required for file type-", ext)
-			logger.LogToFile("Reason: Doesn't belong to unprocessable extensions")
+			debugLogger.LogToFile("Processing not required for file type-", ext)
+			debugLogger.LogToFile("Reason: Doesn't belong to unprocessable extensions")
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
@@ -630,13 +627,13 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 		svc := service.GetService(scannerName)
 
 		if svc == nil {
-			logger.LogToFile("No such scanner vendors:", scannerName)
+			debugLogger.LogToFile("No such scanner vendors:", scannerName)
 			w.WriteHeader(utils.IfPropagateError(http.StatusBadRequest, http.StatusNoContent), nil, false)
 			return
 		}
 
 		if !svc.ReqSupported() {
-			logger.LogfToFile("The vendor %s does not support reqmod of icap\n", scannerName)
+			debugLogger.LogfToFile("The vendor %s does not support reqmod of icap\n", scannerName)
 			w.WriteHeader(utils.IfPropagateError(http.StatusBadRequest, http.StatusNoContent), nil, false)
 			return
 		}
@@ -644,20 +641,18 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 		// The submit file api call is commented out for safety for now
 		submitResp, err := svc.SubmitURL(fileURL, filename) // submitting the file for analysing
 		if err != nil {
-			logger.LogfToFile("Failed to submit url to %s: %s\n", scannerName, err.Error())
+			debugLogger.LogfToFile("Failed to submit url to %s: %s\n", scannerName, err.Error())
 			w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 			return
 		}
 
 		if !submitResp.SubmissionExists {
-			logger.LogToFile("No submissions for the file")
+			debugLogger.LogToFile("No submissions for the file")
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
 
-		if appCfg.Debug {
-			spew.Fdump(logger.LogFile(), "submit response", submitResp)
-		}
+		debugLogger.DumpToFile("submit response", submitResp)
 
 		submissionFinished := false
 		statusCheckFinishTime := time.Now().Add(svc.GetStatusCheckTimeout()) // the time after which, the system is to stop checking for submission finish
@@ -671,26 +666,25 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 			case true:
 				submissionStatus, err := svc.GetSubmissionStatus(submissionID) // getting the file submission status by the submission id received by submitting the file
 				if err != nil {
-					logger.LogfToFile("Failed to get submission status from %s: %s\n", scannerName, err.Error())
+					debugLogger.LogfToFile("Failed to get submission status from %s: %s\n", scannerName, err.Error())
 					w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 					return
 				}
 
-				if appCfg.Debug {
-					spew.Fdump(logger.LogFile(), "submission status resp", submissionStatus)
-				}
+				debugLogger.DumpToFile("submission status resp", submissionStatus)
+
 				submissionFinished = submissionStatus.SubmissionFinished
 			case false: // if it doesn;t the file report result will contain the information
 				var err error
 				sampleInfo, err = svc.GetSampleURLInfo(sampleID, fmi)
 				if err != nil {
-					logger.LogToFile("Couldn't fetch sample information during status check: ", err.Error())
+					debugLogger.LogToFile("Couldn't fetch sample information during status check: ", err.Error())
 					w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 					return
 				}
 				submissionFinished = sampleInfo.SubmissionFinished
 			default:
-				logger.LogToFile("Put the status_endpoint_exists field in the config file under the scanner vendor")
+				debugLogger.LogToFile("Put the status_endpoint_exists field in the config file under the scanner vendor")
 			}
 
 			if !submissionFinished { // if the submission is not finished, wait for a certain time and then call again
@@ -699,7 +693,7 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 		}
 
 		if !submissionFinished {
-			logger.LogToFile("File submission is taking too long to finish")
+			debugLogger.LogToFile("File submission is taking too long to finish")
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
@@ -708,18 +702,16 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 			var err error
 			sampleInfo, err = svc.GetSampleURLInfo(sampleID, fmi) // getting the results after scanner is done analysing the file
 			if err != nil {
-				logger.LogToFile("Couldn't fetch sample information after submission finish: ", err.Error())
+				debugLogger.LogToFile("Couldn't fetch sample information after submission finish: ", err.Error())
 				w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
 				return
 			}
 		}
 
-		if appCfg.Debug {
-			spew.Fdump(logger.LogFile(), "result", sampleInfo)
-		}
+		debugLogger.DumpToFile("result", sampleInfo)
 
 		if !utils.InStringSlice(sampleInfo.SampleSeverity, svc.GetOkFileStatus()) { // checking is the sample severity is amongst the allowable file status
-			logger.LogfToFile("The url:%s is %s\n", filename, sampleInfo.SampleSeverity)
+			infoLogger.LogfToFile("The url:%s is %s\n", filename, sampleInfo.SampleSeverity)
 			data := &dtos.TemplateData{
 				FileName:     sampleInfo.FileName,
 				FileType:     sampleInfo.SampleType,
@@ -733,7 +725,7 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 			dataByte, err := json.Marshal(data)
 
 			if err != nil {
-				logger.LogToFile("Failed to marshal template data: ", err.Error())
+				debugLogger.LogToFile("Failed to marshal template data: ", err.Error())
 				w.WriteHeader(utils.IfPropagateError(http.StatusInternalServerError, http.StatusNoContent), nil, false)
 				return
 			}
@@ -745,15 +737,15 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 			return
 		}
 
-		logger.LogfToFile("The url %s is good to go\n", fileURL)
+		infoLogger.LogfToFile("The url %s is good to go\n", fileURL)
 		w.WriteHeader(http.StatusNoContent, nil, false)
 
 	case "ERRDUMMY":
 		w.WriteHeader(http.StatusBadRequest, nil, false)
-		logger.LogToFile("Malformed request")
+		debugLogger.LogToFile("Malformed request")
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed, nil, false)
-		logger.LogfToFile("Invalid request method %s- reqmod\n", req.Method)
+		debugLogger.LogfToFile("Invalid request method %s- reqmod\n", req.Method)
 
 	}
 }

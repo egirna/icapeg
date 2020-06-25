@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"icapeg/dtos"
-	"icapeg/logger"
 	"icapeg/utils"
 	"net/http"
 	"strconv"
@@ -16,7 +15,7 @@ func ErrorPageHanlder(w http.ResponseWriter, r *http.Request) {
 	data := dtos.TemplateData{}
 
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		logger.LogToFile("Failed to decode template data for error page handler: ", err.Error())
+		debugLogger.LogToFile("Failed to decode template data for error page handler: ", err.Error())
 		fmt.Fprint(w, "SOMETHING WENT WRONG")
 		return
 	}
