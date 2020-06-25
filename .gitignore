@@ -20,3 +20,6 @@ vendor/
 # Misc
 .DS_Store
 .idea/
+
+# Logs
+logs.txt

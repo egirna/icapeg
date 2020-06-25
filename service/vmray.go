@@ -7,10 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"icapeg/dtos"
+	"icapeg/logger"
 	"icapeg/transformers"
 	"io"
 	"io/ioutil"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"time"
@@ -78,7 +78,7 @@ func (v *Vmray) SubmitFile(f *bytes.Buffer, filename string) (*dtos.SubmitRespon
 
 	io.Copy(part, bytes.NewReader(f.Bytes()))
 	if err := bodyWriter.Close(); err != nil {
-		log.Println("failed to close writer", err.Error())
+		logger.LogToFile("failed to close writer", err.Error())
 		return nil, err
 	}
 
@@ -98,7 +98,7 @@ func (v *Vmray) SubmitFile(f *bytes.Buffer, filename string) (*dtos.SubmitRespon
 
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println("service: vmray: failed to do request:", err.Error())
+		logger.LogToFile("service: vmray: failed to do request:", err.Error())
 		return nil, err
 	}
 
@@ -208,7 +208,7 @@ func (v *Vmray) SubmitURL(fileURL, filename string) (*dtos.SubmitResponse, error
 	bodyWriter.WriteField("sample_url", fileURL)
 
 	if err := bodyWriter.Close(); err != nil {
-		log.Println("failed to close writer", err.Error())
+		logger.LogToFile("failed to close writer", err.Error())
 		return nil, err
 	}
 
@@ -228,7 +228,7 @@ func (v *Vmray) SubmitURL(fileURL, filename string) (*dtos.SubmitResponse, error
 
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println("service: vmray: failed to do request:", err.Error())
+		logger.LogToFile("service: vmray: failed to do request:", err.Error())
 		return nil, err
 	}
 
