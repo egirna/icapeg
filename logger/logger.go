@@ -11,6 +11,7 @@ import (
 const (
 	LogLevelInfo  = "info"
 	LogLevelDebug = "debug"
+	LogLevelError = "error"
 	LogLevelNone  = "none"
 )
 

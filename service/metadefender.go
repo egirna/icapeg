@@ -73,7 +73,7 @@ func (m *MetaDefender) SubmitFile(f *bytes.Buffer, filename string) (*dtos.Submi
 	//
 	// io.Copy(part, bytes.NewReader(f.Bytes()))
 	// if err := bodyWriter.Close(); err != nil {
-	// 	debugLogger.LogToFile("failed to close writer", err.Error())
+	// 	errorLogger.LogToFile("failed to close writer", err.Error())
 	// 	return nil, err
 	// }
 	//
@@ -91,7 +91,7 @@ func (m *MetaDefender) SubmitFile(f *bytes.Buffer, filename string) (*dtos.Submi
 
 	resp, err := client.Do(req)
 	if err != nil {
-		debugLogger.LogToFile("service: metadefender: failed to do request:", err.Error())
+		errorLogger.LogToFile("service: metadefender: failed to do request:", err.Error())
 		return nil, err
 	}
 

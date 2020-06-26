@@ -21,7 +21,7 @@ func performShadowOPTIONS(svc service.RemoteICAPService) {
 	resp, err := service.RemoteICAPOptions(svc)
 
 	if err != nil {
-		debugLogger.LogfToFile("Failed to make OPTIONS call of shadow icap server: %s\n", err.Error())
+		errorLogger.LogfToFile("Failed to make OPTIONS call of shadow icap server: %s\n", err.Error())
 		return
 	}
 
@@ -49,7 +49,7 @@ func performShadowRESPMOD(svc service.RemoteICAPService, httpReq http.Request, h
 	b, err := ioutil.ReadAll(httpResp.Body)
 
 	if err != nil {
-		debugLogger.LogToFile("Error reading the body: ", err.Error())
+		errorLogger.LogToFile("Error reading the body: ", err.Error())
 	}
 
 	bdyStr := string(b)
@@ -64,7 +64,7 @@ func performShadowRESPMOD(svc service.RemoteICAPService, httpReq http.Request, h
 	resp, err := service.RemoteICAPRespmod(svc)
 
 	if err != nil {
-		debugLogger.LogfToFile("Failed to make RESPMOD call to shadow icap server: %s\n", err.Error())
+		errorLogger.LogfToFile("Failed to make RESPMOD call to shadow icap server: %s\n", err.Error())
 		return
 	}
 
@@ -105,7 +105,7 @@ func performShadowREQMOD(svc service.RemoteICAPService, httpReq http.Request) {
 	resp, err := service.RemoteICAPReqmod(svc)
 
 	if err != nil {
-		debugLogger.LogfToFile("Failed to make REQMOD call to shadow icap server: %s\n", err.Error())
+		errorLogger.LogfToFile("Failed to make REQMOD call to shadow icap server: %s\n", err.Error())
 		return
 	}
 

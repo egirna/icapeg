@@ -44,7 +44,7 @@ type (
 )
 
 var (
-	debugLogger = logger.NewLogger(logger.LogLevelDebug)
+	errorLogger = logger.NewLogger(logger.LogLevelError, logger.LogLevelDebug)
 )
 
 // IsServiceLocal determines if a service is local or not

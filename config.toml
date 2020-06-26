@@ -1,7 +1,7 @@
 title = "ICAPEG configuration file"
 
 [app]
-log_level = "info"
+log_level = "info" # the log levels for tha app, available values: info-->logging the overall progress of the app, debug --> log everything including errors, error --> log infos and just errors
 port = 1344
 max_filesize = 10000000 #bytes
 resp_scanner_vendor = "clamav" # Supported vendors for respmod of ICAP: "virustotal", "metadefender" , "vmray" , "clamav" , ""- empty specifies, respmod will be bypassing everything
