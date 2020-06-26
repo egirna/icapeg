@@ -45,11 +45,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			RequestHeader: http.Header{},
 		}
 
-		for header, values := range req.Header {
-			for _, value := range values {
-				riSvc.RequestHeader.Set(header, value)
-			}
-		}
+		utils.CopyHeaders(req.Header, riSvc.RequestHeader, "")
 		infoLogger.LogToFile("Passing request to the remote ICAP server...")
 
 	}
@@ -61,12 +57,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			RequestHeader: http.Header{},
 		}
 
-		for header, values := range req.Header {
-			for _, value := range values {
-				siSvc.RequestHeader.Set(header, value)
-			}
-		}
-
+		utils.CopyHeaders(req.Header, siSvc.RequestHeader, "")
 	}
 
 	switch req.Method {
@@ -94,14 +85,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 
 			infoLogger.LogfToFile("Received response from the remote ICAP server wwith status code: %d...\n", resp.StatusCode)
 
-			for header, values := range resp.Header {
-				if header == "Encapsulated" {
-					continue
-				}
-				for _, value := range values {
-					h.Set(header, value)
-				}
-			}
+			utils.CopyHeaders(resp.Header, h, utils.HeaderEncapsulated)
 
 			w.WriteHeader(resp.StatusCode, nil, false)
 			return
@@ -165,11 +149,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 				return
 			}
 
-			for header, values := range resp.Header {
-				for _, value := range values {
-					h.Set(header, value)
-				}
-			}
+			utils.CopyHeaders(resp.Header, h, "")
 
 			infoLogger.LogfToFile("Received response from the remote ICAP server with status code: %d...\n", resp.StatusCode)
 
@@ -443,11 +423,7 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 			RequestHeader: http.Header{},
 		}
 
-		for header, values := range req.Header {
-			for _, value := range values {
-				riSvc.RequestHeader.Set(header, value)
-			}
-		}
+		utils.CopyHeaders(req.Header, riSvc.RequestHeader, "")
 		infoLogger.LogToFile("Passing request to the remote ICAP server...")
 
 	}
@@ -459,11 +435,7 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 			RequestHeader: http.Header{},
 		}
 
-		for header, values := range req.Header {
-			for _, value := range values {
-				siSvc.RequestHeader.Set(header, value)
-			}
-		}
+		utils.CopyHeaders(req.Header, siSvc.RequestHeader, "")
 
 	}
 
@@ -492,14 +464,7 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 
 			infoLogger.LogfToFile("Received response from the remote ICAP server with status code: %d...\n", resp.StatusCode)
 
-			for header, values := range resp.Header {
-				if header == "Encapsulated" {
-					continue
-				}
-				for _, value := range values {
-					h.Set(header, value)
-				}
-			}
+			utils.CopyHeaders(resp.Header, h, utils.HeaderEncapsulated)
 
 			w.WriteHeader(resp.StatusCode, nil, false)
 			return
@@ -549,11 +514,7 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 				return
 			}
 
-			for header, values := range resp.Header {
-				for _, value := range values {
-					h.Set(header, value)
-				}
-			}
+			utils.CopyHeaders(resp.Header, h, "")
 
 			infoLogger.LogfToFile("Received response from the remote ICAP server with status code: %d...\n", resp.StatusCode)
 

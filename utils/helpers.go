@@ -147,3 +147,16 @@ func GetHTTPResponseCopy(resp *http.Response) http.Response {
 	resp.Body = ioutil.NopCloser(bytes.NewBuffer(b))
 	return copyResp
 }
+
+// CopyHeaders copy all the headers from the source(src) to destination(dest), without the provided header(if any)
+func CopyHeaders(src map[string][]string, dest http.Header, without string) {
+	for header, values := range src {
+		if header == without {
+			continue
+		}
+
+		for _, value := range values {
+			dest.Set(header, value)
+		}
+	}
+}

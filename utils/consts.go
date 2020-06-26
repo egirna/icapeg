@@ -13,4 +13,5 @@ const (
 	Unknown                     = "unknown"
 	Any                         = "*"
 	NoModificationStatusCodeStr = "204"
+	HeaderEncapsulated          = "Encapsulated"
 )
