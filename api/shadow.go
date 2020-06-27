@@ -7,13 +7,12 @@ import (
 	"icapeg/utils"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strings"
 )
 
-func performShadowOPTIONS(svc service.RemoteICAPService) {
+func performShadowOPTIONS(svc service.RemoteICAPService, alternativeEndpoint string) {
 	siCfg := config.ShadowICAP()
-	svc.Endpoint = siCfg.RespmodEndpoint
+	svc.Endpoint = alternativeEndpoint
 	if siCfg.OptionsEndpoint != "" {
 		svc.Endpoint = siCfg.OptionsEndpoint
 	}
@@ -42,8 +41,7 @@ func performShadowRESPMOD(svc service.RemoteICAPService, httpReq http.Request, h
 
 	if httpReq.URL.Scheme == "" {
 		debugLogger.LogToFile("Scheme not found, changing the url")
-		u, _ := url.Parse("http://" + httpReq.Host + httpReq.URL.Path)
-		httpReq.URL = u
+		httpReq.URL = utils.GetNewURL(&httpReq)
 	}
 
 	b, err := ioutil.ReadAll(httpResp.Body)
@@ -91,8 +89,7 @@ func performShadowREQMOD(svc service.RemoteICAPService, httpReq http.Request) {
 
 	if httpReq.URL.Scheme == "" {
 		debugLogger.LogToFile("Scheme not found, changing the url")
-		u, _ := url.Parse("http://" + httpReq.Host + httpReq.URL.Path)
-		httpReq.URL = u
+		httpReq.URL = utils.GetNewURL(&httpReq)
 	}
 
 	ext := utils.GetFileExtension(&httpReq)

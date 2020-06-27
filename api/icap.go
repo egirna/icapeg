@@ -11,7 +11,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -34,63 +33,16 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 	infoLogger.LogfToFile("Request received---> METHOD:%s URL:%s\n", req.Method, req.RawURL)
 
 	appCfg := config.App()
-	riCfg := config.RemoteICAP()
-	siCfg := config.ShadowICAP()
-	var riSvc, siSvc *service.RemoteICAPService
-
-	if riCfg.Enabled {
-		riSvc = &service.RemoteICAPService{
-			URL:           riCfg.BaseURL,
-			Timeout:       riCfg.Timeout,
-			RequestHeader: http.Header{},
-		}
-
-		utils.CopyHeaders(req.Header, riSvc.RequestHeader, "")
-		infoLogger.LogToFile("Passing request to the remote ICAP server...")
-
-	}
-
-	if siCfg.Enabled && riCfg.Enabled {
-		siSvc = &service.RemoteICAPService{
-			URL:           siCfg.BaseURL,
-			Timeout:       siCfg.Timeout,
-			RequestHeader: http.Header{},
-		}
-
-		utils.CopyHeaders(req.Header, siSvc.RequestHeader, "")
-	}
 
 	switch req.Method {
 	case utils.ICAPModeOptions:
 
-		if siSvc != nil && riSvc != nil && siCfg.RespmodEndpoint != "" {
-			infoLogger.LogToFile("Passing request to the shadow ICAP server...")
-			go performShadowOPTIONS(*siSvc)
-		}
-
-		if riSvc != nil && riCfg.RespmodEndpoint != "" {
-
-			riSvc.Endpoint = riCfg.RespmodEndpoint
-			if riCfg.OptionsEndpoint != "" {
-				riSvc.Endpoint = riCfg.OptionsEndpoint
-			}
-
-			resp, err := service.RemoteICAPOptions(*riSvc)
-
-			if err != nil {
-				errorLogger.LogfToFile("Failed to make OPTIONS call of remote icap server: %s\n", err.Error())
-				w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
-				return
-			}
-
-			infoLogger.LogfToFile("Received response from the remote ICAP server wwith status code: %d...\n", resp.StatusCode)
-
-			utils.CopyHeaders(resp.Header, h, utils.HeaderEncapsulated)
-
-			w.WriteHeader(resp.StatusCode, nil, false)
+		/* If any remote icap is enabled, the work flow is controlled by the remote icap */
+		if config.RemoteICAP().Enabled {
+			performRemoteOPTIONS(req, w, config.RemoteICAP().RespmodEndpoint)
 			return
-
 		}
+
 		h.Set("Methods", utils.ICAPModeResp)
 		h.Set("Allow", "204")
 		if pb, _ := strconv.Atoi(appCfg.PreviewBytes); pb > 0 {
@@ -108,71 +60,9 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			return
 		}
 
-		if siSvc != nil && riSvc != nil && riCfg.RespmodEndpoint != "" {
-			debugLogger.LogToFile("Passing request to the shadow ICAP server...")
-			shadowHTTPResp := utils.GetHTTPResponseCopy(req.Response)
-			go performShadowRESPMOD(*siSvc, *req.Request, shadowHTTPResp)
-		}
-
-		if riSvc != nil && riCfg.RespmodEndpoint != "" {
-
-			riSvc.Endpoint = riCfg.RespmodEndpoint
-			riSvc.HTTPRequest = req.Request
-			riSvc.HTTPResponse = req.Response
-
-			if req.Request.URL.Scheme == "" {
-				debugLogger.LogToFile("Scheme not found, changing the url")
-				u, _ := url.Parse("http://" + req.Request.Host + req.Request.URL.Path)
-				req.Request.URL = u
-			}
-
-			b, err := ioutil.ReadAll(req.Response.Body)
-
-			if err != nil {
-				errorLogger.LogToFile("Error reading the body: ", err.Error())
-			}
-
-			bdyStr := string(b)
-			if len(b) > int(req.Response.ContentLength) {
-				if strings.HasSuffix(bdyStr, "\n\n") {
-					bdyStr = strings.TrimSuffix(bdyStr, "\n\n")
-				}
-			}
-
-			req.Response.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(bdyStr)))
-
-			resp, err := service.RemoteICAPRespmod(*riSvc)
-
-			if err != nil {
-				errorLogger.LogfToFile("Failed to make RESPMOD call to remote icap server: %s\n", err.Error())
-				w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
-				return
-			}
-
-			utils.CopyHeaders(resp.Header, h, "")
-
-			infoLogger.LogfToFile("Received response from the remote ICAP server with status code: %d...\n", resp.StatusCode)
-
-			if resp.StatusCode == http.StatusOK { // NOTE: this is done to render the error html page, not sure this is the proper way
-
-				if resp.ContentResponse != nil && resp.ContentResponse.Body != nil {
-
-					bdyByte, err := ioutil.ReadAll(resp.ContentResponse.Body)
-					if err != nil && err != io.ErrUnexpectedEOF {
-						errorLogger.LogToFile("Failed to read body from the remote icap response: ", err.Error())
-						w.WriteHeader(utils.IfPropagateError(http.StatusInternalServerError, http.StatusNoContent), nil, false)
-						return
-					}
-
-					defer resp.ContentResponse.Body.Close()
-
-					w.WriteHeader(resp.StatusCode, resp.ContentResponse, true)
-
-					w.Write(bdyByte)
-					return
-				}
-			}
-			w.WriteHeader(resp.StatusCode, nil, false)
+		/* If any remote icap is enabled, the work flow is controlled by the remote icap */
+		if config.RemoteICAP().Enabled {
+			performRemoteRESPMOD(req, w)
 			return
 		}
 
@@ -412,64 +302,16 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 	infoLogger.LogfToFile("Request received---> METHOD:%s URL:%s\n", req.Method, req.RawURL)
 
 	appCfg := config.App()
-	riCfg := config.RemoteICAP()
-	siCfg := config.ShadowICAP()
-	var riSvc, siSvc *service.RemoteICAPService
-
-	if riCfg.Enabled {
-		riSvc = &service.RemoteICAPService{
-			URL:           riCfg.BaseURL,
-			Timeout:       riCfg.Timeout,
-			RequestHeader: http.Header{},
-		}
-
-		utils.CopyHeaders(req.Header, riSvc.RequestHeader, "")
-		infoLogger.LogToFile("Passing request to the remote ICAP server...")
-
-	}
-
-	if siCfg.Enabled && riCfg.Enabled {
-		siSvc = &service.RemoteICAPService{
-			URL:           siCfg.BaseURL,
-			Timeout:       siCfg.Timeout,
-			RequestHeader: http.Header{},
-		}
-
-		utils.CopyHeaders(req.Header, siSvc.RequestHeader, "")
-
-	}
 
 	switch req.Method {
 	case utils.ICAPModeOptions:
 
-		if siSvc != nil && riSvc != nil && siCfg.ReqmodEndpoint != "" {
-			infoLogger.LogToFile("Passing request to the shadow ICAP server...")
-			go performShadowOPTIONS(*siSvc)
-		}
-
-		if riSvc != nil && riCfg.ReqmodEndpoint != "" {
-
-			riSvc.Endpoint = riCfg.ReqmodEndpoint
-			if riCfg.OptionsEndpoint != "" {
-				riSvc.Endpoint = riCfg.OptionsEndpoint
-			}
-
-			resp, err := service.RemoteICAPOptions(*riSvc)
-
-			if err != nil {
-				errorLogger.LogfToFile("Failed to make OPTIONS call of remote icap server: %s\n", err.Error())
-				w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
-				return
-			}
-
-			infoLogger.LogfToFile("Received response from the remote ICAP server with status code: %d...\n", resp.StatusCode)
-
-			utils.CopyHeaders(resp.Header, h, utils.HeaderEncapsulated)
-
-			w.WriteHeader(resp.StatusCode, nil, false)
+		// /* If any remote icap is enabled, the work flow is controlled by the remote icap */
+		if config.RemoteICAP().Enabled {
+			performRemoteOPTIONS(req, w, config.RemoteICAP().ReqmodEndpoint)
 			return
-
 		}
+
 		h.Set("Methods", utils.ICAPModeReq)
 		h.Set("Allow", "204")
 		h.Set("Preview", "0")
@@ -483,62 +325,9 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 			return
 		}
 
-		if siSvc != nil && riSvc != nil && riCfg.ReqmodEndpoint != "" {
-			infoLogger.LogToFile("Passing request to the shadow ICAP server...")
-			go performShadowREQMOD(*siSvc, *req.Request)
-		}
-
-		if riSvc != nil && riCfg.ReqmodEndpoint != "" {
-			riSvc.Endpoint = riCfg.ReqmodEndpoint
-			riSvc.HTTPRequest = req.Request
-
-			if req.Request.URL.Scheme == "" {
-				debugLogger.LogToFile("Scheme not found, changing the url")
-				u, _ := url.Parse("http://" + req.Request.Host + req.Request.URL.Path)
-				req.Request.URL = u
-			}
-
-			ext := utils.GetFileExtension(req.Request)
-
-			if ext == "" {
-				debugLogger.LogToFile("Processing not required...")
-				w.WriteHeader(http.StatusNoContent, nil, false)
-				return
-			}
-
-			resp, err := service.RemoteICAPReqmod(*riSvc)
-
-			if err != nil {
-				errorLogger.LogfToFile("Failed to make REQMOD call to remote icap server: %s\n", err.Error())
-				w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
-				return
-			}
-
-			utils.CopyHeaders(resp.Header, h, "")
-
-			infoLogger.LogfToFile("Received response from the remote ICAP server with status code: %d...\n", resp.StatusCode)
-
-			if resp.StatusCode == http.StatusOK {
-
-				if resp.ContentResponse != nil && resp.ContentResponse.Body != nil {
-
-					bdyByte, err := ioutil.ReadAll(resp.ContentResponse.Body)
-					if err != nil && err != io.ErrUnexpectedEOF {
-						errorLogger.LogToFile("Failed to read body from the remote icap response: ", err.Error())
-						w.WriteHeader(utils.IfPropagateError(http.StatusInternalServerError, http.StatusNoContent), nil, false)
-						return
-					}
-
-					defer resp.ContentResponse.Body.Close()
-
-					w.WriteHeader(resp.StatusCode, resp.ContentResponse, true)
-
-					w.Write(bdyByte)
-					return
-				}
-			}
-
-			w.WriteHeader(resp.StatusCode, nil, false)
+		// /* If any remote icap is enabled, the work flow is controlled by the remote icap */
+		if config.RemoteICAP().Enabled {
+			performRemoteREQMOD(req, w)
 			return
 		}
 

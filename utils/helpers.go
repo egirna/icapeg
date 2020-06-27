@@ -160,3 +160,9 @@ func CopyHeaders(src map[string][]string, dest http.Header, without string) {
 		}
 	}
 }
+
+// GetNewURL generates a new URL for a http request with a URL with no scheme
+func GetNewURL(req *http.Request) *url.URL {
+	u, _ := url.Parse("http://" + req.Host + req.URL.Path)
+	return u
+}
