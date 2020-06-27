@@ -2,16 +2,30 @@ package api
 
 import (
 	"bytes"
+	"fmt"
 	"icapeg/config"
 	"icapeg/service"
 	"icapeg/utils"
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
+
+	"github.com/spf13/viper"
 )
 
+func getShadowConfig(name string) config.RemoteICAPConfig {
+	return config.RemoteICAPConfig{
+		BaseURL:         viper.GetString(fmt.Sprintf("%s.base_url", name)),
+		ReqmodEndpoint:  viper.GetString(fmt.Sprintf("%s.reqmod_endpoint", name)),
+		RespmodEndpoint: viper.GetString(fmt.Sprintf("%s.respmod_endpoint", name)),
+		OptionsEndpoint: viper.GetString(fmt.Sprintf("%s.options_endpoint", name)),
+		Timeout:         viper.GetDuration(fmt.Sprintf("%s.timeout", name)) * time.Second,
+	}
+}
+
 func performShadowOPTIONS(svc service.RemoteICAPService, alternativeEndpoint string) {
-	siCfg := config.ShadowICAP()
+	siCfg := getShadowConfig(config.Shadow().RemoteICAP)
 	svc.Endpoint = alternativeEndpoint
 	if siCfg.OptionsEndpoint != "" {
 		svc.Endpoint = siCfg.OptionsEndpoint
@@ -34,7 +48,7 @@ func performShadowOPTIONS(svc service.RemoteICAPService, alternativeEndpoint str
 }
 
 func performShadowRESPMOD(svc service.RemoteICAPService, httpReq http.Request, httpResp http.Response) {
-	siCfg := config.ShadowICAP()
+	siCfg := getShadowConfig(config.Shadow().RemoteICAP)
 	svc.Endpoint = siCfg.RespmodEndpoint
 	svc.HTTPRequest = &httpReq
 	svc.HTTPResponse = &httpResp
@@ -83,7 +97,7 @@ func performShadowRESPMOD(svc service.RemoteICAPService, httpReq http.Request, h
 }
 
 func performShadowREQMOD(svc service.RemoteICAPService, httpReq http.Request) {
-	siCfg := config.ShadowICAP()
+	siCfg := getShadowConfig(config.Shadow().RemoteICAP)
 	svc.Endpoint = siCfg.ReqmodEndpoint
 	svc.HTTPRequest = &httpReq
 

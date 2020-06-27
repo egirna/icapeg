@@ -38,7 +38,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 	case utils.ICAPModeOptions:
 
 		/* If any remote icap is enabled, the work flow is controlled by the remote icap */
-		if config.RemoteICAP().Enabled {
+		if appCfg.RemoteICAP != "" {
 			performRemoteOPTIONS(req, w, config.RemoteICAP().RespmodEndpoint)
 			return
 		}
@@ -61,7 +61,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 		}
 
 		/* If any remote icap is enabled, the work flow is controlled by the remote icap */
-		if config.RemoteICAP().Enabled {
+		if appCfg.RemoteICAP != "" {
 			performRemoteRESPMOD(req, w)
 			return
 		}
@@ -307,7 +307,7 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 	case utils.ICAPModeOptions:
 
 		// /* If any remote icap is enabled, the work flow is controlled by the remote icap */
-		if config.RemoteICAP().Enabled {
+		if appCfg.RemoteICAP != "" {
 			performRemoteOPTIONS(req, w, config.RemoteICAP().ReqmodEndpoint)
 			return
 		}
@@ -326,7 +326,7 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 		}
 
 		// /* If any remote icap is enabled, the work flow is controlled by the remote icap */
-		if config.RemoteICAP().Enabled {
+		if appCfg.RemoteICAP != "" {
 			performRemoteREQMOD(req, w)
 			return
 		}

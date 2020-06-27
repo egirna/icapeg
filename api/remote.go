@@ -16,13 +16,13 @@ import (
 
 func performRemoteOPTIONS(req *icap.Request, w icap.ResponseWriter, alternativeEndpoint string) {
 	riCfg := config.RemoteICAP()
-	siCfg := config.ShadowICAP()
 	var riSvc, siSvc service.RemoteICAPService
 
 	riSvc = prepareRemoteSvc(req.Header, riCfg.BaseURL, riCfg.Timeout)
 	infoLogger.LogToFile("Passing request to the remote ICAP server...")
 
-	if siCfg.Enabled && riCfg.Enabled {
+	if config.Shadow().RemoteICAP != "" {
+		siCfg := getShadowConfig(config.Shadow().RemoteICAP)
 		siSvc = prepareRemoteSvc(req.Header, siCfg.BaseURL, siCfg.Timeout)
 		infoLogger.LogToFile("Passing request to the shadow ICAP server...")
 		go performShadowOPTIONS(siSvc, alternativeEndpoint)
@@ -52,13 +52,13 @@ func performRemoteOPTIONS(req *icap.Request, w icap.ResponseWriter, alternativeE
 func performRemoteRESPMOD(req *icap.Request, w icap.ResponseWriter) {
 
 	riCfg := config.RemoteICAP()
-	siCfg := config.ShadowICAP()
 	var riSvc, siSvc service.RemoteICAPService
 
 	riSvc = prepareRemoteSvc(req.Header, riCfg.BaseURL, riCfg.Timeout)
 	infoLogger.LogToFile("Passing request to the remote ICAP server...")
 
-	if siCfg.Enabled && riCfg.Enabled {
+	if config.Shadow().RemoteICAP != "" {
+		siCfg := getShadowConfig(config.Shadow().RemoteICAP)
 		siSvc = prepareRemoteSvc(req.Header, siCfg.BaseURL, siCfg.Timeout)
 		infoLogger.LogToFile("Passing request to the shadow ICAP server...")
 		shadowHTTPResp := utils.GetHTTPResponseCopy(req.Response)
@@ -126,13 +126,13 @@ func performRemoteRESPMOD(req *icap.Request, w icap.ResponseWriter) {
 
 func performRemoteREQMOD(req *icap.Request, w icap.ResponseWriter) {
 	riCfg := config.RemoteICAP()
-	siCfg := config.ShadowICAP()
 	var riSvc, siSvc service.RemoteICAPService
 
 	riSvc = prepareRemoteSvc(req.Header, riCfg.BaseURL, riCfg.Timeout)
 	infoLogger.LogToFile("Passing request to the remote ICAP server...")
 
-	if siCfg.Enabled && riCfg.Enabled {
+	if config.Shadow().RemoteICAP != "" {
+		siCfg := getShadowConfig(config.Shadow().RemoteICAP)
 		siSvc = prepareRemoteSvc(req.Header, siCfg.BaseURL, siCfg.Timeout)
 		infoLogger.LogToFile("Passing request to the shadow ICAP server...")
 		go performShadowREQMOD(siSvc, *req.Request)

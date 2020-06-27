@@ -1,14 +1,14 @@
 package config
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/spf13/viper"
 )
 
-// RemoteICAPCfg represents the remote icap configuration settings
-type RemoteICAPCfg struct {
-	Enabled         bool
+// RemoteICAPConfig represents the remote icap configuration settings
+type RemoteICAPConfig struct {
 	BaseURL         string
 	ReqmodEndpoint  string
 	RespmodEndpoint string
@@ -16,21 +16,20 @@ type RemoteICAPCfg struct {
 	Timeout         time.Duration
 }
 
-var riCfg RemoteICAPCfg
+var riCfg RemoteICAPConfig
 
 // LoadRemoteICAP populated the remote icap configuration instance with values from the config
-func LoadRemoteICAP() {
-	riCfg = RemoteICAPCfg{
-		Enabled:         viper.GetBool("remote_icap.enabled"),
-		BaseURL:         viper.GetString("remote_icap.base_url"),
-		ReqmodEndpoint:  viper.GetString("remote_icap.reqmod_endpoint"),
-		RespmodEndpoint: viper.GetString("remote_icap.respmod_endpoint"),
-		OptionsEndpoint: viper.GetString("remote_icap.options_endpoint"),
-		Timeout:         viper.GetDuration("remote_icap.timeout") * time.Second,
+func LoadRemoteICAP(name string) {
+	riCfg = RemoteICAPConfig{
+		BaseURL:         viper.GetString(fmt.Sprintf("%s.base_url", name)),
+		ReqmodEndpoint:  viper.GetString(fmt.Sprintf("%s.reqmod_endpoint", name)),
+		RespmodEndpoint: viper.GetString(fmt.Sprintf("%s.respmod_endpoint", name)),
+		OptionsEndpoint: viper.GetString(fmt.Sprintf("%s.options_endpoint", name)),
+		Timeout:         viper.GetDuration(fmt.Sprintf("%s.timeout", name)) * time.Second,
 	}
 }
 
 // RemoteICAP returns the remote icap configuration instance
-func RemoteICAP() RemoteICAPCfg {
+func RemoteICAP() RemoteICAPConfig {
 	return riCfg
 }
