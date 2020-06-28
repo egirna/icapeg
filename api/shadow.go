@@ -24,7 +24,7 @@ func getShadowConfig(name string) config.RemoteICAPConfig {
 	}
 }
 
-func performShadowOPTIONS(svc service.RemoteICAPService, alternativeEndpoint string) {
+func doShadowOPTIONS(svc service.RemoteICAPService, alternativeEndpoint string) {
 	siCfg := getShadowConfig(config.Shadow().RemoteICAP)
 	svc.Endpoint = alternativeEndpoint
 	if siCfg.OptionsEndpoint != "" {
@@ -47,7 +47,7 @@ func performShadowOPTIONS(svc service.RemoteICAPService, alternativeEndpoint str
 	}
 }
 
-func performShadowRESPMOD(svc service.RemoteICAPService, httpReq http.Request, httpResp http.Response) {
+func doShadowRESPMOD(svc service.RemoteICAPService, httpReq http.Request, httpResp http.Response) {
 	siCfg := getShadowConfig(config.Shadow().RemoteICAP)
 	svc.Endpoint = siCfg.RespmodEndpoint
 	svc.HTTPRequest = &httpReq
@@ -96,7 +96,7 @@ func performShadowRESPMOD(svc service.RemoteICAPService, httpReq http.Request, h
 	}
 }
 
-func performShadowREQMOD(svc service.RemoteICAPService, httpReq http.Request) {
+func doShadowREQMOD(svc service.RemoteICAPService, httpReq http.Request) {
 	siCfg := getShadowConfig(config.Shadow().RemoteICAP)
 	svc.Endpoint = siCfg.ReqmodEndpoint
 	svc.HTTPRequest = &httpReq

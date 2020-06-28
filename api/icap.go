@@ -6,14 +6,12 @@ import (
 	"icapeg/config"
 	"icapeg/dtos"
 	"icapeg/logger"
-	"icapeg/service"
 	"icapeg/utils"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/egirna/icap"
 )
@@ -39,7 +37,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 
 		/* If any remote icap is enabled, the work flow is controlled by the remote icap */
 		if appCfg.RemoteICAP != "" {
-			performRemoteOPTIONS(req, w, config.RemoteICAP().RespmodEndpoint)
+			doRemoteOPTIONS(req, w, config.RemoteICAP().RespmodEndpoint)
 			return
 		}
 
@@ -62,7 +60,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 
 		/* If any remote icap is enabled, the work flow is controlled by the remote icap */
 		if appCfg.RemoteICAP != "" {
-			performRemoteRESPMOD(req, w)
+			doRemoteRESPMOD(req, w)
 			return
 		}
 
@@ -124,165 +122,29 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			FileSize: float64(buf.Len()),
 		}
 
-		localService := service.IsServiceLocal(scannerName)
+		status, sampleInfo := doScan(scannerName, filename, fmi, buf, "") // scan the file for any anomalies
 
-		if localService { // if the scanner is installed locally
-			lsvc := service.GetLocalService(scannerName)
+		if status == http.StatusOK && sampleInfo != nil {
+			infoLogger.LogfToFile("The file:%s is %s\n", filename, sampleInfo.SampleSeverity)
+			htmlBuf, newResp := utils.GetTemplateBufferAndResponse(utils.BadFileTemplate, &dtos.TemplateData{
+				FileName:     sampleInfo.FileName,
+				FileType:     sampleInfo.SampleType,
+				FileSizeStr:  sampleInfo.FileSizeStr,
+				RequestedURL: utils.BreakHTTPURL(req.Request.RequestURI),
+				Severity:     sampleInfo.SampleSeverity,
+				Score:        sampleInfo.VTIScore,
+				ResultsBy:    scannerName,
+			})
+			w.WriteHeader(http.StatusOK, newResp, true)
+			w.Write(htmlBuf.Bytes())
 
-			if lsvc == nil {
-				debugLogger.LogToFile("No such scanner vendors:", scannerName)
-				w.WriteHeader(utils.IfPropagateError(http.StatusBadRequest, http.StatusNoContent), nil, false)
-				return
-			}
-
-			if !lsvc.RespSupported() {
-				debugLogger.LogfToFile("The vendor %s does not support respmod of icap\n", scannerName)
-				w.WriteHeader(utils.IfPropagateError(http.StatusBadRequest, http.StatusNoContent), nil, false)
-				return
-			}
-
-			sampleInfo, err := lsvc.ScanFileStream(buf, fmi)
-			if err != nil {
-				errorLogger.LogToFile("Couldn't fetch sample information for local service: ", err.Error())
-				w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
-				return
-			}
-
-			debugLogger.DumpToFile("result", sampleInfo)
-
-			if !utils.InStringSlice(sampleInfo.SampleSeverity, lsvc.GetOkFileStatus()) { // checking is the sample severity is amongst the allowable file status
-				debugLogger.LogfToFile("The file:%s is %s\n", filename, sampleInfo.SampleSeverity)
-				htmlBuf, newResp := utils.GetTemplateBufferAndResponse(utils.BadFileTemplate, &dtos.TemplateData{
-					FileName:     sampleInfo.FileName,
-					FileType:     sampleInfo.SampleType,
-					FileSizeStr:  sampleInfo.FileSizeStr,
-					RequestedURL: utils.BreakHTTPURL(req.Request.RequestURI),
-					Severity:     sampleInfo.SampleSeverity,
-					Score:        sampleInfo.VTIScore,
-					ResultsBy:    scannerName,
-				})
-				w.WriteHeader(http.StatusOK, newResp, true)
-				w.Write(htmlBuf.Bytes())
-				return
-			}
-
+			return
 		}
 
-		if !localService { // if the scanner is an external service requiring API calls.
-			// making necessary service api calls
-
-			svc := service.GetService(scannerName)
-
-			if svc == nil {
-				debugLogger.LogToFile("No such scanner vendors:", scannerName)
-				w.WriteHeader(utils.IfPropagateError(http.StatusBadRequest, http.StatusNoContent), nil, false)
-				return
-			}
-
-			if svc == nil {
-				debugLogger.LogToFile("No such scanner vendors:", scannerName)
-				w.WriteHeader(utils.IfPropagateError(http.StatusBadRequest, http.StatusNoContent), nil, false)
-				return
-			}
-
-			if !svc.RespSupported() {
-				debugLogger.LogfToFile("The vendor %s does not support respmod of icap\n", scannerName)
-				w.WriteHeader(utils.IfPropagateError(http.StatusBadRequest, http.StatusNoContent), nil, false)
-				return
-			}
-
-			// The submit file api call is commented out for safety for now
-			submitResp, err := svc.SubmitFile(buf, filename) // submitting the file for analysing
-			if err != nil {
-				errorLogger.LogfToFile("Failed to submit file to %s: %s\n", scannerName, err.Error())
-				w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
-				return
-			}
-
-			if !submitResp.SubmissionExists {
-				debugLogger.LogToFile("No submissions for the file")
-				w.WriteHeader(http.StatusNoContent, nil, false)
-				return
-			}
-
-			debugLogger.DumpToFile("submit response", submitResp)
-
-			submissionFinished := false
-			statusCheckFinishTime := time.Now().Add(svc.GetStatusCheckTimeout()) // the time after which, the system is to stop checking for submission finish
-			var sampleInfo *dtos.SampleInfo
-			sampleID := submitResp.SubmissionSampleID //"4715575"
-
-			for !submissionFinished && time.Now().Before(statusCheckFinishTime) { // while the time dedicated for status checking has no expired
-				submissionID := submitResp.SubmissionID //"5651578"
-
-				switch svc.StatusEndpointExists() { // this blocks acts depending of the fact that the scanner has a seperate endpoint for checking file scan status or not, somne of them has and some don't
-				case true:
-					submissionStatus, err := svc.GetSubmissionStatus(submissionID) // getting the file submission status by the submission id received by submitting the file
-					if err != nil {
-						errorLogger.LogfToFile("Failed to get submission status from %s: %s\n", scannerName, err.Error())
-						w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
-						return
-					}
-
-					debugLogger.DumpToFile("submission status resp", submissionStatus)
-
-					submissionFinished = submissionStatus.SubmissionFinished
-				case false: // if it doesn;t the file report result will contain the information
-					var err error
-					sampleInfo, err = svc.GetSampleFileInfo(sampleID, fmi)
-					if err != nil {
-						errorLogger.LogToFile("Couldn't fetch sample information during status check: ", err.Error())
-						w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
-						return
-					}
-					submissionFinished = sampleInfo.SubmissionFinished
-				default:
-					debugLogger.LogToFile("Put the status_endpoint_exists field in the config file under the scanner vendor")
-				}
-
-				if !submissionFinished { // if the submission is not finished, wait for a certain time and then call again
-					time.Sleep(svc.GetStatusCheckInterval())
-				}
-			}
-
-			if !submissionFinished {
-				debugLogger.LogToFile("File submission is taking too long to finish")
-				w.WriteHeader(http.StatusNoContent, nil, false)
-				return
-			}
-
-			if sampleInfo == nil {
-				var err error
-				sampleInfo, err = svc.GetSampleFileInfo(sampleID, fmi) // getting the results after scanner is done analysing the file
-				if err != nil {
-					errorLogger.LogToFile("Couldn't fetch sample information after submission finish: ", err.Error())
-					w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
-					return
-				}
-			}
-
-			debugLogger.DumpToFile("result", sampleInfo)
-
-			if !utils.InStringSlice(sampleInfo.SampleSeverity, svc.GetOkFileStatus()) { // checking is the sample severity is amongst the allowable file status
-				infoLogger.LogfToFile("The file:%s is %s\n", filename, sampleInfo.SampleSeverity)
-				htmlBuf, newResp := utils.GetTemplateBufferAndResponse(utils.BadFileTemplate, &dtos.TemplateData{
-					FileName:     sampleInfo.FileName,
-					FileType:     sampleInfo.SampleType,
-					FileSizeStr:  sampleInfo.FileSizeStr,
-					RequestedURL: utils.BreakHTTPURL(req.Request.RequestURI),
-					Severity:     sampleInfo.SampleSeverity,
-					Score:        sampleInfo.VTIScore,
-					ResultsBy:    scannerName,
-				})
-				w.WriteHeader(http.StatusOK, newResp, true)
-				w.Write(htmlBuf.Bytes())
-
-				return
-			}
+		if status == http.StatusNoContent {
+			infoLogger.LogfToFile("The file %s is good to go\n", filename)
 		}
-
-		infoLogger.LogfToFile("The file %s is good to go\n", filename)
-		w.WriteHeader(http.StatusNoContent, nil, false) // all ok, show the contents as it is
+		w.WriteHeader(status, nil, false) // \
 
 	case "ERRDUMMY":
 		w.WriteHeader(http.StatusBadRequest, nil, false)
@@ -308,7 +170,7 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 
 		// /* If any remote icap is enabled, the work flow is controlled by the remote icap */
 		if appCfg.RemoteICAP != "" {
-			performRemoteOPTIONS(req, w, config.RemoteICAP().ReqmodEndpoint)
+			doRemoteOPTIONS(req, w, config.RemoteICAP().ReqmodEndpoint)
 			return
 		}
 
@@ -327,7 +189,7 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 
 		// /* If any remote icap is enabled, the work flow is controlled by the remote icap */
 		if appCfg.RemoteICAP != "" {
-			performRemoteREQMOD(req, w)
+			doRemoteREQMOD(req, w)
 			return
 		}
 
@@ -375,93 +237,9 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 			FileType: fileExt,
 		}
 
-		svc := service.GetService(scannerName)
+		status, sampleInfo := doScan(scannerName, filename, fmi, nil, fileURL)
 
-		if svc == nil {
-			debugLogger.LogToFile("No such scanner vendors:", scannerName)
-			w.WriteHeader(utils.IfPropagateError(http.StatusBadRequest, http.StatusNoContent), nil, false)
-			return
-		}
-
-		if !svc.ReqSupported() {
-			debugLogger.LogfToFile("The vendor %s does not support reqmod of icap\n", scannerName)
-			w.WriteHeader(utils.IfPropagateError(http.StatusBadRequest, http.StatusNoContent), nil, false)
-			return
-		}
-
-		// The submit file api call is commented out for safety for now
-		submitResp, err := svc.SubmitURL(fileURL, filename) // submitting the file for analysing
-		if err != nil {
-			errorLogger.LogfToFile("Failed to submit url to %s: %s\n", scannerName, err.Error())
-			w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
-			return
-		}
-
-		if !submitResp.SubmissionExists {
-			debugLogger.LogToFile("No submissions for the file")
-			w.WriteHeader(http.StatusNoContent, nil, false)
-			return
-		}
-
-		debugLogger.DumpToFile("submit response", submitResp)
-
-		submissionFinished := false
-		statusCheckFinishTime := time.Now().Add(svc.GetStatusCheckTimeout()) // the time after which, the system is to stop checking for submission finish
-		var sampleInfo *dtos.SampleInfo
-		sampleID := submitResp.SubmissionSampleID //"4715575"
-
-		for !submissionFinished && time.Now().Before(statusCheckFinishTime) { // while the time dedicated for status checking has no expired
-			submissionID := submitResp.SubmissionID //"5651578"
-
-			switch svc.StatusEndpointExists() { // this blocks acts depending of the fact that the scanner has a seperate endpoint for checking file scan status or not, somne of them has and some don't
-			case true:
-				submissionStatus, err := svc.GetSubmissionStatus(submissionID) // getting the file submission status by the submission id received by submitting the file
-				if err != nil {
-					errorLogger.LogfToFile("Failed to get submission status from %s: %s\n", scannerName, err.Error())
-					w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
-					return
-				}
-
-				debugLogger.DumpToFile("submission status resp", submissionStatus)
-
-				submissionFinished = submissionStatus.SubmissionFinished
-			case false: // if it doesn;t the file report result will contain the information
-				var err error
-				sampleInfo, err = svc.GetSampleURLInfo(sampleID, fmi)
-				if err != nil {
-					errorLogger.LogToFile("Couldn't fetch sample information during status check: ", err.Error())
-					w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
-					return
-				}
-				submissionFinished = sampleInfo.SubmissionFinished
-			default:
-				debugLogger.LogToFile("Put the status_endpoint_exists field in the config file under the scanner vendor")
-			}
-
-			if !submissionFinished { // if the submission is not finished, wait for a certain time and then call again
-				time.Sleep(svc.GetStatusCheckInterval())
-			}
-		}
-
-		if !submissionFinished {
-			debugLogger.LogToFile("File submission is taking too long to finish")
-			w.WriteHeader(http.StatusNoContent, nil, false)
-			return
-		}
-
-		if sampleInfo == nil {
-			var err error
-			sampleInfo, err = svc.GetSampleURLInfo(sampleID, fmi) // getting the results after scanner is done analysing the file
-			if err != nil {
-				errorLogger.LogToFile("Couldn't fetch sample information after submission finish: ", err.Error())
-				w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
-				return
-			}
-		}
-
-		debugLogger.DumpToFile("result", sampleInfo)
-
-		if !utils.InStringSlice(sampleInfo.SampleSeverity, svc.GetOkFileStatus()) { // checking is the sample severity is amongst the allowable file status
+		if status == http.StatusOK && sampleInfo != nil {
 			infoLogger.LogfToFile("The url:%s is %s\n", filename, sampleInfo.SampleSeverity)
 			data := &dtos.TemplateData{
 				FileName:     sampleInfo.FileName,
@@ -488,8 +266,11 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 			return
 		}
 
-		infoLogger.LogfToFile("The url %s is good to go\n", fileURL)
-		w.WriteHeader(http.StatusNoContent, nil, false)
+		if status == http.StatusNoContent {
+			infoLogger.LogfToFile("The url %s is good to go\n", fileURL)
+		}
+
+		w.WriteHeader(status, nil, false)
 
 	case "ERRDUMMY":
 		w.WriteHeader(http.StatusBadRequest, nil, false)
