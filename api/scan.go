@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"icapeg/config"
 	"icapeg/dtos"
 	"icapeg/service"
 	"icapeg/utils"
@@ -10,6 +11,10 @@ import (
 )
 
 func doScan(scannerName, filename string, fmi dtos.FileMetaInfo, buf *bytes.Buffer, fileURL string) (int, *dtos.SampleInfo) {
+
+	if config.Shadow().RespScannerVendor != "" || config.Shadow().ReqScannerVendor != "" {
+		go doShadowScan(filename, fmi, buf, fileURL)
+	}
 
 	var sts int
 	var si *dtos.SampleInfo

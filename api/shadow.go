@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"icapeg/config"
+	"icapeg/dtos"
 	"icapeg/service"
 	"icapeg/utils"
 	"io/ioutil"
@@ -134,5 +135,57 @@ func doShadowREQMOD(svc service.RemoteICAPService, httpReq http.Request) {
 			infoLogger.LogfToFile("%s: %v\n", header, values)
 		}
 	}
+
+}
+
+func doShadowScan(filename string, fmi dtos.FileMetaInfo, buf *bytes.Buffer, fileURL string) {
+
+	scannerName := ""
+	if buf == nil && fileURL != "" {
+		scannerName = config.Shadow().ReqScannerVendor
+	}
+	if buf != nil && fileURL == "" {
+		scannerName = config.Shadow().RespScannerVendor
+	}
+
+	var sts int
+	var si *dtos.SampleInfo
+
+	localService := service.IsServiceLocal(scannerName)
+
+	if localService && buf != nil { // if the scanner is installed locally
+		sts, si = doLocalScan(scannerName, fmi, buf)
+	}
+
+	if !localService { // if the scanner is an external service requiring API calls.
+
+		if buf == nil && fileURL != "" { // indicates this is a URL scan request
+			sts, si = doRemoteURLScan(scannerName, filename, fmi, fileURL)
+		}
+
+		if buf != nil && fileURL == "" { // indicates this is a File scan request
+			sts, si = doRemoteFileScan(scannerName, filename, fmi, buf)
+		}
+
+	}
+
+	infoLogger.LogToFile("The Shadow Result:")
+	infoLogger.LogToFile("------------------------------")
+
+	infoLogger.LogfToFile("Response Status from the shadow scanner(%s): %d", scannerName, sts)
+	if sts == http.StatusNoContent {
+		infoLogger.LogfToFile("The file:%s is good to go\n", filename)
+	}
+	if sts == http.StatusOK {
+		infoLogger.LogToFile("File Name: ", si.FileName)
+		infoLogger.LogToFile("File Type: ", si.SampleType)
+		infoLogger.LogToFile("File Size: ", si.FileSizeStr)
+		infoLogger.LogToFile("Requested URL: ", utils.BreakHTTPURL(fileURL))
+		infoLogger.LogToFile("Severity", si.SampleSeverity)
+		infoLogger.LogToFile("Positive Score: ", si.VTIScore)
+		infoLogger.LogToFile("Results By: ", scannerName)
+	}
+
+	infoLogger.LogToFile("------------------------------")
 
 }
