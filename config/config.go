@@ -8,16 +8,17 @@ import (
 
 // AppConfig represents the app configuration
 type AppConfig struct {
-	Port              int
-	MaxFileSize       int
-	LogLevel          string
-	RespScannerVendor string
-	ReqScannerVendor  string
-	RemoteICAP        string
-	BypassExtensions  []string
-	ProcessExtensions []string
-	PreviewBytes      string
-	PropagateError    bool
+	Port                    int
+	MaxFileSize             int
+	LogLevel                string
+	RespScannerVendor       string
+	ReqScannerVendor        string
+	RespScannerVendorShadow string
+	ReqScannerVendorShadow  string
+	BypassExtensions        []string
+	ProcessExtensions       []string
+	PreviewBytes            string
+	PropagateError          bool
 }
 
 var appCfg AppConfig
@@ -33,22 +34,17 @@ func Init() {
 	}
 
 	appCfg = AppConfig{
-		Port:              viper.GetInt("app.port"),
-		MaxFileSize:       viper.GetInt("app.max_filesize"),
-		LogLevel:          viper.GetString("app.log_level"),
-		RespScannerVendor: viper.GetString("app.resp_scanner_vendor"),
-		ReqScannerVendor:  viper.GetString("app.req_scanner_vendor"),
-		RemoteICAP:        viper.GetString("app.remote_icap"),
-		BypassExtensions:  viper.GetStringSlice("app.bypass_extensions"),
-		ProcessExtensions: viper.GetStringSlice("app.process_extensions"),
-		PreviewBytes:      viper.GetString("app.preview_bytes"),
-		PropagateError:    viper.GetBool("app.propagate_error"),
-	}
-
-	LoadShadow()
-
-	if appCfg.RemoteICAP != "" {
-		LoadRemoteICAP(appCfg.RemoteICAP)
+		Port:                    viper.GetInt("app.port"),
+		MaxFileSize:             viper.GetInt("app.max_filesize"),
+		LogLevel:                viper.GetString("app.log_level"),
+		RespScannerVendor:       viper.GetString("app.resp_scanner_vendor"),
+		ReqScannerVendor:        viper.GetString("app.req_scanner_vendor"),
+		RespScannerVendorShadow: viper.GetString("app.resp_scanner_vendor_shadow"),
+		ReqScannerVendorShadow:  viper.GetString("app.req_scanner_vendor_shadow"),
+		BypassExtensions:        viper.GetStringSlice("app.bypass_extensions"),
+		ProcessExtensions:       viper.GetStringSlice("app.process_extensions"),
+		PreviewBytes:            viper.GetString("app.preview_bytes"),
+		PropagateError:          viper.GetBool("app.propagate_error"),
 	}
 
 }

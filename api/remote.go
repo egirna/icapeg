@@ -2,38 +2,35 @@ package api
 
 import (
 	"bytes"
-	"icapeg/config"
 	"icapeg/service"
 	"icapeg/utils"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
-	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/egirna/icap"
 )
 
-func doRemoteOPTIONS(req *icap.Request, w icap.ResponseWriter, alternativeEndpoint string) {
-	riCfg := config.RemoteICAP()
-	var riSvc, siSvc service.RemoteICAPService
+func doRemoteOPTIONS(req *icap.Request, w icap.ResponseWriter, vendor, shadowVendor, mode string) {
 
-	riSvc = prepareRemoteSvc(req.Header, riCfg.BaseURL, riCfg.Timeout)
+	riSvc := service.GetICAPService(vendor)
+
 	infoLogger.LogToFile("Passing request to the remote ICAP server...")
 
-	if config.Shadow().RemoteICAP != "" {
-		siCfg := getShadowConfig(config.Shadow().RemoteICAP)
-		siSvc = prepareRemoteSvc(req.Header, siCfg.BaseURL, siCfg.Timeout)
+	if shadowVendor != utils.NoVendor && strings.HasPrefix(shadowVendor, utils.ICAPPrefix) {
+		siSvc := service.GetICAPService(shadowVendor)
+		updateEmptyOptionsEndpoint(siSvc, mode)
 		infoLogger.LogToFile("Passing request to the shadow ICAP server...")
-		go doShadowOPTIONS(siSvc, alternativeEndpoint)
+		go doShadowOPTIONS(siSvc)
 	}
 
-	riSvc.Endpoint = alternativeEndpoint
-	if riCfg.OptionsEndpoint != "" {
-		riSvc.Endpoint = riCfg.OptionsEndpoint
-	}
+	updateEmptyOptionsEndpoint(riSvc, mode)
 
-	resp, err := service.RemoteICAPOptions(riSvc)
+	spew.Dump("sdfksdffjdkjf")
+
+	resp, err := riSvc.DoOptions()
 
 	if err != nil {
 		errorLogger.LogfToFile("Failed to make OPTIONS call of remote icap server: %s\n", err.Error())
@@ -49,25 +46,20 @@ func doRemoteOPTIONS(req *icap.Request, w icap.ResponseWriter, alternativeEndpoi
 
 }
 
-func doRemoteRESPMOD(req *icap.Request, w icap.ResponseWriter) {
+func doRemoteRESPMOD(req *icap.Request, w icap.ResponseWriter, vendor, shadowVendor string) {
 
-	riCfg := config.RemoteICAP()
-	var riSvc, siSvc service.RemoteICAPService
-
-	riSvc = prepareRemoteSvc(req.Header, riCfg.BaseURL, riCfg.Timeout)
+	riSvc := service.GetICAPService(vendor)
 	infoLogger.LogToFile("Passing request to the remote ICAP server...")
 
-	if config.Shadow().RemoteICAP != "" {
-		siCfg := getShadowConfig(config.Shadow().RemoteICAP)
-		siSvc = prepareRemoteSvc(req.Header, siCfg.BaseURL, siCfg.Timeout)
+	if shadowVendor != utils.NoVendor && strings.HasPrefix(shadowVendor, utils.ICAPPrefix) {
+		siSvc := service.GetICAPService(shadowVendor)
 		infoLogger.LogToFile("Passing request to the shadow ICAP server...")
 		shadowHTTPResp := utils.GetHTTPResponseCopy(req.Response)
 		go doShadowRESPMOD(siSvc, *req.Request, shadowHTTPResp)
 	}
 
-	riSvc.Endpoint = riCfg.RespmodEndpoint
-	riSvc.HTTPRequest = req.Request
-	riSvc.HTTPResponse = req.Response
+	riSvc.SetHTTPRequest(req.Request)
+	riSvc.SetHTTPResponse(req.Response)
 
 	if req.Request.URL.Scheme == "" {
 		debugLogger.LogToFile("Scheme not found, changing the url")
@@ -89,7 +81,7 @@ func doRemoteRESPMOD(req *icap.Request, w icap.ResponseWriter) {
 
 	req.Response.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(bdyStr)))
 
-	resp, err := service.RemoteICAPRespmod(riSvc)
+	resp, err := riSvc.DoRespmod()
 
 	if err != nil {
 		errorLogger.LogfToFile("Failed to make RESPMOD call to remote icap server: %s\n", err.Error())
@@ -124,22 +116,18 @@ func doRemoteRESPMOD(req *icap.Request, w icap.ResponseWriter) {
 
 }
 
-func doRemoteREQMOD(req *icap.Request, w icap.ResponseWriter) {
-	riCfg := config.RemoteICAP()
-	var riSvc, siSvc service.RemoteICAPService
+func doRemoteREQMOD(req *icap.Request, w icap.ResponseWriter, vendor, shadowVendor string) {
 
-	riSvc = prepareRemoteSvc(req.Header, riCfg.BaseURL, riCfg.Timeout)
+	riSvc := service.GetICAPService(vendor)
 	infoLogger.LogToFile("Passing request to the remote ICAP server...")
 
-	if config.Shadow().RemoteICAP != "" {
-		siCfg := getShadowConfig(config.Shadow().RemoteICAP)
-		siSvc = prepareRemoteSvc(req.Header, siCfg.BaseURL, siCfg.Timeout)
+	if shadowVendor != utils.NoVendor && strings.HasPrefix(shadowVendor, utils.ICAPPrefix) {
+		siSvc := service.GetICAPService(shadowVendor)
 		infoLogger.LogToFile("Passing request to the shadow ICAP server...")
 		go doShadowREQMOD(siSvc, *req.Request)
 	}
 
-	riSvc.Endpoint = riCfg.ReqmodEndpoint
-	riSvc.HTTPRequest = req.Request
+	riSvc.SetHTTPRequest(req.Request)
 
 	if req.Request.URL.Scheme == "" {
 		debugLogger.LogToFile("Scheme not found, changing the url")
@@ -154,7 +142,7 @@ func doRemoteREQMOD(req *icap.Request, w icap.ResponseWriter) {
 		return
 	}
 
-	resp, err := service.RemoteICAPReqmod(riSvc)
+	resp, err := riSvc.DoReqmod()
 
 	if err != nil {
 		errorLogger.LogfToFile("Failed to make REQMOD call to remote icap server: %s\n", err.Error())
@@ -190,12 +178,13 @@ func doRemoteREQMOD(req *icap.Request, w icap.ResponseWriter) {
 
 }
 
-func prepareRemoteSvc(reqHeaders map[string][]string, url string, timeout time.Duration) service.RemoteICAPService {
-	svc := service.RemoteICAPService{
-		URL:           url,
-		Timeout:       timeout,
-		RequestHeader: http.Header{},
+func updateEmptyOptionsEndpoint(svc service.ICAPService, mode string) {
+	if svc.GetOptionsEndpoint() == "" {
+		if mode == utils.ICAPModeResp {
+			svc.ChangeOptionsEndpoint(svc.GetRespmodEndpoint())
+		}
+		if mode == utils.ICAPModeReq {
+			svc.ChangeOptionsEndpoint(svc.GetReqmodEndpoint())
+		}
 	}
-	utils.CopyHeaders(reqHeaders, svc.RequestHeader, "")
-	return svc
 }

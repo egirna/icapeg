@@ -14,4 +14,6 @@ const (
 	Any                         = "*"
 	NoModificationStatusCodeStr = "204"
 	HeaderEncapsulated          = "Encapsulated"
+	ICAPPrefix                  = "icap_"
+	NoVendor                    = "none"
 )

@@ -12,7 +12,7 @@ import (
 
 func doScan(scannerName, filename string, fmi dtos.FileMetaInfo, buf *bytes.Buffer, fileURL string) (int, *dtos.SampleInfo) {
 
-	if config.Shadow().RespScannerVendor != "" || config.Shadow().ReqScannerVendor != "" {
+	if config.App().RespScannerVendorShadow != utils.NoVendor || config.App().ReqScannerVendorShadow != utils.NoVendor {
 		go doShadowScan(filename, fmi, buf, fileURL)
 	}
 

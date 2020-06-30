@@ -2,7 +2,6 @@ package api
 
 import (
 	"bytes"
-	"fmt"
 	"icapeg/config"
 	"icapeg/dtos"
 	"icapeg/service"
@@ -10,29 +9,11 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
-	"time"
-
-	"github.com/spf13/viper"
 )
 
-func getShadowConfig(name string) config.RemoteICAPConfig {
-	return config.RemoteICAPConfig{
-		BaseURL:         viper.GetString(fmt.Sprintf("%s.base_url", name)),
-		ReqmodEndpoint:  viper.GetString(fmt.Sprintf("%s.reqmod_endpoint", name)),
-		RespmodEndpoint: viper.GetString(fmt.Sprintf("%s.respmod_endpoint", name)),
-		OptionsEndpoint: viper.GetString(fmt.Sprintf("%s.options_endpoint", name)),
-		Timeout:         viper.GetDuration(fmt.Sprintf("%s.timeout", name)) * time.Second,
-	}
-}
+func doShadowOPTIONS(svc service.ICAPService) {
 
-func doShadowOPTIONS(svc service.RemoteICAPService, alternativeEndpoint string) {
-	siCfg := getShadowConfig(config.Shadow().RemoteICAP)
-	svc.Endpoint = alternativeEndpoint
-	if siCfg.OptionsEndpoint != "" {
-		svc.Endpoint = siCfg.OptionsEndpoint
-	}
-
-	resp, err := service.RemoteICAPOptions(svc)
+	resp, err := svc.DoOptions()
 
 	if err != nil {
 		errorLogger.LogfToFile("Failed to make OPTIONS call of shadow icap server: %s\n", err.Error())
@@ -48,11 +29,9 @@ func doShadowOPTIONS(svc service.RemoteICAPService, alternativeEndpoint string) 
 	}
 }
 
-func doShadowRESPMOD(svc service.RemoteICAPService, httpReq http.Request, httpResp http.Response) {
-	siCfg := getShadowConfig(config.Shadow().RemoteICAP)
-	svc.Endpoint = siCfg.RespmodEndpoint
-	svc.HTTPRequest = &httpReq
-	svc.HTTPResponse = &httpResp
+func doShadowRESPMOD(svc service.ICAPService, httpReq http.Request, httpResp http.Response) {
+	svc.SetHTTPRequest(&httpReq)
+	svc.SetHTTPResponse(&httpResp)
 
 	if httpReq.URL.Scheme == "" {
 		debugLogger.LogToFile("Scheme not found, changing the url")
@@ -74,7 +53,7 @@ func doShadowRESPMOD(svc service.RemoteICAPService, httpReq http.Request, httpRe
 
 	httpResp.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(bdyStr)))
 
-	resp, err := service.RemoteICAPRespmod(svc)
+	resp, err := svc.DoRespmod()
 
 	if err != nil {
 		errorLogger.LogfToFile("Failed to make RESPMOD call to shadow icap server: %s\n", err.Error())
@@ -97,10 +76,8 @@ func doShadowRESPMOD(svc service.RemoteICAPService, httpReq http.Request, httpRe
 	}
 }
 
-func doShadowREQMOD(svc service.RemoteICAPService, httpReq http.Request) {
-	siCfg := getShadowConfig(config.Shadow().RemoteICAP)
-	svc.Endpoint = siCfg.ReqmodEndpoint
-	svc.HTTPRequest = &httpReq
+func doShadowREQMOD(svc service.ICAPService, httpReq http.Request) {
+	svc.SetHTTPRequest(&httpReq)
 
 	if httpReq.URL.Scheme == "" {
 		debugLogger.LogToFile("Scheme not found, changing the url")
@@ -114,7 +91,7 @@ func doShadowREQMOD(svc service.RemoteICAPService, httpReq http.Request) {
 		return
 	}
 
-	resp, err := service.RemoteICAPReqmod(svc)
+	resp, err := svc.DoReqmod()
 
 	if err != nil {
 		errorLogger.LogfToFile("Failed to make REQMOD call to shadow icap server: %s\n", err.Error())
@@ -142,10 +119,10 @@ func doShadowScan(filename string, fmi dtos.FileMetaInfo, buf *bytes.Buffer, fil
 
 	scannerName := ""
 	if buf == nil && fileURL != "" {
-		scannerName = config.Shadow().ReqScannerVendor
+		scannerName = config.App().ReqScannerVendorShadow
 	}
 	if buf != nil && fileURL == "" {
-		scannerName = config.Shadow().RespScannerVendor
+		scannerName = config.App().RespScannerVendorShadow
 	}
 
 	var sts int

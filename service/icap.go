@@ -6,6 +6,7 @@ import (
 	"time"
 
 	ic "github.com/egirna/icap-client"
+	"github.com/spf13/viper"
 )
 
 func init() {
@@ -14,29 +15,42 @@ func init() {
 
 // RemoteICAPService represents the remote icap service informations
 type RemoteICAPService struct {
-	URL           string
-	Endpoint      string
-	HTTPRequest   *http.Request
-	HTTPResponse  *http.Response
-	RequestHeader http.Header
-	Timeout       time.Duration
+	url             string
+	respmodEndpoint string
+	reqmodEndpoint  string
+	optionsEndpoint string
+	httpRequest     *http.Request
+	httpResponse    *http.Response
+	requestHeader   http.Header
+	timeout         time.Duration
 }
 
-// RemoteICAPReqmod calls the remote icap server using REQMOD method
-func RemoteICAPReqmod(rs RemoteICAPService) (*ic.Response, error) {
+// NewRemoteICAPService populates and returns a new RemoteICAPService instance
+func NewRemoteICAPService(name string) *RemoteICAPService {
+	return &RemoteICAPService{
+		url:             viper.GetString(fmt.Sprintf("%s.base_url", name)),
+		respmodEndpoint: viper.GetString(fmt.Sprintf("%s.respmod_endpoint", name)),
+		reqmodEndpoint:  viper.GetString(fmt.Sprintf("%s.reqmod_endpoint", name)),
+		optionsEndpoint: viper.GetString(fmt.Sprintf("%s.options_endpoint", name)),
+		timeout:         viper.GetDuration(fmt.Sprintf("%s.timeout", name)) * time.Second,
+	}
+}
 
-	urlStr := rs.URL + rs.Endpoint
+// DoReqmod calls the remote icap server using REQMOD method
+func (r *RemoteICAPService) DoReqmod() (*ic.Response, error) {
 
-	req, err := ic.NewRequest(ic.MethodREQMOD, urlStr, rs.HTTPRequest, nil)
+	urlStr := r.url + r.reqmodEndpoint
+
+	req, err := ic.NewRequest(ic.MethodREQMOD, urlStr, r.httpRequest, nil)
 
 	if err != nil {
 		return nil, err
 	}
 
-	req.ExtendHeader(rs.RequestHeader)
+	req.ExtendHeader(r.requestHeader)
 
 	client := &ic.Client{
-		Timeout: rs.Timeout,
+		Timeout: r.timeout,
 	}
 
 	resp, err := client.Do(req)
@@ -48,21 +62,21 @@ func RemoteICAPReqmod(rs RemoteICAPService) (*ic.Response, error) {
 	return resp, nil
 }
 
-// RemoteICAPRespmod calls the remote icap server using RESPMOD method
-func RemoteICAPRespmod(rs RemoteICAPService) (*ic.Response, error) {
+// DoRespmod calls the remote icap server using RESPMOD method
+func (r *RemoteICAPService) DoRespmod() (*ic.Response, error) {
 
-	urlStr := rs.URL + rs.Endpoint
+	urlStr := r.url + r.respmodEndpoint
 
-	req, err := ic.NewRequest(ic.MethodRESPMOD, urlStr, rs.HTTPRequest, rs.HTTPResponse)
+	req, err := ic.NewRequest(ic.MethodRESPMOD, urlStr, r.httpRequest, r.httpResponse)
 
 	if err != nil {
 		return nil, err
 	}
 
-	req.ExtendHeader(rs.RequestHeader)
+	req.ExtendHeader(r.requestHeader)
 
 	client := &ic.Client{
-		Timeout: rs.Timeout,
+		Timeout: r.timeout,
 	}
 
 	resp, err := client.Do(req)
@@ -74,20 +88,21 @@ func RemoteICAPRespmod(rs RemoteICAPService) (*ic.Response, error) {
 	return resp, nil
 }
 
-// RemoteICAPOptions calls the remote icap server using OPTIONS method
-func RemoteICAPOptions(rs RemoteICAPService) (*ic.Response, error) {
+// DoOptions calls the remote icap server using OPTIONS method
+func (r *RemoteICAPService) DoOptions() (*ic.Response, error) {
 
-	urlStr := rs.URL + rs.Endpoint
-	req, err := ic.NewRequest(ic.MethodOPTIONS, urlStr, rs.HTTPRequest, rs.HTTPResponse)
+	urlStr := r.url + r.optionsEndpoint
+
+	req, err := ic.NewRequest(ic.MethodOPTIONS, urlStr, r.httpRequest, r.httpResponse)
 
 	if err != nil {
 		return nil, err
 	}
 
-	req.ExtendHeader(rs.RequestHeader)
+	req.ExtendHeader(r.requestHeader)
 
 	client := &ic.Client{
-		Timeout: rs.Timeout,
+		Timeout: r.timeout,
 	}
 
 	resp, err := client.Do(req)
@@ -101,4 +116,49 @@ func RemoteICAPOptions(rs RemoteICAPService) (*ic.Response, error) {
 	}
 
 	return resp, nil
+}
+
+// GetURL returns the base url of the remote icap service
+func (r *RemoteICAPService) GetURL() string {
+	return r.url
+}
+
+// GetRespmodEndpoint returns the respmod endpoint of the remote icap service
+func (r *RemoteICAPService) GetRespmodEndpoint() string {
+	return r.respmodEndpoint
+}
+
+// GetReqmodEndpoint returns the reqmod endpoint of the remote icap service
+func (r *RemoteICAPService) GetReqmodEndpoint() string {
+	return r.reqmodEndpoint
+}
+
+// GetOptionsEndpoint returns the options endpoint of the remote icap service
+func (r *RemoteICAPService) GetOptionsEndpoint() string {
+	return r.optionsEndpoint
+}
+
+// GetTimeout returns the timeout of the remote icap service
+func (r *RemoteICAPService) GetTimeout() time.Duration {
+	return r.timeout
+}
+
+// SetHTTPRequest sets the http request of the remote icap service
+func (r *RemoteICAPService) SetHTTPRequest(req *http.Request) {
+	r.httpRequest = req
+}
+
+// SetHTTPResponse sets the http response of the remote icap service
+func (r *RemoteICAPService) SetHTTPResponse(resp *http.Response) {
+	r.httpResponse = resp
+}
+
+// SetHeader sets the request header of the remote icap service
+func (r *RemoteICAPService) SetHeader(hdr http.Header) {
+	r.requestHeader = hdr
+}
+
+// ChangeOptionsEndpoint changes the options endpoint with the given one
+func (r *RemoteICAPService) ChangeOptionsEndpoint(endpoint string) {
+	r.optionsEndpoint = endpoint
 }

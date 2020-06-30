@@ -36,8 +36,8 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 	case utils.ICAPModeOptions:
 
 		/* If any remote icap is enabled, the work flow is controlled by the remote icap */
-		if appCfg.RemoteICAP != "" {
-			doRemoteOPTIONS(req, w, config.RemoteICAP().RespmodEndpoint)
+		if strings.HasPrefix(appCfg.RespScannerVendor, utils.ICAPPrefix) {
+			doRemoteOPTIONS(req, w, appCfg.RespScannerVendor, appCfg.RespScannerVendorShadow, utils.ICAPModeResp)
 			return
 		}
 
@@ -59,14 +59,14 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 		}
 
 		/* If any remote icap is enabled, the work flow is controlled by the remote icap */
-		if appCfg.RemoteICAP != "" {
-			doRemoteRESPMOD(req, w)
+		if strings.HasPrefix(appCfg.RespScannerVendor, utils.ICAPPrefix) {
+			doRemoteRESPMOD(req, w, appCfg.RespScannerVendor, appCfg.RespScannerVendorShadow)
 			return
 		}
 
 		scannerName := strings.ToLower(appCfg.RespScannerVendor) // the name of the scanner vendor
 
-		if scannerName == "" { // if no scanner name provided, then bypass everything
+		if scannerName == utils.NoVendor { // if no scanner name provided, then bypass everything
 			debugLogger.LogToFile("No respmod scanner provided...bypassing everything")
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
@@ -169,8 +169,8 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 	case utils.ICAPModeOptions:
 
 		// /* If any remote icap is enabled, the work flow is controlled by the remote icap */
-		if appCfg.RemoteICAP != "" {
-			doRemoteOPTIONS(req, w, config.RemoteICAP().ReqmodEndpoint)
+		if strings.HasPrefix(appCfg.ReqScannerVendor, utils.ICAPPrefix) {
+			doRemoteOPTIONS(req, w, appCfg.ReqScannerVendor, appCfg.ReqScannerVendorShadow, utils.ICAPModeReq)
 			return
 		}
 
@@ -188,14 +188,14 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 		}
 
 		// /* If any remote icap is enabled, the work flow is controlled by the remote icap */
-		if appCfg.RemoteICAP != "" {
-			doRemoteREQMOD(req, w)
+		if strings.HasPrefix(appCfg.ReqScannerVendor, utils.ICAPPrefix) {
+			doRemoteREQMOD(req, w, appCfg.ReqScannerVendor, appCfg.ReqScannerVendorShadow)
 			return
 		}
 
 		scannerName := strings.ToLower(appCfg.ReqScannerVendor)
 
-		if scannerName == "" {
+		if scannerName == utils.NoVendor {
 			debugLogger.LogToFile("No reqmod scanner provided...bypassing everything")
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
