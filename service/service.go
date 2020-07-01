@@ -57,7 +57,7 @@ type (
 		GetTimeout() time.Duration
 		SetHTTPRequest(*http.Request)
 		SetHTTPResponse(*http.Response)
-		SetHeader(http.Header)
+		SetHeader(map[string][]string)
 		ChangeOptionsEndpoint(string)
 	}
 )

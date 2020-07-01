@@ -9,27 +9,24 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/egirna/icap"
 )
 
 func doRemoteOPTIONS(req *icap.Request, w icap.ResponseWriter, vendor, shadowVendor, mode string) {
 
 	riSvc := service.GetICAPService(vendor)
-
-	infoLogger.LogToFile("Passing request to the remote ICAP server...")
+	riSvc.SetHeader(req.Header)
 
 	if shadowVendor != utils.NoVendor && strings.HasPrefix(shadowVendor, utils.ICAPPrefix) {
 		siSvc := service.GetICAPService(shadowVendor)
+		siSvc.SetHeader(req.Header)
 		updateEmptyOptionsEndpoint(siSvc, mode)
-		infoLogger.LogToFile("Passing request to the shadow ICAP server...")
 		go doShadowOPTIONS(siSvc)
 	}
 
 	updateEmptyOptionsEndpoint(riSvc, mode)
 
-	spew.Dump("sdfksdffjdkjf")
-
+	infoLogger.LogToFile("Passing request to the remote ICAP server...")
 	resp, err := riSvc.DoOptions()
 
 	if err != nil {
@@ -49,11 +46,11 @@ func doRemoteOPTIONS(req *icap.Request, w icap.ResponseWriter, vendor, shadowVen
 func doRemoteRESPMOD(req *icap.Request, w icap.ResponseWriter, vendor, shadowVendor string) {
 
 	riSvc := service.GetICAPService(vendor)
-	infoLogger.LogToFile("Passing request to the remote ICAP server...")
+	riSvc.SetHeader(req.Header)
 
 	if shadowVendor != utils.NoVendor && strings.HasPrefix(shadowVendor, utils.ICAPPrefix) {
 		siSvc := service.GetICAPService(shadowVendor)
-		infoLogger.LogToFile("Passing request to the shadow ICAP server...")
+		siSvc.SetHeader(req.Header)
 		shadowHTTPResp := utils.GetHTTPResponseCopy(req.Response)
 		go doShadowRESPMOD(siSvc, *req.Request, shadowHTTPResp)
 	}
@@ -81,6 +78,7 @@ func doRemoteRESPMOD(req *icap.Request, w icap.ResponseWriter, vendor, shadowVen
 
 	req.Response.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(bdyStr)))
 
+	infoLogger.LogToFile("Passing request to the remote ICAP server...")
 	resp, err := riSvc.DoRespmod()
 
 	if err != nil {
@@ -119,11 +117,11 @@ func doRemoteRESPMOD(req *icap.Request, w icap.ResponseWriter, vendor, shadowVen
 func doRemoteREQMOD(req *icap.Request, w icap.ResponseWriter, vendor, shadowVendor string) {
 
 	riSvc := service.GetICAPService(vendor)
-	infoLogger.LogToFile("Passing request to the remote ICAP server...")
+	riSvc.SetHeader(req.Header)
 
 	if shadowVendor != utils.NoVendor && strings.HasPrefix(shadowVendor, utils.ICAPPrefix) {
 		siSvc := service.GetICAPService(shadowVendor)
-		infoLogger.LogToFile("Passing request to the shadow ICAP server...")
+		siSvc.SetHeader(req.Header)
 		go doShadowREQMOD(siSvc, *req.Request)
 	}
 
@@ -142,6 +140,7 @@ func doRemoteREQMOD(req *icap.Request, w icap.ResponseWriter, vendor, shadowVend
 		return
 	}
 
+	infoLogger.LogToFile("Passing request to the remote ICAP server...")
 	resp, err := riSvc.DoReqmod()
 
 	if err != nil {

@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"icapeg/utils"
 	"net/http"
 	"time"
 
@@ -33,6 +34,7 @@ func NewRemoteICAPService(name string) *RemoteICAPService {
 		reqmodEndpoint:  viper.GetString(fmt.Sprintf("%s.reqmod_endpoint", name)),
 		optionsEndpoint: viper.GetString(fmt.Sprintf("%s.options_endpoint", name)),
 		timeout:         viper.GetDuration(fmt.Sprintf("%s.timeout", name)) * time.Second,
+		requestHeader:   http.Header{},
 	}
 }
 
@@ -154,8 +156,10 @@ func (r *RemoteICAPService) SetHTTPResponse(resp *http.Response) {
 }
 
 // SetHeader sets the request header of the remote icap service
-func (r *RemoteICAPService) SetHeader(hdr http.Header) {
-	r.requestHeader = hdr
+func (r *RemoteICAPService) SetHeader(hdr map[string][]string) {
+	newHdr := http.Header{}
+	utils.CopyHeaders(hdr, newHdr, "") // NOTE: to avoid mutation of the original header from the parameter
+	r.requestHeader = newHdr
 }
 
 // ChangeOptionsEndpoint changes the options endpoint with the given one

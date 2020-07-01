@@ -13,6 +13,7 @@ import (
 
 func doShadowOPTIONS(svc service.ICAPService) {
 
+	infoLogger.LogToFile("Passing request to the shadow ICAP server...")
 	resp, err := svc.DoOptions()
 
 	if err != nil {
@@ -53,6 +54,7 @@ func doShadowRESPMOD(svc service.ICAPService, httpReq http.Request, httpResp htt
 
 	httpResp.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(bdyStr)))
 
+	infoLogger.LogToFile("Passing request to the shadow ICAP server...")
 	resp, err := svc.DoRespmod()
 
 	if err != nil {
@@ -91,6 +93,7 @@ func doShadowREQMOD(svc service.ICAPService, httpReq http.Request) {
 		return
 	}
 
+	infoLogger.LogToFile("Passing request to the shadow ICAP server...")
 	resp, err := svc.DoReqmod()
 
 	if err != nil {
