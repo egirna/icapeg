@@ -16,13 +16,15 @@ func doScan(scannerName, filename string, fmi dtos.FileMetaInfo, buf *bytes.Buff
 		go doShadowScan(filename, fmi, buf, fileURL)
 	}
 
+	newBuf := utils.CopyBuffer(buf)
+
 	var sts int
 	var si *dtos.SampleInfo
 
 	localService := service.IsServiceLocal(scannerName)
 
 	if localService && buf != nil { // if the scanner is installed locally
-		sts, si = doLocalScan(scannerName, fmi, buf)
+		sts, si = doLocalScan(scannerName, fmi, newBuf)
 	}
 
 	if !localService { // if the scanner is an external service requiring API calls.
@@ -32,7 +34,7 @@ func doScan(scannerName, filename string, fmi dtos.FileMetaInfo, buf *bytes.Buff
 		}
 
 		if buf != nil && fileURL == "" { // indicates this is a File scan request
-			sts, si = doRemoteFileScan(scannerName, filename, fmi, buf)
+			sts, si = doRemoteFileScan(scannerName, filename, fmi, newBuf)
 		}
 
 	}

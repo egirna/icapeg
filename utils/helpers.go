@@ -166,3 +166,11 @@ func GetNewURL(req *http.Request) *url.URL {
 	u, _ := url.Parse("http://" + req.Host + req.URL.Path)
 	return u
 }
+
+// CopyBuffer creates a new buffer from the given one
+func CopyBuffer(buf *bytes.Buffer) *bytes.Buffer {
+	if buf != nil {
+		return bytes.NewBuffer(buf.Bytes())
+	}
+	return nil
+}
