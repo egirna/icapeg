@@ -80,8 +80,8 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 		processExts := appCfg.ProcessExtensions
 		bypassExts := appCfg.BypassExtensions
 
-		if !(utils.InStringSlice(utils.Any, processExts) && !utils.InStringSlice(ct, bypassExts)) { // if there is no star in process and the  provided extension is in bypass
-			if !utils.InStringSlice(ct, processExts) { // and its not in processable either, then don't process it
+		if !(utils.InStringSlice(utils.Any, processExts) && utils.InStringSlice(ct, bypassExts)) { // if there is no star in process and the  provided extension is in bypass
+			if !utils.InStringSlice(ct, processExts) { // and its not in processable either, then don't process it (because process has the priority here)
 				debugLogger.LogToFile("Processing not required for file type-", ct)
 				debugLogger.LogToFile("Reason: Doesn't belong to processable extensions")
 				w.WriteHeader(http.StatusNoContent, nil, false)
