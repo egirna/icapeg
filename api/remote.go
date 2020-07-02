@@ -106,7 +106,7 @@ func doRemoteRESPMOD(req *icap.Request, w icap.ResponseWriter, vendor, shadowVen
 
 			w.WriteHeader(resp.StatusCode, resp.ContentResponse, true)
 
-			w.Write(bdyByte)
+			w.WriteRaw(string(bdyByte))
 			return
 		}
 	}
@@ -168,7 +168,7 @@ func doRemoteREQMOD(req *icap.Request, w icap.ResponseWriter, vendor, shadowVend
 
 			w.WriteHeader(resp.StatusCode, resp.ContentResponse, true)
 
-			w.Write(bdyByte)
+			w.WriteRaw(string(bdyByte))
 			return
 		}
 	}

@@ -155,7 +155,6 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			})
 			w.WriteHeader(http.StatusOK, newResp, true)
 			w.Write(htmlBuf.Bytes())
-
 			return
 		}
 
