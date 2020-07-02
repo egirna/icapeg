@@ -94,19 +94,16 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 		processExts := appCfg.ProcessExtensions
 		bypassExts := appCfg.BypassExtensions
 
-		if !(utils.InStringSlice(utils.Any, processExts) && utils.InStringSlice(ct, bypassExts)) { // if there is no star in process and the  provided extension is in bypass
-			if !utils.InStringSlice(ct, processExts) { // and its not in processable either, then don't process it (because process has the priority here)
-				debugLogger.LogToFile("Processing not required for file type-", ct)
-				debugLogger.LogToFile("Reason: Doesn't belong to processable extensions")
-				w.WriteHeader(http.StatusNoContent, nil, false)
-				return
-			}
+		if utils.InStringSlice(ct, bypassExts) { // if the extension is bypassable
+			debugLogger.LogToFile("Processing not required for file type-", ct)
+			debugLogger.LogToFile("Reason: Belongs bypassable extensions")
+			w.WriteHeader(http.StatusNoContent, nil, false)
+			return
 		}
 
-		if (utils.InStringSlice(utils.Any, bypassExts) && !utils.InStringSlice(ct, processExts)) ||
-			utils.InStringSlice(ct, bypassExts) { // if there is start in bypass and there provided extension is not in process or it is in bypass, the don't process it
+		if utils.InStringSlice(utils.Any, bypassExts) && !utils.InStringSlice(ct, processExts) { // if extension does not belong to "All bypassable except the processable ones" group
 			debugLogger.LogToFile("Processing not required for file type-", ct)
-			debugLogger.LogToFile("Reason: Doesn't belong to unprocessable extensions")
+			debugLogger.LogToFile("Reason: Doesn't belong to processable extensions")
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
@@ -243,19 +240,16 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 		processExts := appCfg.ProcessExtensions
 		bypassExts := appCfg.BypassExtensions
 
-		if !(utils.InStringSlice(utils.Any, processExts) && !utils.InStringSlice(ext, bypassExts)) { // if there is no star in process and the  provided extension is in bypass
-			if !utils.InStringSlice(ext, processExts) { // and its not in processable either, then don't process it
-				debugLogger.LogToFile("Processing not required for file type-", ext)
-				debugLogger.LogToFile("Reason: Doesn't belong to processable extensions")
-				w.WriteHeader(http.StatusNoContent, nil, false)
-				return
-			}
+		if utils.InStringSlice(ext, bypassExts) { // if the extension is bypassable
+			debugLogger.LogToFile("Processing not required for file type-", ext)
+			debugLogger.LogToFile("Reason: Belongs bypassable extensions")
+			w.WriteHeader(http.StatusNoContent, nil, false)
+			return
 		}
 
-		if (utils.InStringSlice(utils.Any, bypassExts) && !utils.InStringSlice(ext, processExts)) ||
-			utils.InStringSlice(ext, bypassExts) { // if there is start in bypass and there provided extension is not in process or it is in bypass, the don't process it
+		if utils.InStringSlice(utils.Any, bypassExts) && !utils.InStringSlice(ext, processExts) { // if extension does not belong to "All bypassable except the processable ones" group
 			debugLogger.LogToFile("Processing not required for file type-", ext)
-			debugLogger.LogToFile("Reason: Doesn't belong to unprocessable extensions")
+			debugLogger.LogToFile("Reason: Doesn't belong to processable extensions")
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
