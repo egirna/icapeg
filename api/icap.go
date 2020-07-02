@@ -6,6 +6,7 @@ import (
 	"icapeg/config"
 	"icapeg/dtos"
 	"icapeg/logger"
+	"icapeg/service"
 	"icapeg/utils"
 	"io"
 	"io/ioutil"
@@ -39,6 +40,11 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 		if strings.HasPrefix(appCfg.RespScannerVendor, utils.ICAPPrefix) {
 			doRemoteOPTIONS(req, w, appCfg.RespScannerVendor, appCfg.RespScannerVendorShadow, utils.ICAPModeResp)
 			return
+		} else if strings.HasPrefix(appCfg.RespScannerVendorShadow, utils.ICAPPrefix) { // if the shadow wants to run independently
+			siSvc := service.GetICAPService(appCfg.RespScannerVendorShadow)
+			siSvc.SetHeader(req.Header)
+			updateEmptyOptionsEndpoint(siSvc, utils.ICAPModeResp)
+			go doShadowOPTIONS(siSvc)
 		}
 
 		h.Set("Methods", utils.ICAPModeResp)
@@ -64,9 +70,17 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			return
 		}
 
-		scannerName := strings.ToLower(appCfg.RespScannerVendor) // the name of the scanner vendor
+		/* If the shadow icap wants to run independently */
+		if appCfg.RespScannerVendor == utils.NoVendor && strings.HasPrefix(appCfg.RespScannerVendorShadow, utils.ICAPPrefix) {
+			siSvc := service.GetICAPService(appCfg.RespScannerVendorShadow)
+			siSvc.SetHeader(req.Header)
+			shadowHTTPResp := utils.GetHTTPResponseCopy(req.Response)
+			go doShadowRESPMOD(siSvc, *req.Request, shadowHTTPResp)
+			w.WriteHeader(http.StatusNoContent, nil, false)
+			return
+		}
 
-		if scannerName == utils.NoVendor { // if no scanner name provided, then bypass everything
+		if appCfg.RespScannerVendor == utils.NoVendor && appCfg.RespScannerVendorShadow == utils.NoVendor { // if no scanner name provided, then bypass everything
 			debugLogger.LogToFile("No respmod scanner provided...bypassing everything")
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
@@ -122,7 +136,14 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			FileSize: float64(buf.Len()),
 		}
 
-		status, sampleInfo := doScan(scannerName, filename, fmi, buf, "") // scan the file for any anomalies
+		/* If the shadow virus scanner wants to run independently */
+		if appCfg.RespScannerVendor == utils.NoVendor && appCfg.RespScannerVendorShadow != utils.NoVendor {
+			go doShadowScan(filename, fmi, buf, "")
+			w.WriteHeader(http.StatusNoContent, nil, false)
+			return
+		}
+
+		status, sampleInfo := doScan(appCfg.RespScannerVendor, filename, fmi, buf, "") // scan the file for any anomalies
 
 		if status == http.StatusOK && sampleInfo != nil {
 			infoLogger.LogfToFile("The file:%s is %s\n", filename, sampleInfo.SampleSeverity)
@@ -133,7 +154,7 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 				RequestedURL: utils.BreakHTTPURL(req.Request.RequestURI),
 				Severity:     sampleInfo.SampleSeverity,
 				Score:        sampleInfo.VTIScore,
-				ResultsBy:    scannerName,
+				ResultsBy:    appCfg.RespScannerVendor,
 			})
 			w.WriteHeader(http.StatusOK, newResp, true)
 			w.Write(htmlBuf.Bytes())
@@ -168,10 +189,15 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 	switch req.Method {
 	case utils.ICAPModeOptions:
 
-		// /* If any remote icap is enabled, the work flow is controlled by the remote icap */
+		/* If any remote icap is enabled, the work flow is controlled by the remote icap */
 		if strings.HasPrefix(appCfg.ReqScannerVendor, utils.ICAPPrefix) {
 			doRemoteOPTIONS(req, w, appCfg.ReqScannerVendor, appCfg.ReqScannerVendorShadow, utils.ICAPModeReq)
 			return
+		} else if strings.HasPrefix(appCfg.ReqScannerVendorShadow, utils.ICAPPrefix) { /* If the shadow icap wants to run independently */
+			siSvc := service.GetICAPService(appCfg.ReqScannerVendorShadow)
+			siSvc.SetHeader(req.Header)
+			updateEmptyOptionsEndpoint(siSvc, utils.ICAPModeReq)
+			go doShadowOPTIONS(siSvc)
 		}
 
 		h.Set("Methods", utils.ICAPModeReq)
@@ -193,9 +219,16 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 			return
 		}
 
-		scannerName := strings.ToLower(appCfg.ReqScannerVendor)
+		/* If the shadow icap wants to run independently */
+		if appCfg.ReqScannerVendor == utils.NoVendor && strings.HasPrefix(appCfg.ReqScannerVendorShadow, utils.ICAPPrefix) {
+			siSvc := service.GetICAPService(appCfg.ReqScannerVendorShadow)
+			siSvc.SetHeader(req.Header)
+			go doShadowREQMOD(siSvc, *req.Request)
+			w.WriteHeader(http.StatusNoContent, nil, false)
+			return
+		}
 
-		if scannerName == utils.NoVendor {
+		if appCfg.ReqScannerVendor == utils.NoVendor && appCfg.ReqScannerVendorShadow == utils.NoVendor {
 			debugLogger.LogToFile("No reqmod scanner provided...bypassing everything")
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
@@ -237,7 +270,14 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 			FileType: fileExt,
 		}
 
-		status, sampleInfo := doScan(scannerName, filename, fmi, nil, fileURL)
+		/* If the shadow virus scanner wants to run independently */
+		if appCfg.ReqScannerVendor == utils.NoVendor && appCfg.ReqScannerVendorShadow != utils.NoVendor {
+			go doShadowScan(filename, fmi, nil, fileURL)
+			w.WriteHeader(http.StatusNoContent, nil, false)
+			return
+		}
+
+		status, sampleInfo := doScan(appCfg.ReqScannerVendor, filename, fmi, nil, fileURL)
 
 		if status == http.StatusOK && sampleInfo != nil {
 			infoLogger.LogfToFile("The url:%s is %s\n", filename, sampleInfo.SampleSeverity)
@@ -248,7 +288,7 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 				RequestedURL: utils.BreakHTTPURL(req.Request.RequestURI),
 				Severity:     sampleInfo.SampleSeverity,
 				Score:        sampleInfo.VTIScore,
-				ResultsBy:    scannerName,
+				ResultsBy:    appCfg.ReqScannerVendor,
 			}
 
 			dataByte, err := json.Marshal(data)
