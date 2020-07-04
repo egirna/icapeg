@@ -266,6 +266,12 @@ If you are still not getting any logs and the file is downloaded whatsoever, ple
 
 3. You need to configure your network(or your browser)'s proxy settings to go through squid.
 
+## More on ICAPeg
+
+1. [Remote ICAP Servers & Shadowing](REMOTEANDSHADOW.md)
+
+2. [Logging](LOGS.md)
+
 
 ### Contributing
 
