@@ -1,7 +1,11 @@
 package utils
 
 import (
+	"io/ioutil"
 	"net/http"
+	"net/url"
+	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -222,4 +226,122 @@ func TestBreakURL(t *testing.T) {
 		}
 
 	}
+}
+
+func TestCopyHTTPResponse(t *testing.T) {
+
+	type testSample struct {
+		originalBodyStr string
+		changedBodyStr  string
+	}
+
+	sampleTable := []testSample{
+		{
+			originalBodyStr: "Hello World",
+			changedBodyStr:  "Bye Bye world",
+		},
+		{
+			originalBodyStr: "This is a message",
+			changedBodyStr:  "This is another message",
+		},
+	}
+
+	for _, sample := range sampleTable {
+		resp := &http.Response{
+			Body: ioutil.NopCloser(strings.NewReader(sample.originalBodyStr)),
+		}
+		newResp := GetHTTPResponseCopy(resp)
+		newResp.Body = ioutil.NopCloser(strings.NewReader(sample.changedBodyStr))
+		if b, _ := ioutil.ReadAll(resp.Body); string(b) == sample.changedBodyStr {
+			t.Errorf("GetHTTPResponseCopy for %s , wanted: %s got: %s", sample.originalBodyStr, sample.originalBodyStr,
+				sample.changedBodyStr)
+		}
+
+		defer resp.Body.Close()
+		defer newResp.Body.Close()
+	}
+
+}
+
+func TestCopyHeaders(t *testing.T) {
+	type testSample struct {
+		src        http.Header
+		wantedDest http.Header
+		without    string
+	}
+
+	sampleTable := []testSample{
+		{
+			src: http.Header{
+				"Message": []string{"Hello World"},
+				"Length":  []string{"11"},
+			},
+			wantedDest: http.Header{
+				"Message": []string{"Hello World"},
+				"Length":  []string{"11"},
+			},
+		},
+		{
+			src: http.Header{
+				"Message": []string{"Hello World", "Bye Bye World"},
+				"Length":  []string{"11"},
+			},
+			wantedDest: http.Header{
+				"Message": []string{"Hello World", "Bye Bye World"},
+			},
+			without: "Length",
+		},
+	}
+
+	for _, sample := range sampleTable {
+		dest := http.Header{}
+		CopyHeaders(sample.src, dest, sample.without)
+		if sample.without == "" && !reflect.DeepEqual(sample.src, dest) {
+			t.Errorf("CopyHeaders failed for %v , wanted: %v, got: %v", sample.src, sample.src, dest)
+			continue
+		}
+
+		if sample.without != "" {
+			delete(sample.src, sample.without)
+			if _, exists := dest[sample.without]; exists || !reflect.DeepEqual(sample.src, dest) {
+				t.Errorf("CopyHeaders failed for %v , wanted: %v, got: %v", sample.src, sample.src, dest)
+			}
+		}
+
+	}
+
+}
+
+func TestNewURL(t *testing.T) {
+	type testSample struct {
+		host         string
+		path         string
+		wantedURLStr string
+	}
+
+	sampleTable := []testSample{
+		{
+			host:         "www.somehost.com",
+			path:         "/path/to/glory",
+			wantedURLStr: "http://www.somehost.com/path/to/glory",
+		},
+		{
+			host:         "www.testhost.com",
+			path:         "",
+			wantedURLStr: "http://www.testhost.com",
+		},
+	}
+
+	for _, sample := range sampleTable {
+		req := &http.Request{
+			Host: sample.host,
+			URL:  &url.URL{Path: sample.path},
+		}
+		u := GetNewURL(req)
+
+		if u.String() != sample.wantedURLStr {
+			t.Errorf("GetNewURL failed for %v, wanted: %s, got: %s", sample, sample.wantedURLStr, u.String())
+		}
+	}
+
 }

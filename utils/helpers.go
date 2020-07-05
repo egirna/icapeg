@@ -156,7 +156,7 @@ func CopyHeaders(src map[string][]string, dest http.Header, without string) {
 		}
 
 		for _, value := range values {
-			dest.Set(header, value)
+			dest.Add(header, value)
 		}
 	}
 }
