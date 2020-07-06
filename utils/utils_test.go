@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bytes"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -341,6 +342,41 @@ func TestNewURL(t *testing.T) {
 
 		if u.String() != sample.wantedURLStr {
 			t.Errorf("GetNewURL failed for %v, wanted: %s, got: %s", sample, sample.wantedURLStr, u.String())
+		}
+	}
+
+}
+
+func TestCopyBuffer(t *testing.T) {
+	type testSample struct {
+		buf       *bytes.Buffer
+		newBufStr string
+	}
+
+	sampleTable := []testSample{
+		{
+			buf:       bytes.NewBuffer([]byte(`Hello World`)),
+			newBufStr: "Bye Bye World",
+		},
+		{
+			buf:       nil,
+			newBufStr: "Something",
+		},
+	}
+
+	for _, sample := range sampleTable {
+		newBuf := CopyBuffer(sample.buf)
+
+		if sample.buf == nil {
+			if newBuf != nil {
+				t.Errorf("CopyBuffer failed for %v , wanted: %v, got: %v", sample, sample.buf, newBuf)
+			}
+			continue
+		}
+		newBuf.WriteString(sample.newBufStr)
+
+		if sample.buf.String() == newBuf.String() {
+			t.Errorf("CopyBuffer failed for %v, both the buffers are same", sample)
 		}
 	}
 
