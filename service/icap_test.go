@@ -6,10 +6,18 @@ import (
 	"icapeg/dtos"
 	"icapeg/utils"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
+	"os"
+	"os/signal"
+	"reflect"
 	"strconv"
+	"strings"
+	"syscall"
 	"testing"
+	"time"
 
 	"github.com/egirna/icap"
 )
@@ -22,17 +30,103 @@ const (
 )
 
 type remoteICAPTester struct {
-	port            int
-	w               icap.ResponseWriter
-	req             *icap.Request
-	mode            string
-	previewBytes    string
-	transferPreview string
-	isTag           string
-	service         string
+	port                int
+	w                   icap.ResponseWriter
+	req                 *icap.Request
+	mode                string
+	previewBytes        string
+	transferPreview     string
+	isTag               string
+	service             string
+	stop                chan os.Signal
+	callOPTIONS         bool
+	httpResp            *http.Response
+	httpReq             *http.Request
+	wantedOPTIONSHeader http.Header
+	wantedRESPMODHeader http.Header
+	wantedREQMODHeader  http.Header
 }
 
 func TestRemoteICAP(t *testing.T) {
+
+	// preparing the remote ICAP tester
+	testers := []remoteICAPTester{
+		{
+			port:            1345,
+			mode:            utils.ICAPModeResp,
+			previewBytes:    "0",
+			transferPreview: "*",
+			isTag:           "remote_icap_server",
+			service:         "test",
+			stop:            make(chan os.Signal, 1),
+			callOPTIONS:     true,
+			httpResp:        makeHTTPResponse(goodMockURL),
+			httpReq:         makeHTTPRequest(goodMockURL),
+			wantedOPTIONSHeader: http.Header{
+				"Methods":          []string{utils.ICAPModeResp},
+				"Allow":            []string{"204"},
+				"Transfer-Preview": []string{"*"},
+			},
+		},
+	}
+
+	for _, rit := range testers {
+		//preparing the remote ICAP service
+		svc := &RemoteICAPService{
+			url:             fmt.Sprintf("icap://localhost:%d", rit.port),
+			respmodEndpoint: "/remote-resp",
+			optionsEndpoint: "",
+			reqmodEndpoint:  "remote-req",
+			timeout:         5 * time.Second,
+			requestHeader:   http.Header{},
+		}
+
+		// starting the remote icap server
+		go rit.startRemoteICAPMockServer()
+
+		if rit.callOPTIONS {
+			/* Performing OPTIONS */
+			if svc.optionsEndpoint == "" {
+				if rit.mode == utils.ICAPModeResp {
+					svc.optionsEndpoint = svc.respmodEndpoint
+				}
+				if rit.mode == utils.ICAPModeReq {
+					svc.optionsEndpoint = svc.reqmodEndpoint
+				}
+			}
+			resp, err := svc.DoOptions()
+
+			if err != nil {
+				t.Error("RemoteICAP failed: ", err.Error())
+			}
+
+			if resp.StatusCode != http.StatusOK {
+				t.Errorf("RemoteICAP failed for OPTIONS, wanted status code: %d, got: %d", http.StatusOK, resp.StatusCode)
+			}
+
+			for header, value := range rit.wantedOPTIONSHeader {
+				if _, exists := resp.Header[header]; !exists {
+					t.Errorf("RemoteICAP failed for OPTIONS, expected header: %s", header)
+					continue
+				}
+				if !reflect.DeepEqual(value, resp.Header[header]) {
+					t.Errorf("RemoteICAP failed for OPTIONS header(%s) value, wanted: %v , got: %v", header, value, resp.Header[header])
+				}
+			}
+
+			/* --------------------------------------------------------------------- */
+		}
+
+		if rit.mode == utils.ICAPModeReq {
+			// TODO: Perform reqmod tests here
+		}
+		if rit.mode == utils.ICAPModeResp {
+			// TODO: Perform respmod tests here
+		}
+
+		rit.stopRemoteICAPMockServer()
+
+	}
 
 }
 
@@ -43,13 +137,25 @@ func (rit *remoteICAPTester) startRemoteICAPMockServer() {
 		rit.remoteICAPMockRespmod()
 	})
 
-	if err := icap.ListenAndServe(fmt.Sprintf(":%d", rit.port), nil); err != nil {
-		log.Fatal(err.Error())
-	}
+	signal.Notify(rit.stop, syscall.SIGKILL, syscall.SIGINT, syscall.SIGQUIT)
+
+	go func() {
+		if err := icap.ListenAndServe(fmt.Sprintf(":%d", rit.port), nil); err != nil {
+			log.Println(err.Error())
+			rit.stopRemoteICAPMockServer()
+		}
+	}()
+
+	<-rit.stop
 
 }
 
+func (rit *remoteICAPTester) stopRemoteICAPMockServer() {
+	rit.stop <- syscall.SIGKILL
+}
+
 func (rit *remoteICAPTester) remoteICAPMockOptions() {
+
 	h := rit.w.Header()
 	h.Set("Methods", rit.mode)
 	h.Set("Allow", "204")
@@ -129,4 +235,33 @@ func (rit *remoteICAPTester) remoteICAPMockRespmod() {
 
 func remoteICAPMockReqmod(rit remoteICAPTester) {
 
+}
+
+func makeHTTPResponse(urlStr string) *http.Response {
+	var resp *http.Response
+	if urlStr == goodMockURL {
+		resp = &http.Response{
+			Body:          ioutil.NopCloser(strings.NewReader(goodMockFile)),
+			ContentLength: int64(len(goodMockFile)),
+		}
+	}
+
+	if urlStr == badMockURL {
+		resp = &http.Response{
+			Body:          ioutil.NopCloser(strings.NewReader(badMockFile)),
+			ContentLength: int64(len(badMockFile)),
+		}
+	}
+
+	return resp
+}
+
+func makeHTTPRequest(urlStr string) *http.Request {
+	u, _ := url.Parse(urlStr)
+	req := &http.Request{
+		URL:  u,
+		Host: "file.com",
+	}
+
+	return req
 }
