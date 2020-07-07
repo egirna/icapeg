@@ -2,21 +2,24 @@ package config
 
 import (
 	"log"
+	"strings"
 
 	"github.com/spf13/viper"
 )
 
 // AppConfig represents the app configuration
 type AppConfig struct {
-	Port              int
-	MaxFileSize       int
-	Debug             bool
-	RespScannerVendor string
-	ReqScannerVendor  string
-	BypassExtensions  []string
-	ProcessExtensions []string
-	PreviewBytes      string
-	PropagateError    bool
+	Port                    int
+	MaxFileSize             int
+	LogLevel                string
+	RespScannerVendor       string
+	ReqScannerVendor        string
+	RespScannerVendorShadow string
+	ReqScannerVendorShadow  string
+	BypassExtensions        []string
+	ProcessExtensions       []string
+	PreviewBytes            string
+	PropagateError          bool
 }
 
 var appCfg AppConfig
@@ -32,15 +35,17 @@ func Init() {
 	}
 
 	appCfg = AppConfig{
-		Port:              viper.GetInt("app.port"),
-		MaxFileSize:       viper.GetInt("app.max_filesize"),
-		Debug:             viper.GetBool("app.debug"),
-		RespScannerVendor: viper.GetString("app.resp_scanner_vendor"),
-		ReqScannerVendor:  viper.GetString("app.req_scanner_vendor"),
-		BypassExtensions:  viper.GetStringSlice("app.bypass_extensions"),
-		ProcessExtensions: viper.GetStringSlice("app.process_extensions"),
-		PreviewBytes:      viper.GetString("app.preview_bytes"),
-		PropagateError:    viper.GetBool("app.propagate_error"),
+		Port:                    viper.GetInt("app.port"),
+		MaxFileSize:             viper.GetInt("app.max_filesize"),
+		LogLevel:                viper.GetString("app.log_level"),
+		RespScannerVendor:       strings.ToLower(viper.GetString("app.resp_scanner_vendor")),
+		ReqScannerVendor:        strings.ToLower(viper.GetString("app.req_scanner_vendor")),
+		RespScannerVendorShadow: strings.ToLower(viper.GetString("app.resp_scanner_vendor_shadow")),
+		ReqScannerVendorShadow:  strings.ToLower(viper.GetString("app.req_scanner_vendor_shadow")),
+		BypassExtensions:        viper.GetStringSlice("app.bypass_extensions"),
+		ProcessExtensions:       viper.GetStringSlice("app.process_extensions"),
+		PreviewBytes:            viper.GetString("app.preview_bytes"),
+		PropagateError:          viper.GetBool("app.propagate_error"),
 	}
 
 }
@@ -56,15 +61,17 @@ func InitTestConfig() {
 	}
 
 	appCfg = AppConfig{
-		Port:              viper.GetInt("app.port"),
-		MaxFileSize:       viper.GetInt("app.max_filesize"),
-		Debug:             viper.GetBool("app.debug"),
-		RespScannerVendor: viper.GetString("app.resp_scanner_vendor"),
-		ReqScannerVendor:  viper.GetString("app.req_scanner_vendor"),
-		BypassExtensions:  viper.GetStringSlice("app.bypass_extensions"),
-		ProcessExtensions: viper.GetStringSlice("app.process_extensions"),
-		PreviewBytes:      viper.GetString("app.preview_bytes"),
-		PropagateError:    viper.GetBool("app.propagate_error"),
+		Port:                    viper.GetInt("app.port"),
+		MaxFileSize:             viper.GetInt("app.max_filesize"),
+		LogLevel:                viper.GetString("app.log_level"),
+		RespScannerVendor:       strings.ToLower(viper.GetString("app.resp_scanner_vendor")),
+		ReqScannerVendor:        strings.ToLower(viper.GetString("app.req_scanner_vendor")),
+		RespScannerVendorShadow: strings.ToLower(viper.GetString("app.resp_scanner_vendor_shadow")),
+		ReqScannerVendorShadow:  strings.ToLower(viper.GetString("app.req_scanner_vendor_shadow")),
+		BypassExtensions:        viper.GetStringSlice("app.bypass_extensions"),
+		ProcessExtensions:       viper.GetStringSlice("app.process_extensions"),
+		PreviewBytes:            viper.GetString("app.preview_bytes"),
+		PropagateError:          viper.GetBool("app.propagate_error"),
 	}
 }
 

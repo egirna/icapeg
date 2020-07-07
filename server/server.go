@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"icapeg/api"
 	"icapeg/config"
-	"log"
+	"icapeg/logger"
 	"net/http"
 	"os"
 	"os/signal"
@@ -24,24 +24,37 @@ func StartServer() error {
 
 	http.HandleFunc("/", api.ErrorPageHanlder)
 
-	log.Println("Starting the ICAP server...")
+	logger.SetLogLevel(config.App().LogLevel)
+	logr := logger.NewLogger()
+
+	if err := logger.SetLogFile("logs.txt"); err != nil {
+		logr.LogToScreen("Failed to prepare log file: ", err.Error())
+	} else {
+		defer logger.LogFile().Close()
+	}
+
+	if config.App().LogLevel == logger.LogLevelDebug {
+		logr.LogToAll("Starting the ICAP server in DEBUG mode...")
+	} else {
+		logr.LogToAll("Starting the ICAP server...")
+	}
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGKILL, syscall.SIGINT, syscall.SIGQUIT)
 
 	go func() {
 		if err := icap.ListenAndServe(fmt.Sprintf(":%d", config.App().Port), nil); err != nil {
-			log.Fatal(err.Error())
+			logger.LogFatalToScreen(err.Error())
 		}
 	}()
 
 	time.Sleep(5 * time.Millisecond)
 
-	log.Printf("ICAP server is running on localhost:%d ...\n", config.App().Port)
+	logr.LogfToAll("ICAP server is running on localhost:%d ...\n", config.App().Port)
 
 	<-stop
 
-	log.Println("ICAP server gracefully shut down")
+	logr.LogToAll("ICAP server gracefully shut down")
 
 	return nil
 }

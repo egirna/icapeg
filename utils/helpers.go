@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"icapeg/dtos"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -136,4 +137,40 @@ func IfPropagateError(thenStatus, elseStatus int) int {
 	}
 
 	return elseStatus
+}
+
+// GetHTTPResponseCopy creates a new http.Response for the given one, including the body
+func GetHTTPResponseCopy(resp *http.Response) http.Response {
+	b, _ := ioutil.ReadAll(resp.Body)
+	copyResp := *resp
+	copyResp.Body = ioutil.NopCloser(bytes.NewBuffer(b))
+	resp.Body = ioutil.NopCloser(bytes.NewBuffer(b))
+	return copyResp
+}
+
+// CopyHeaders copy all the headers from the source(src) to destination(dest), without the provided header(if any)
+func CopyHeaders(src map[string][]string, dest http.Header, without string) {
+	for header, values := range src {
+		if header == without {
+			continue
+		}
+
+		for _, value := range values {
+			dest.Add(header, value)
+		}
+	}
+}
+
+// GetNewURL generates a new URL for a http request with a URL with no scheme
+func GetNewURL(req *http.Request) *url.URL {
+	u, _ := url.Parse("http://" + req.Host + req.URL.Path)
+	return u
+}
+
+// CopyBuffer creates a new buffer from the given one
+func CopyBuffer(buf *bytes.Buffer) *bytes.Buffer {
+	if buf != nil {
+		return bytes.NewBuffer(buf.Bytes())
+	}
+	return nil
 }
