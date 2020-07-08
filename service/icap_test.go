@@ -2,6 +2,7 @@ package service
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"icapeg/dtos"
 	"icapeg/utils"
@@ -20,6 +21,7 @@ import (
 	"time"
 
 	"github.com/egirna/icap"
+	ic "github.com/egirna/icap-client"
 )
 
 const (
@@ -31,8 +33,6 @@ const (
 
 type remoteICAPTester struct {
 	port                int
-	w                   icap.ResponseWriter
-	req                 *icap.Request
 	mode                string
 	previewBytes        string
 	transferPreview     string
@@ -45,30 +45,15 @@ type remoteICAPTester struct {
 	wantedOPTIONSHeader http.Header
 	wantedRESPMODHeader http.Header
 	wantedREQMODHeader  http.Header
+	wantedOPTIONSStatus int
+	wantedREQMODStatus  int
+	wantedRESPMODStatus int
 }
 
 func TestRemoteICAP(t *testing.T) {
 
 	// preparing the remote ICAP tester
-	testers := []remoteICAPTester{
-		{
-			port:            1345,
-			mode:            utils.ICAPModeResp,
-			previewBytes:    "0",
-			transferPreview: "*",
-			isTag:           "remote_icap_server",
-			service:         "test",
-			stop:            make(chan os.Signal, 1),
-			callOPTIONS:     true,
-			httpResp:        makeHTTPResponse(goodMockURL),
-			httpReq:         makeHTTPRequest(goodMockURL),
-			wantedOPTIONSHeader: http.Header{
-				"Methods":          []string{utils.ICAPModeResp},
-				"Allow":            []string{"204"},
-				"Transfer-Preview": []string{"*"},
-			},
-		},
-	}
+	testers := getRemoteICAPTesters()
 
 	for _, rit := range testers {
 		//preparing the remote ICAP service
@@ -76,7 +61,7 @@ func TestRemoteICAP(t *testing.T) {
 			url:             fmt.Sprintf("icap://localhost:%d", rit.port),
 			respmodEndpoint: "/remote-resp",
 			optionsEndpoint: "",
-			reqmodEndpoint:  "remote-req",
+			reqmodEndpoint:  "/remote-req",
 			timeout:         5 * time.Second,
 			requestHeader:   http.Header{},
 		}
@@ -84,8 +69,10 @@ func TestRemoteICAP(t *testing.T) {
 		// starting the remote icap server
 		go rit.startRemoteICAPMockServer()
 
+		/* Performing OPTIONS */
+		var oResp *ic.Response
 		if rit.callOPTIONS {
-			/* Performing OPTIONS */
+
 			if svc.optionsEndpoint == "" {
 				if rit.mode == utils.ICAPModeResp {
 					svc.optionsEndpoint = svc.respmodEndpoint
@@ -94,35 +81,93 @@ func TestRemoteICAP(t *testing.T) {
 					svc.optionsEndpoint = svc.reqmodEndpoint
 				}
 			}
-			resp, err := svc.DoOptions()
+			var err error
+			oResp, err = svc.DoOptions()
 
 			if err != nil {
 				t.Error("RemoteICAP failed: ", err.Error())
+				rit.stopRemoteICAPMockServer()
+				continue
 			}
 
-			if resp.StatusCode != http.StatusOK {
-				t.Errorf("RemoteICAP failed for OPTIONS, wanted status code: %d, got: %d", http.StatusOK, resp.StatusCode)
+			if oResp.StatusCode != rit.wantedOPTIONSStatus {
+				t.Errorf("RemoteICAP failed for OPTIONS, wanted status code: %d, got: %d", rit.wantedOPTIONSStatus, oResp.StatusCode)
 			}
 
 			for header, value := range rit.wantedOPTIONSHeader {
-				if _, exists := resp.Header[header]; !exists {
+				if _, exists := oResp.Header[header]; !exists {
 					t.Errorf("RemoteICAP failed for OPTIONS, expected header: %s", header)
 					continue
 				}
-				if !reflect.DeepEqual(value, resp.Header[header]) {
-					t.Errorf("RemoteICAP failed for OPTIONS header(%s) value, wanted: %v , got: %v", header, value, resp.Header[header])
+				if !reflect.DeepEqual(value, oResp.Header[header]) {
+					t.Errorf("RemoteICAP failed for OPTIONS header(%s) value, wanted: %v , got: %v", header, value, oResp.Header[header])
 				}
 			}
 
 			/* --------------------------------------------------------------------- */
 		}
 
+		if oResp != nil {
+			svc.SetHeader(oResp.Header) // setting the headers received from OPTIONS for client's next call
+		}
+
+		/* Performing REQMOD */
 		if rit.mode == utils.ICAPModeReq {
-			// TODO: Perform reqmod tests here
+			svc.SetHTTPRequest(rit.httpReq)
+			resp, err := svc.DoReqmod()
+
+			if err != nil {
+				t.Error("RemoteICAP failed for REQMOD: ", err.Error())
+				rit.stopRemoteICAPMockServer()
+				continue
+			}
+
+			if resp.StatusCode != rit.wantedREQMODStatus {
+				t.Errorf("RemoteICAP failed for REQMOD, wanted status code: %d ,got: %d", rit.wantedREQMODStatus, resp.StatusCode)
+			}
+
+			for header, value := range rit.wantedREQMODHeader {
+				if _, exists := resp.Header[header]; !exists {
+					t.Errorf("RemoteICAP failed for REQMOD, expected header: %s", header)
+					continue
+				}
+				if !reflect.DeepEqual(value, resp.Header[header]) {
+					t.Errorf("RemoteICAP failed for REQMOD header(%s) value, wanted: %v , got: %v", header, value, resp.Header[header])
+				}
+			}
+
 		}
+
+		/* ------------------------------------------------------------------------ */
+
+		/* Performing RESPMOD */
 		if rit.mode == utils.ICAPModeResp {
-			// TODO: Perform respmod tests here
+			svc.SetHTTPRequest(rit.httpReq)
+			svc.SetHTTPResponse(rit.httpResp)
+			resp, err := svc.DoRespmod()
+
+			if err != nil {
+				t.Error("RemoteICAP failed for RESPMOD: ", err.Error())
+				rit.stopRemoteICAPMockServer()
+				continue
+			}
+
+			if resp.StatusCode != rit.wantedRESPMODStatus {
+				t.Errorf("RemoteICAP failed for RESPMOD, wanted status code: %d ,got: %d", rit.wantedRESPMODStatus, resp.StatusCode)
+			}
+
+			for header, value := range rit.wantedRESPMODHeader {
+				if _, exists := resp.Header[header]; !exists {
+					t.Errorf("RemoteICAP failed for RESPMOD, expected header: %s", header)
+					continue
+				}
+				if !reflect.DeepEqual(value, resp.Header[header]) {
+					t.Errorf("RemoteICAP failed for RESPMOD header(%s) value, wanted: %v , got: %v", header, value, resp.Header[header])
+				}
+			}
 		}
+
+		/* ------------------------------------------------------------------------ */
 
 		rit.stopRemoteICAPMockServer()
 
@@ -132,9 +177,11 @@ func TestRemoteICAP(t *testing.T) {
 
 func (rit *remoteICAPTester) startRemoteICAPMockServer() {
 	icap.HandleFunc("/remote-resp", func(w icap.ResponseWriter, req *icap.Request) {
-		rit.w = w
-		rit.req = req
-		rit.remoteICAPMockRespmod()
+		rit.remoteICAPMockRespmod(w, req)
+	})
+
+	icap.HandleFunc("/remote-req", func(w icap.ResponseWriter, req *icap.Request) {
+		rit.remoteICAPMockReqmod(w, req)
 	})
 
 	signal.Notify(rit.stop, syscall.SIGKILL, syscall.SIGINT, syscall.SIGQUIT)
@@ -154,48 +201,48 @@ func (rit *remoteICAPTester) stopRemoteICAPMockServer() {
 	rit.stop <- syscall.SIGKILL
 }
 
-func (rit *remoteICAPTester) remoteICAPMockOptions() {
+func (rit *remoteICAPTester) remoteICAPMockOptions(w icap.ResponseWriter, req *icap.Request) {
 
-	h := rit.w.Header()
+	h := w.Header()
 	h.Set("Methods", rit.mode)
 	h.Set("Allow", "204")
 	if pb, _ := strconv.Atoi(rit.previewBytes); pb > 0 {
 		h.Set("Preview", rit.previewBytes)
 	}
 	h.Set("Transfer-Preview", rit.transferPreview)
-	rit.w.WriteHeader(http.StatusOK, nil, false)
+	w.WriteHeader(http.StatusOK, nil, false)
 }
 
-func (rit *remoteICAPTester) remoteICAPMockRespmod() {
-	h := rit.w.Header()
+func (rit *remoteICAPTester) remoteICAPMockRespmod(w icap.ResponseWriter, req *icap.Request) {
+	h := w.Header()
 	h.Set("ISTag", rit.isTag)
 	h.Set("Service", rit.service)
 
-	switch rit.req.Method {
+	switch req.Method {
 	case utils.ICAPModeOptions:
-		rit.remoteICAPMockOptions()
+		rit.remoteICAPMockOptions(w, req)
 	case utils.ICAPModeResp:
 
-		defer rit.req.Response.Body.Close()
+		defer req.Response.Body.Close()
 
-		if val, exist := rit.req.Header["Allow"]; !exist || (len(val) > 0 && val[0] != utils.NoModificationStatusCodeStr) {
-			rit.w.WriteHeader(http.StatusNoContent, nil, false)
+		if val, exist := req.Header["Allow"]; !exist || (len(val) > 0 && val[0] != utils.NoModificationStatusCodeStr) {
+			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
 
-		ct := utils.GetMimeExtension(rit.req.Preview)
+		ct := utils.GetMimeExtension(req.Preview)
 
 		buf := &bytes.Buffer{}
 
-		if _, err := io.Copy(buf, rit.req.Response.Body); err != nil {
-			rit.w.WriteHeader(http.StatusNoContent, nil, false)
+		if _, err := io.Copy(buf, req.Response.Body); err != nil {
+			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
 
 		var sampleInfo *dtos.SampleInfo
 		var status int
 
-		filename := utils.GetFileName(rit.req.Request)
+		filename := utils.GetFileName(req.Request)
 
 		if buf.String() == badMockFile {
 			sampleInfo = &dtos.SampleInfo{
@@ -213,28 +260,191 @@ func (rit *remoteICAPTester) remoteICAPMockRespmod() {
 		}
 
 		if status == http.StatusOK && sampleInfo != nil {
-			htmlBuf, newResp := utils.GetTemplateBufferAndResponse(utils.BadFileTemplate, &dtos.TemplateData{
+			td := &dtos.TemplateData{
 				FileName:     sampleInfo.FileName,
 				FileType:     sampleInfo.SampleType,
 				FileSizeStr:  sampleInfo.FileSizeStr,
-				RequestedURL: utils.BreakHTTPURL(rit.req.Request.RequestURI),
+				RequestedURL: utils.BreakHTTPURL(req.Request.RequestURI),
 				Severity:     sampleInfo.SampleSeverity,
 				Score:        sampleInfo.VTIScore,
 				ResultsBy:    "some_vendor",
-			})
-			rit.w.WriteHeader(http.StatusOK, newResp, true)
-			rit.w.Write(htmlBuf.Bytes())
+			}
+			htmlStr := fmt.Sprintf("<html><body>%v</body></htm>", *td)
+			htmlBuf := bytes.NewBuffer([]byte(htmlStr))
+			newResp := &http.Response{
+				StatusCode: http.StatusForbidden,
+				Status:     http.StatusText(http.StatusForbidden),
+				Header: http.Header{
+					"Content-Type":   []string{"text/html"},
+					"Content-Length": []string{strconv.Itoa(htmlBuf.Len())},
+				},
+			}
+			w.WriteHeader(http.StatusOK, newResp, true)
+			w.Write(htmlBuf.Bytes())
 			return
 		}
 
-		rit.w.WriteHeader(status, nil, false)
+		w.WriteHeader(status, nil, false)
 
 	}
 
 }
 
-func remoteICAPMockReqmod(rit remoteICAPTester) {
+func (rit *remoteICAPTester) remoteICAPMockReqmod(w icap.ResponseWriter, req *icap.Request) {
+	h := w.Header()
+	h.Set("ISTag", rit.isTag)
+	h.Set("Service", rit.service)
 
+	switch req.Method {
+	case utils.ICAPModeOptions:
+		rit.remoteICAPMockOptions(w, req)
+	case utils.ICAPModeReq:
+		if val, exist := req.Header["Allow"]; !exist || (len(val) > 0 && val[0] != utils.NoModificationStatusCodeStr) {
+			w.WriteHeader(http.StatusNoContent, nil, false)
+			return
+		}
+
+		fileURL := req.Request.RequestURI
+
+		filename := utils.GetFileName(req.Request)
+		fileExt := utils.GetFileExtension(req.Request)
+
+		var sampleInfo *dtos.SampleInfo
+		var status int
+
+		if fileURL == badMockURL {
+			sampleInfo = &dtos.SampleInfo{
+				SampleSeverity: "malicious",
+				FileName:       filename,
+				SampleType:     fileExt,
+				FileSizeStr:    "2.2mb",
+				VTIScore:       "10/100",
+			}
+			status = http.StatusOK
+		}
+
+		if fileURL == goodMockURL {
+			status = http.StatusNoContent
+		}
+
+		if status == http.StatusOK && sampleInfo != nil {
+			data := &dtos.TemplateData{
+				FileName:     sampleInfo.FileName,
+				FileType:     sampleInfo.SampleType,
+				FileSizeStr:  sampleInfo.FileSizeStr,
+				RequestedURL: utils.BreakHTTPURL(req.Request.RequestURI),
+				Severity:     sampleInfo.SampleSeverity,
+				Score:        sampleInfo.VTIScore,
+			}
+
+			dataByte, err := json.Marshal(data)
+
+			if err != nil {
+				w.WriteHeader(utils.IfPropagateError(http.StatusInternalServerError, http.StatusNoContent), nil, false)
+				return
+			}
+
+			req.Request.Body = ioutil.NopCloser(bytes.NewReader(dataByte))
+
+			icap.ServeLocally(w, req)
+
+			return
+		}
+
+		w.WriteHeader(status, nil, false)
+
+	}
+
+}
+
+func getRemoteICAPTesters() []remoteICAPTester {
+	return []remoteICAPTester{
+		{
+			port:            1345,
+			mode:            utils.ICAPModeResp,
+			previewBytes:    "0",
+			transferPreview: "*",
+			isTag:           "remote_icap_server",
+			service:         "test",
+			stop:            make(chan os.Signal, 1),
+			callOPTIONS:     false,
+			httpResp:        makeHTTPResponse(goodMockURL),
+			httpReq:         makeHTTPRequest(goodMockURL),
+			wantedRESPMODHeader: http.Header{
+				"Istag":   []string{"remote_icap_server"},
+				"Service": []string{"test"},
+			},
+			wantedOPTIONSStatus: http.StatusOK,
+			wantedRESPMODStatus: http.StatusNoContent,
+		},
+		{
+			port:            1346,
+			mode:            utils.ICAPModeResp,
+			previewBytes:    "4096",
+			transferPreview: "*",
+			isTag:           "remote_icap_server",
+			service:         "test",
+			stop:            make(chan os.Signal, 1),
+			callOPTIONS:     true,
+			httpResp:        makeHTTPResponse(badMockURL),
+			httpReq:         makeHTTPRequest(badMockURL),
+			wantedOPTIONSHeader: http.Header{
+				"Methods":          []string{utils.ICAPModeResp},
+				"Allow":            []string{"204"},
+				"Transfer-Preview": []string{"*"},
+			},
+			wantedRESPMODHeader: http.Header{
+				"Istag":   []string{"remote_icap_server"},
+				"Service": []string{"test"},
+			},
+			wantedOPTIONSStatus: http.StatusOK,
+			wantedRESPMODStatus: http.StatusOK,
+		},
+		{
+			port:            1347,
+			mode:            utils.ICAPModeReq,
+			previewBytes:    "0",
+			transferPreview: "*",
+			isTag:           "remote_icap_server",
+			service:         "test",
+			stop:            make(chan os.Signal, 1),
+			callOPTIONS:     true,
+			httpReq:         makeHTTPRequest(goodMockURL),
+			wantedOPTIONSHeader: http.Header{
+				"Methods":          []string{utils.ICAPModeReq},
+				"Allow":            []string{"204"},
+				"Transfer-Preview": []string{"*"},
+			},
+			wantedREQMODHeader: http.Header{
+				"Istag":   []string{"remote_icap_server"},
+				"Service": []string{"test"},
+			},
+			wantedOPTIONSStatus: http.StatusOK,
+			wantedREQMODStatus:  http.StatusNoContent,
+		},
+		{
+			port:            1348,
+			mode:            utils.ICAPModeReq,
+			previewBytes:    "4096",
+			transferPreview: "*",
+			isTag:           "remote_icap_server",
+			service:         "test",
+			stop:            make(chan os.Signal, 1),
+			callOPTIONS:     true,
+			httpReq:         makeHTTPRequest(badMockURL),
+			wantedOPTIONSHeader: http.Header{
+				"Methods":          []string{utils.ICAPModeReq},
+				"Allow":            []string{"204"},
+				"Transfer-Preview": []string{"*"},
+			},
+			wantedREQMODHeader: http.Header{
+				"Istag":   []string{"remote_icap_server"},
+				"Service": []string{"test"},
+			},
+			wantedOPTIONSStatus: http.StatusOK,
+			wantedREQMODStatus:  http.StatusOK,
+		},
+	}
 }
 
 func makeHTTPResponse(urlStr string) *http.Response {
@@ -253,14 +463,17 @@ func makeHTTPResponse(urlStr string) *http.Response {
 		}
 	}
 
+	resp.Header = http.Header{}
+
 	return resp
 }
 
 func makeHTTPRequest(urlStr string) *http.Request {
 	u, _ := url.Parse(urlStr)
 	req := &http.Request{
-		URL:  u,
-		Host: "file.com",
+		URL:    u,
+		Host:   "file.com",
+		Header: http.Header{},
 	}
 
 	return req
