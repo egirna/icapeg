@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/egirna/icap"
 )
 
@@ -184,6 +185,8 @@ func ToICAPEGReq(w icap.ResponseWriter, req *icap.Request) {
 
 	switch req.Method {
 	case utils.ICAPModeOptions:
+
+		spew.Dump(appCfg.ReqScannerVendor, utils.ICAPPrefix)
 
 		/* If any remote icap is enabled, the work flow is controlled by the remote icap */
 		if strings.HasPrefix(appCfg.ReqScannerVendor, utils.ICAPPrefix) {

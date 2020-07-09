@@ -1,16 +1,32 @@
 title = "ICAPEG test configuration file"
 
 [app]
-debug = true
-port = 1345
+log_level = "debug" # the log levels for tha app, available values: info-->logging the overall progress of the app, debug --> log everything including errors, error --> log infos and just errors
+port = 1344
 max_filesize = 10000000 #bytes
-resp_scanner_vendor = "virustotal" # Supported vendors for respmod of ICAP: "virustotal", "metadefender" , "vmray" , "clamav" , ""- empty specifies, respmod will be bypassing everything
+resp_scanner_vendor = "virustotal" # Supported vendors for respmod of ICAP: "virustotal", "metadefender" , "vmray" , "clamav" , "none"- none specifies, respmod will be bypassing everything
 req_scanner_vendor = "vmray" # Supported vendors for reqmod of ICAP: "virustotal" , "vmray",
+resp_scanner_vendor_shadow = "none"
+req_scanner_vendor_shadow = "none"
 bypass_extensions = ["*"]
 process_extensions = ["txt" , "pdf" , "dmg" , "exe" , "com", "rar" , "unknown"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
-preview_bytes = "4096" #bytes
+preview_bytes = "0" #bytes
 propagate_error = true
 
+
+[icap_something]
+base_url = "icap://127.0.0.1:1345"
+reqmod_endpoint = "/reqmod-icapeg"
+respmod_endpoint = "/respmod-icapeg"
+options_endpoint = ""
+timeout = 50# seconds, the whole allowed life span of an ICAP request
+
+[icap_somethingelse]
+base_url = "icap://127.0.0.1:1346"
+reqmod_endpoint = "/reqmod-icapeg"
+respmod_endpoint = "/respmod-icapeg"
+options_endpoint = ""
+timeout = 50# seconds, the whole allowed life span of an ICAP request
 
 
 [virustotal]

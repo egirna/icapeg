@@ -76,6 +76,6 @@ func InitTestConfig() {
 }
 
 // App returns the the app configuration instance
-func App() AppConfig {
-	return appCfg
+func App() *AppConfig {
+	return &appCfg
 }

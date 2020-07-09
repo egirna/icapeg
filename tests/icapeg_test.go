@@ -12,25 +12,47 @@ import (
 	ic "github.com/egirna/icap-client"
 )
 
-func TestICAPeg(t *testing.T) {
+// func TestICAPeg(t *testing.T) {
+// 	// initializing the test configurations
+// 	config.InitTestConfig()
+//
+// 	// making the stop channel to control the stoppage of the test sever
+// 	stop := make(chan os.Signal, 1)
+//
+// 	//starting the test ICAP server
+// 	go startTestServer(stop)
+//
+// 	//preparing the third-party mock servers
+// 	tss := getThirdPartyServers()
+// 	startThirdPartyServers(tss)
+//
+// 	startTesting(t)
+//
+// 	//stopping the third-party mock servers & test ICAP server
+// 	stopThirdPartyServers(tss)
+// 	stopTestServer(stop)
+// }
+
+func TestRemoteICAP(t *testing.T) {
 	// initializing the test configurations
 	config.InitTestConfig()
+	appCfg := config.App()
+	appCfg.RespScannerVendor = "icap_something"
+	appCfg.ReqScannerVendor = "icap_something"
 
 	// making the stop channel to control the stoppage of the test sever
 	stop := make(chan os.Signal, 1)
+	stopRemote := make(chan os.Signal, 1)
 
-	//starting the test ICAP server
+	//starting the test ICAP server and the Remote ICAP Server
 	go startTestServer(stop)
-
-	//preparing the third-party mock servers
-	tss := getThirdPartyServers()
-	startThirdPartyServers(tss)
+	go startRemoteICAPMockServer(stopRemote, 1345)
 
 	startTesting(t)
 
-	//stopping the third-party mock servers & test ICAP server
-	stopThirdPartyServers(tss)
+	// stopping the remote ICAP server & test ICAP server
 	stopTestServer(stop)
+	stopRemoteICAPMockServer(stopRemote)
 }
 
 func startTesting(t *testing.T) {
