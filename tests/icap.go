@@ -15,12 +15,14 @@ import (
 	"strconv"
 	"syscall"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/egirna/icap"
 )
 
 const (
 	transferPreview = "*"
 	previewBytes    = "4096"
+	remoteICAPPort  = 1345
 )
 
 func startRemoteICAPMockServer(stop chan os.Signal, port int) error {
@@ -134,6 +136,9 @@ func remoteICAPMockRespmod(w icap.ResponseWriter, req *icap.Request) {
 }
 
 func remoteICAPMockReqmod(w icap.ResponseWriter, req *icap.Request) {
+
+	spew.Dump("dksfkdsfjksdjfkdsjfkd")
+
 	h := w.Header()
 	h.Set("ISTag", "remote_icap_server")
 	h.Set("Service", "remote_service")
