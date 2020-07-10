@@ -15,7 +15,6 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/egirna/icap"
 )
 
@@ -23,6 +22,7 @@ const (
 	transferPreview = "*"
 	previewBytes    = "4096"
 	remoteICAPPort  = 1345
+	shadowICAPPort  = 1346
 )
 
 func startRemoteICAPMockServer(stop chan os.Signal, port int) error {
@@ -137,8 +137,6 @@ func remoteICAPMockRespmod(w icap.ResponseWriter, req *icap.Request) {
 
 func remoteICAPMockReqmod(w icap.ResponseWriter, req *icap.Request) {
 
-	spew.Dump("dksfkdsfjksdjfkdsjfkd")
-
 	h := w.Header()
 	h.Set("ISTag", "remote_icap_server")
 	h.Set("Service", "remote_service")
@@ -147,6 +145,7 @@ func remoteICAPMockReqmod(w icap.ResponseWriter, req *icap.Request) {
 	case utils.ICAPModeOptions:
 		remoteICAPMockOptions(w, req, utils.ICAPModeReq)
 	case utils.ICAPModeReq:
+
 		if val, exist := req.Header["Allow"]; !exist || (len(val) > 0 && val[0] != utils.NoModificationStatusCodeStr) {
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return

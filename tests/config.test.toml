@@ -6,18 +6,18 @@ port = 1344
 max_filesize = 10000000 #bytes
 resp_scanner_vendor = "virustotal" # Supported vendors for respmod of ICAP: "virustotal", "metadefender" , "vmray" , "clamav" , "none"- none specifies, respmod will be bypassing everything
 req_scanner_vendor = "vmray" # Supported vendors for reqmod of ICAP: "virustotal" , "vmray",
-resp_scanner_vendor_shadow = "none"
-req_scanner_vendor_shadow = "none"
+resp_scanner_vendor_shadow = "virustotal"
+req_scanner_vendor_shadow = "vmray"
 bypass_extensions = ["*"]
 process_extensions = ["txt" , "pdf" , "dmg" , "exe" , "com", "rar" , "unknown"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
-preview_bytes = "0" #bytes
+preview_bytes = "4096" #bytes
 propagate_error = true
 
 
 [icap_something]
 base_url = "icap://127.0.0.1:1345"
-reqmod_endpoint = "/reqmod-icapeg"
-respmod_endpoint = "/respmod-icapeg"
+reqmod_endpoint = "/remote-req"
+respmod_endpoint = "/remote-resp"
 options_endpoint = ""
 timeout = 50# seconds, the whole allowed life span of an ICAP request
 

@@ -284,11 +284,11 @@ func TestCopyHeaders(t *testing.T) {
 		},
 		{
 			src: http.Header{
-				"Message": []string{"Hello World", "Bye Bye World"},
+				"Message": []string{"Hello World"},
 				"Length":  []string{"11"},
 			},
 			wantedDest: http.Header{
-				"Message": []string{"Hello World", "Bye Bye World"},
+				"Message": []string{"Hello World"},
 			},
 			without: "Length",
 		},

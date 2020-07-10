@@ -46,11 +46,11 @@ func doRemoteOPTIONS(req *icap.Request, w icap.ResponseWriter, vendor, shadowVen
 func doRemoteRESPMOD(req *icap.Request, w icap.ResponseWriter, vendor, shadowVendor string) {
 
 	riSvc := service.GetICAPService(vendor)
-	// riSvc.SetHeader(req.Header)
+	riSvc.SetHeader(req.Header)
 
 	if shadowVendor != utils.NoVendor && strings.HasPrefix(shadowVendor, utils.ICAPPrefix) {
 		siSvc := service.GetICAPService(shadowVendor)
-		// siSvc.SetHeader(req.Header)
+		siSvc.SetHeader(req.Header)
 		shadowHTTPResp := utils.GetHTTPResponseCopy(req.Response)
 		go doShadowRESPMOD(siSvc, *req.Request, shadowHTTPResp)
 	}
@@ -117,7 +117,7 @@ func doRemoteRESPMOD(req *icap.Request, w icap.ResponseWriter, vendor, shadowVen
 func doRemoteREQMOD(req *icap.Request, w icap.ResponseWriter, vendor, shadowVendor string) {
 
 	riSvc := service.GetICAPService(vendor)
-	// riSvc.SetHeader(req.Header)
+	riSvc.SetHeader(req.Header)
 
 	if shadowVendor != utils.NoVendor && strings.HasPrefix(shadowVendor, utils.ICAPPrefix) {
 		siSvc := service.GetICAPService(shadowVendor)
