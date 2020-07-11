@@ -23,8 +23,8 @@ timeout = 50# seconds, the whole allowed life span of an ICAP request
 
 [icap_somethingelse]
 base_url = "icap://127.0.0.1:1346"
-reqmod_endpoint = "/reqmod-icapeg"
-respmod_endpoint = "/respmod-icapeg"
+reqmod_endpoint = "/remote-req"
+respmod_endpoint = "/remote-resp"
 options_endpoint = ""
 timeout = 50# seconds, the whole allowed life span of an ICAP request
 
