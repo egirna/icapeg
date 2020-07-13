@@ -15,7 +15,7 @@ import (
 func doRemoteOPTIONS(req *icap.Request, w icap.ResponseWriter, vendor, shadowVendor, mode string) {
 
 	riSvc := service.GetICAPService(vendor)
-	riSvc.SetHeader(req.Header)
+	// riSvc.SetHeader(req.Header)
 
 	if shadowVendor != utils.NoVendor && strings.HasPrefix(shadowVendor, utils.ICAPPrefix) {
 		siSvc := service.GetICAPService(shadowVendor)
