@@ -11,7 +11,7 @@ import (
 )
 
 func init() {
-	ic.SetDebugMode(false)
+
 }
 
 // RemoteICAPService represents the remote icap service informations

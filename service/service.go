@@ -2,6 +2,7 @@ package service
 
 import (
 	"bytes"
+	"icapeg/config"
 	"icapeg/dtos"
 	"icapeg/logger"
 	"io"
@@ -109,5 +110,9 @@ func GetLocalService(name string) LocalService {
 
 // GetICAPService returns a remote ICAP service based on the name
 func GetICAPService(name string) ICAPService {
+	if config.App().LogLevel == logger.LogLevelDebug {
+		ic.SetDebugMode(true)
+		ic.SetDebugOutput(logger.LogFile())
+	}
 	return NewRemoteICAPService(name)
 }
