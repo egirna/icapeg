@@ -10,7 +10,6 @@ import (
 	"icapeg/transformers"
 	"io"
 	"io/ioutil"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"time"
@@ -23,6 +22,11 @@ type VirusTotal struct {
 	BaseURL              string
 	Timeout              time.Duration
 	APIKey               string
+	FileScanEndpoint     string
+	URLScanEndpoint      string
+	FileReportEndpoint   string
+	URLReportEndpoint    string
+	FailThreshold        int
 	statusCheckInterval  time.Duration
 	statusCheckTimeout   time.Duration
 	badFileStatus        []string
@@ -38,6 +42,11 @@ func NewVirusTotalService() Service {
 		BaseURL:              viper.GetString("virustotal.base_url"),
 		Timeout:              viper.GetDuration("virustotal.timeout") * time.Second,
 		APIKey:               viper.GetString("virustotal.api_key"),
+		FileScanEndpoint:     viper.GetString("virustotal.file_scan_endpoint"),
+		URLScanEndpoint:      viper.GetString("virustotal.url_scan_endpoint"),
+		FileReportEndpoint:   viper.GetString("virustotal.file_report_endpoint"),
+		URLReportEndpoint:    viper.GetString("virustotal.url_report_endpoint"),
+		FailThreshold:        viper.GetInt("virustotal.fail_threshold"),
 		statusCheckInterval:  viper.GetDuration("virustotal.status_check_interval") * time.Second,
 		statusCheckTimeout:   viper.GetDuration("virustotal.status_check_timeout") * time.Second,
 		badFileStatus:        viper.GetStringSlice("virustotal.bad_file_status"),
@@ -51,7 +60,7 @@ func NewVirusTotalService() Service {
 // SubmitFile calls the submission api for virustotal
 func (v *VirusTotal) SubmitFile(f *bytes.Buffer, filename string) (*dtos.SubmitResponse, error) {
 
-	urlStr := v.BaseURL + viper.GetString("virustotal.file_scan_endpoint")
+	urlStr := v.BaseURL + v.FileScanEndpoint
 
 	bodyBuf := &bytes.Buffer{}
 
@@ -67,7 +76,7 @@ func (v *VirusTotal) SubmitFile(f *bytes.Buffer, filename string) (*dtos.SubmitR
 
 	io.Copy(part, bytes.NewReader(f.Bytes()))
 	if err := bodyWriter.Close(); err != nil {
-		log.Println("failed to close writer", err.Error())
+		errorLogger.LogToFile("failed to close writer", err.Error())
 		return nil, err
 	}
 
@@ -86,7 +95,7 @@ func (v *VirusTotal) SubmitFile(f *bytes.Buffer, filename string) (*dtos.SubmitR
 
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println("service: virustotal: failed to do request:", err.Error())
+		errorLogger.LogToFile("service: virustotal: failed to do request:", err.Error())
 		return nil, err
 	}
 
@@ -114,7 +123,7 @@ func (v *VirusTotal) SubmitFile(f *bytes.Buffer, filename string) (*dtos.SubmitR
 // SubmitURL calls the submission api for virustotal
 func (v *VirusTotal) SubmitURL(fileURL, filename string) (*dtos.SubmitResponse, error) {
 
-	urlStr := v.BaseURL + viper.GetString("virustotal.url_scan_endpoint")
+	urlStr := v.BaseURL + v.URLScanEndpoint
 
 	bodyBuf := &bytes.Buffer{}
 
@@ -124,7 +133,7 @@ func (v *VirusTotal) SubmitURL(fileURL, filename string) (*dtos.SubmitResponse, 
 	bodyWriter.WriteField("url", fileURL)
 
 	if err := bodyWriter.Close(); err != nil {
-		log.Println("failed to close writer", err.Error())
+		errorLogger.LogToFile("failed to close writer", err.Error())
 		return nil, err
 	}
 
@@ -143,7 +152,7 @@ func (v *VirusTotal) SubmitURL(fileURL, filename string) (*dtos.SubmitResponse, 
 
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println("service: virustotal: failed to do request:", err.Error())
+		errorLogger.LogToFile("service: virustotal: failed to do request:", err.Error())
 		return nil, err
 	}
 
@@ -171,7 +180,7 @@ func (v *VirusTotal) SubmitURL(fileURL, filename string) (*dtos.SubmitResponse, 
 // GetSampleFileInfo returns the submitted sample file's info
 func (v *VirusTotal) GetSampleFileInfo(sampleID string, filemetas ...dtos.FileMetaInfo) (*dtos.SampleInfo, error) {
 
-	urlStr := v.BaseURL + fmt.Sprintf(viper.GetString("virustotal.file_report_endpoint"), viper.GetString("virustotal.api_key"), sampleID)
+	urlStr := v.BaseURL + fmt.Sprintf(v.FileReportEndpoint, v.APIKey, sampleID)
 
 	req, err := http.NewRequest(http.MethodGet, urlStr, nil)
 
@@ -218,14 +227,14 @@ func (v *VirusTotal) GetSampleFileInfo(sampleID string, filemetas ...dtos.FileMe
 		fm = filemetas[0]
 	}
 
-	return transformers.TransformVirusTotalToSampleInfo(&sampleResp, fm), nil
+	return transformers.TransformVirusTotalToSampleInfo(&sampleResp, fm, v.FailThreshold), nil
 
 }
 
 // GetSampleURLInfo returns the submitted sample url's info
 func (v *VirusTotal) GetSampleURLInfo(sampleID string, filemetas ...dtos.FileMetaInfo) (*dtos.SampleInfo, error) {
 
-	urlStr := v.BaseURL + fmt.Sprintf(viper.GetString("virustotal.url_report_endpoint"), viper.GetString("virustotal.api_key"), sampleID)
+	urlStr := v.BaseURL + fmt.Sprintf(v.URLReportEndpoint, v.APIKey, sampleID)
 
 	req, err := http.NewRequest(http.MethodGet, urlStr, nil)
 
@@ -272,7 +281,7 @@ func (v *VirusTotal) GetSampleURLInfo(sampleID string, filemetas ...dtos.FileMet
 		fm = filemetas[0]
 	}
 
-	return transformers.TransformVirusTotalToSampleInfo(&sampleResp, fm), nil
+	return transformers.TransformVirusTotalToSampleInfo(&sampleResp, fm, v.FailThreshold), nil
 
 }
 

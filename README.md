@@ -127,7 +127,7 @@ Next, provide the **clamd socket file path**(getting back to this in a bit) in t
 [Here is how you setup clamav and generate the socket file](CLAMAVSETUP.md)
 
 
-**NOTE**: All the settings of ICAPeg is present in the **config.toml** file in the repo. Also before selecting your vendors as the scanners, keep in mind to check whether that certain vendor supports the modification mode or not. For example, when adding ``virustotal``  as the ``resp_scanner_vendor``, check under the configuration of ``virustotal`` if the ``resp_supported`` flag is true or not. Likewise for ``req_scanner_vendor`` and for any other vendors.
+**NOTE**: All the settings of ICAPeg is present in the **config.toml** file in the repo. Also before selecting your vendors as the scanners, keep in mind to check whether that certain vendor supports the modification mode or not. For example, when adding ``virustotal``  as the ``resp_scanner_vendor``, check under the configuration of ``virustotal`` if the ``resp_supported`` flag is true or not. Likewise for ``req_scanner_vendor`` and for any other vendors. Also you can provide `none` in the ``resp/req_scanner_vendor/vendor_shadow`` fields to indicate no vendor is provided & ICAPeg is just gonna avoid processing the requests.
 
 ## How do I turn this thing on!!
 
@@ -265,6 +265,12 @@ If you are still not getting any logs and the file is downloaded whatsoever, ple
 2. You will have to restart squid whenever you restart the ICAP.
 
 3. You need to configure your network(or your browser)'s proxy settings to go through squid.
+
+## More on ICAPeg
+
+1. [Remote ICAP Servers & Shadowing](REMOTEANDSHADOW.md)
+
+2. [Logging](LOGS.md)
 
 
 ### Contributing

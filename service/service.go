@@ -2,9 +2,14 @@ package service
 
 import (
 	"bytes"
+	"icapeg/config"
 	"icapeg/dtos"
+	"icapeg/logger"
 	"io"
+	"net/http"
 	"time"
+
+	ic "github.com/egirna/icap-client"
 )
 
 // The service names
@@ -40,6 +45,26 @@ type (
 		RespSupported() bool
 		ReqSupported() bool
 	}
+
+	// ICAPService holds the blueprint of a Remote ICAP service
+	ICAPService interface {
+		DoReqmod() (*ic.Response, error)
+		DoRespmod() (*ic.Response, error)
+		DoOptions() (*ic.Response, error)
+		GetURL() string
+		GetRespmodEndpoint() string
+		GetReqmodEndpoint() string
+		GetOptionsEndpoint() string
+		GetTimeout() time.Duration
+		SetHTTPRequest(*http.Request)
+		SetHTTPResponse(*http.Response)
+		SetHeader(map[string][]string)
+		ChangeOptionsEndpoint(string)
+	}
+)
+
+var (
+	errorLogger = logger.NewLogger(logger.LogLevelError, logger.LogLevelDebug)
 )
 
 // IsServiceLocal determines if a service is local or not
@@ -81,4 +106,13 @@ func GetLocalService(name string) LocalService {
 	}
 
 	return nil
+}
+
+// GetICAPService returns a remote ICAP service based on the name
+func GetICAPService(name string) ICAPService {
+	if config.App().LogLevel == logger.LogLevelDebug {
+		ic.SetDebugMode(true)
+		ic.SetDebugOutput(logger.LogFile())
+	}
+	return NewRemoteICAPService(name)
 }

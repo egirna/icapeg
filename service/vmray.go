@@ -10,7 +10,6 @@ import (
 	"icapeg/transformers"
 	"io"
 	"io/ioutil"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"time"
@@ -22,39 +21,45 @@ type (
 
 	// Vmray represents the vmray service
 	Vmray struct {
-		BaseURL              string
-		Timeout              time.Duration
-		APIKey               string
-		statusCheckInterval  time.Duration
-		statusCheckTimeout   time.Duration
-		badFileStatus        []string
-		okFileStatus         []string
-		statusEndPointExists bool
-		respSupported        bool
-		reqSupported         bool
+		BaseURL                  string
+		Timeout                  time.Duration
+		APIKey                   string
+		SubmitEndpoint           string
+		GetSampleEndpoint        string
+		SubmissionStatusEndpoint string
+		statusCheckInterval      time.Duration
+		statusCheckTimeout       time.Duration
+		badFileStatus            []string
+		okFileStatus             []string
+		statusEndPointExists     bool
+		respSupported            bool
+		reqSupported             bool
 	}
 )
 
 // NewVmrayService populates a new vmray instance as a service
 func NewVmrayService() Service {
 	return &Vmray{
-		BaseURL:              viper.GetString("vmray.base_url"),
-		Timeout:              viper.GetDuration("vmray.timeout") * time.Second,
-		APIKey:               viper.GetString("vmray.api_key"),
-		statusCheckInterval:  viper.GetDuration("vmray.status_check_interval") * time.Second,
-		statusCheckTimeout:   viper.GetDuration("vmray.status_check_timeout") * time.Second,
-		badFileStatus:        viper.GetStringSlice("vmray.bad_file_status"),
-		okFileStatus:         viper.GetStringSlice("vmray.ok_file_status"),
-		statusEndPointExists: true,
-		respSupported:        true,
-		reqSupported:         true,
+		BaseURL:                  viper.GetString("vmray.base_url"),
+		Timeout:                  viper.GetDuration("vmray.timeout") * time.Second,
+		APIKey:                   viper.GetString("vmray.api_key"),
+		SubmitEndpoint:           viper.GetString("vmray.submit_endpoint"),
+		GetSampleEndpoint:        viper.GetString("vmray.get_sample_endpoint"),
+		SubmissionStatusEndpoint: viper.GetString("vmray.submission_status_endpoint"),
+		statusCheckInterval:      viper.GetDuration("vmray.status_check_interval") * time.Second,
+		statusCheckTimeout:       viper.GetDuration("vmray.status_check_timeout") * time.Second,
+		badFileStatus:            viper.GetStringSlice("vmray.bad_file_status"),
+		okFileStatus:             viper.GetStringSlice("vmray.ok_file_status"),
+		statusEndPointExists:     true,
+		respSupported:            true,
+		reqSupported:             true,
 	}
 }
 
 // SubmitFile calls the submission api for vmray
 func (v *Vmray) SubmitFile(f *bytes.Buffer, filename string) (*dtos.SubmitResponse, error) {
 
-	urlStr := v.BaseURL + viper.GetString("vmray.submit_endpoint")
+	urlStr := v.BaseURL + v.SubmitEndpoint
 
 	bodyBuf := &bytes.Buffer{}
 
@@ -66,9 +71,13 @@ func (v *Vmray) SubmitFile(f *bytes.Buffer, filename string) (*dtos.SubmitRespon
 		return nil, err
 	}
 
+	if f == nil {
+		return nil, errors.New("Invalid file")
+	}
+
 	io.Copy(part, bytes.NewReader(f.Bytes()))
 	if err := bodyWriter.Close(); err != nil {
-		log.Println("failed to close writer", err.Error())
+		errorLogger.LogToFile("failed to close writer", err.Error())
 		return nil, err
 	}
 
@@ -88,7 +97,7 @@ func (v *Vmray) SubmitFile(f *bytes.Buffer, filename string) (*dtos.SubmitRespon
 
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println("service: vmray: failed to do request:", err.Error())
+		errorLogger.LogToFile("service: vmray: failed to do request:", err.Error())
 		return nil, err
 	}
 
@@ -114,7 +123,7 @@ func (v *Vmray) SubmitFile(f *bytes.Buffer, filename string) (*dtos.SubmitRespon
 // GetSampleFileInfo returns the submitted sample file's info
 func (v *Vmray) GetSampleFileInfo(sampleID string, filemetas ...dtos.FileMetaInfo) (*dtos.SampleInfo, error) {
 
-	urlStr := fmt.Sprintf("%s%s/%s", v.BaseURL, viper.GetString("vmray.get_sample_endpoint"), sampleID)
+	urlStr := fmt.Sprintf("%s%s/%s", v.BaseURL, v.GetSampleEndpoint, sampleID)
 
 	req, err := http.NewRequest(http.MethodGet, urlStr, nil)
 
@@ -151,7 +160,7 @@ func (v *Vmray) GetSampleFileInfo(sampleID string, filemetas ...dtos.FileMetaInf
 
 // GetSubmissionStatus returns the submission status of a submitted sample
 func (v *Vmray) GetSubmissionStatus(submissionID string) (*dtos.SubmissionStatusResponse, error) {
-	urlStr := fmt.Sprintf("%s%s/%s", v.BaseURL, viper.GetString("vmray.submission_status_endpoint"), submissionID)
+	urlStr := fmt.Sprintf("%s%s/%s", v.BaseURL, v.SubmissionStatusEndpoint, submissionID)
 
 	req, err := http.NewRequest(http.MethodGet, urlStr, nil)
 
@@ -189,7 +198,7 @@ func (v *Vmray) GetSubmissionStatus(submissionID string) (*dtos.SubmissionStatus
 // SubmitURL calls the submission api for vmray
 func (v *Vmray) SubmitURL(fileURL, filename string) (*dtos.SubmitResponse, error) {
 
-	urlStr := v.BaseURL + viper.GetString("vmray.submit_endpoint")
+	urlStr := v.BaseURL + v.SubmitEndpoint
 
 	bodyBuf := &bytes.Buffer{}
 
@@ -198,7 +207,7 @@ func (v *Vmray) SubmitURL(fileURL, filename string) (*dtos.SubmitResponse, error
 	bodyWriter.WriteField("sample_url", fileURL)
 
 	if err := bodyWriter.Close(); err != nil {
-		log.Println("failed to close writer", err.Error())
+		errorLogger.LogToFile("failed to close writer", err.Error())
 		return nil, err
 	}
 
@@ -218,7 +227,7 @@ func (v *Vmray) SubmitURL(fileURL, filename string) (*dtos.SubmitResponse, error
 
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println("service: vmray: failed to do request:", err.Error())
+		errorLogger.LogToFile("service: vmray: failed to do request:", err.Error())
 		return nil, err
 	}
 

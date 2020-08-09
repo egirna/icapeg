@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"icapeg/dtos"
 	"icapeg/utils"
-
-	"github.com/spf13/viper"
 )
 
 // the sample severity constants
@@ -27,9 +25,7 @@ func TransformVirusTotalToSubmitResponse(sr *dtos.VirusTotalScanFileResponse) *d
 }
 
 // TransformVirusTotalToSampleInfo transforms a virustotal report response to generic sample info response
-func TransformVirusTotalToSampleInfo(vr *dtos.VirusTotalReportResponse, fmi dtos.FileMetaInfo) *dtos.SampleInfo {
-
-	failThreshold := viper.GetInt("virustotal.fail_threshold")
+func TransformVirusTotalToSampleInfo(vr *dtos.VirusTotalReportResponse, fmi dtos.FileMetaInfo, failThreshold int) *dtos.SampleInfo {
 
 	svrty := VirusTotalSampleSeverityOk
 	vtiScore := fmt.Sprintf("%d/%d", vr.Positives, vr.Total)
