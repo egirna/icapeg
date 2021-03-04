@@ -44,12 +44,12 @@ func GetMimeExtension(data []byte) string {
 
 // GetFileName returns the filename from the http request
 func GetFileName(req *http.Request) string {
-	//req.RequestURI
-	var Requrl string 
-	if req == nil{
+	//req.RequestURI check if there is url on request or not
+	var Requrl string
+	if req == nil {
 		Requrl = "http://www.example/images/sampletest.pdf"
 
-	}else{
+	} else {
 		Requrl = req.RequestURI
 
 	}
