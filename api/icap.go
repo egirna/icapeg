@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"icapeg/config"
 	"icapeg/dtos"
 	"icapeg/logger"
@@ -25,10 +26,10 @@ var (
 
 // ToICAPEGResp is the ICAP Response Mode Handler:
 func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
+
 	h := w.Header()
 	h.Set("ISTag", utils.ISTag)
 	h.Set("Service", "Egirna ICAP-EG")
-
 	infoLogger.LogfToFile("Request received---> METHOD:%s URL:%s\n", req.Method, req.RawURL)
 
 	appCfg := config.App()
@@ -49,15 +50,28 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 
 		h.Set("Methods", utils.ICAPModeResp)
 		h.Set("Allow", "204")
-		if pb, _ := strconv.Atoi(appCfg.PreviewBytes); pb > 0 {
+
+		/*if pb, _ := strconv.Atoi(appCfg.PreviewBytes); pb > 0 {
 			h.Set("Preview", appCfg.PreviewBytes)
-		}
+		}*/
+		h.Set("Preview", "0")
+
 		h.Set("Transfer-Preview", utils.Any)
+
 		w.WriteHeader(http.StatusOK, nil, false)
+
+		/*buf := &bytes.Buffer{}
+
+		if _, err := io.Copy(buf, req.Response.Body); err != nil {
+			errorLogger.LogToFile("Failed to copy the response body to buffer: ", err.Error())
+			w.WriteHeader(http.StatusNoContent, nil, false)
+			return
+		}
+		fmt.Println(buf.String())*/
+
 	case utils.ICAPModeResp:
-
+		fmt.Println("test resp")
 		defer req.Response.Body.Close()
-
 		if val, exist := req.Header["Allow"]; !exist || (len(val) > 0 && val[0] != utils.NoModificationStatusCodeStr) { // following RFC3507, if the request has Allow: 204 header, it is to be checked and if it doesn't exists, return the request as it is to the ICAP client, https://tools.ietf.org/html/rfc3507#section-4.6
 			debugLogger.LogToFile("Processing not required for this request")
 			w.WriteHeader(http.StatusNoContent, nil, false)
@@ -123,7 +137,6 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
-
 		// preparing the file meta informations
 		filename := utils.GetFileName(req.Request)
 		fileExt := utils.GetFileExtension(req.Request)
@@ -139,7 +152,37 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
+		// Gw rebuid servise req api , resp icap client
+		if appCfg.RespScannerVendor == "glasswall" {
+			//34.242.219.224:1344
+			// "https://52.19.235.59"
 
+			resp, err := DoCDR("glasswall", buf, filename)
+			if err != nil {
+				fmt.Println(err)
+				newResp := &http.Response{
+					StatusCode: http.StatusForbidden,
+					Status:     http.StatusText(http.StatusForbidden),
+				}
+				w.WriteHeader(http.StatusForbidden, newResp, true)
+
+			} else {
+				bodybyte, _ := ioutil.ReadAll(resp.Body)
+				newResp := &http.Response{
+					StatusCode: http.StatusOK,
+					Status:     http.StatusText(http.StatusOK),
+					Header: http.Header{
+						"Content-Type":   []string{"application/pdf"},
+						"Content-Length": []string{strconv.Itoa(len(string(bodybyte)))},
+					},
+				}
+				w.WriteHeader(http.StatusOK, newResp, true)
+				w.Write(bodybyte)
+
+			}
+			return
+
+		}
 		status, sampleInfo := doScan(appCfg.RespScannerVendor, filename, fmi, buf, "") // scan the file for any anomalies
 
 		if status == http.StatusOK && sampleInfo != nil {
@@ -164,9 +207,12 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 		w.WriteHeader(status, nil, false) // \
 
 	case "ERRDUMMY":
+		fmt.Println("ERRDUMMY")
 		w.WriteHeader(http.StatusBadRequest, nil, false)
 		debugLogger.LogToFile("Malformed request")
 	default:
+		fmt.Println("default")
+
 		w.WriteHeader(http.StatusMethodNotAllowed, nil, false)
 		debugLogger.LogfToFile("Invalid request method %s- respmod\n", req.Method)
 	}
