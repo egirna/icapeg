@@ -21,7 +21,7 @@
 
 Open Source multi-vendor ICAP server
 
-Scan files requested via a proxy server using ICAPeg ICAP server, ICAPeg is an ICAP server connecting web proxies with API based scanning services and more soon!. ICAPeg currently supports [VirusTotal](https://www.virustotal.com/gui/home/upload),[VMRAY](https://www.vmray.com/) , [MetaDefender](https://metadefender.opswat.com/?lang=en) & [Clamav](https://www.clamav.net/)  for scanning the files following the ICAP protocol. If you don't know about the ICAP protocol, here is a bit about it:
+Scan files requested via a proxy server using ICAPeg ICAP server, ICAPeg is an ICAP server connecting web proxies with API based scanning services and more soon!. ICAPeg currently supports [Glasswall]() , [VirusTotal](https://www.virustotal.com/gui/home/upload),[VMRAY](https://www.vmray.com/) , [MetaDefender](https://metadefender.opswat.com/?lang=en) & [Clamav](https://www.clamav.net/)  for scanning the files following the ICAP protocol. If you don't know about the ICAP protocol, here is a bit about it:
 
 ## What is ICAP?
 
@@ -80,6 +80,19 @@ squid is an example in this readme
 3. A scanner vendor. `ICAPeg` now supports `VirusTotal`,  `MetaDefender` , `VMRay` & `Clamav` as scanner vendors.
 Make sure that you setup your scanner vendor properly. You can setup your scanners for both [RESPMOD](https://tools.ietf.org/html/rfc3507#page-27) & [REQMOD](https://tools.ietf.org/html/rfc3507#page-23).  Although, not every scanner supports every mods. [Check this out](MODS.md) to know which scanner supports which mods.
 
+Setup Glasswall :**
+
+Insert `Glasswall` as your scanner vendor in the config.toml file
+
+  ```code
+    resp_scanner_vendor = "glasswall"
+  ```
+
+  Or,
+
+  ```code
+    req_scanner_vendor = "glasswall"
+  ```
 
 Setup **VirusTotal:**
 
@@ -225,7 +238,7 @@ Add the following lines at the bottom of your ACLs configurations
 
   ```configuration
     icap_enable on
-    icap_service service_resp respmod_precache icap://127.0.0.1:1344/respmod-icapeg
+    icap_service service_resp respmod_precache icap://127.0.0.1:1344/respmod
     adaptation_access service_resp allow all
   ```
 
@@ -234,7 +247,6 @@ Add the following line at the end of the file
   ```configuration
     cache deny all
   ```
-
 
 A sample conf file for squid exists in the repository in a file
    [squid.conf](https://github.com/mkaram007/icapeg/blob/fa4ce337b27a2583c93c5dc81d8c7310fdc38e3a/squid.conf)
@@ -248,34 +260,6 @@ Restart squid:
   ```bash
     systemctl restart squid
   ```
-
-## How do I know its working!
-
-3. Now that you have squid running as well, you can test it out by trying to download/access a file from the Internet(through the proxy) and see the magic happens! You'll be able to download/access the file if its alright,
-
-      If you try and download something not malicious you should see something like this in the logs:
-![fileoklog](img/fileoklog.jpg)
-
-
-
-   To test properly using malicious files , visit the [Eicar Test File Site](https://www.eicar.org/?page_id=3950), and try to download a malicious file.
-
-   For example, open the following link
-
-   www.eicar.org/download/eicar_com.zip,
-
-   There will be terminal logs such as:
-   ![filenotok](img/filenotok.jpg)
-
-   And you are gonna see something like this in the browser:
-   ![error_page](img/errorpage.jpg)
-
-   And the details of the malicious file is shown by clicking on "details" button:
-   ![error_page](img/details.jpg)
-
-Oh, and do not forget to setup your Browser or Machine 's  proxy settings according to the squid.
-
-If you are still not getting any logs and the file is downloaded whatsoever, please check your proxy(squid) setup.
 
 ## Things to keep in mind
 

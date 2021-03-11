@@ -17,8 +17,6 @@ propagate_error = true
 [glasswall]
  
 base_url = "https://52.211.35.250" # 34.242.89.11 52.19.235.59  52.211.35.250 46.101.58.233
-
-
 scan_endpoint = "/api/rebuild/file"
 api_key = "<Your glasswall API KEY here>"
 timeout  = 35 #seconds , ICAP will return 408 - Request timeout
