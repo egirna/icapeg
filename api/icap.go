@@ -51,26 +51,15 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 		h.Set("Methods", utils.ICAPModeResp)
 		h.Set("Allow", "204")
 
-		/*if pb, _ := strconv.Atoi(appCfg.PreviewBytes); pb > 0 {
+		if pb, _ := strconv.Atoi(appCfg.PreviewBytes); pb > 0 {
 			h.Set("Preview", appCfg.PreviewBytes)
-		}*/
-		h.Set("Preview", "0")
+		}
 
 		h.Set("Transfer-Preview", utils.Any)
 
 		w.WriteHeader(http.StatusOK, nil, false)
 
-		/*buf := &bytes.Buffer{}
-
-		if _, err := io.Copy(buf, req.Response.Body); err != nil {
-			errorLogger.LogToFile("Failed to copy the response body to buffer: ", err.Error())
-			w.WriteHeader(http.StatusNoContent, nil, false)
-			return
-		}
-		fmt.Println(buf.String())*/
-
 	case utils.ICAPModeResp:
-		fmt.Println("test resp")
 		defer req.Response.Body.Close()
 		if val, exist := req.Header["Allow"]; !exist || (len(val) > 0 && val[0] != utils.NoModificationStatusCodeStr) { // following RFC3507, if the request has Allow: 204 header, it is to be checked and if it doesn't exists, return the request as it is to the ICAP client, https://tools.ietf.org/html/rfc3507#section-4.6
 			debugLogger.LogToFile("Processing not required for this request")
