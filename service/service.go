@@ -18,12 +18,14 @@ const (
 	SVCMetaDefender = "metadefender"
 	SVCVmray        = "vmray"
 	SVCClamav       = "clamav"
+	SVCGlasswall    = "glasswall"
 )
 
 type (
 	// Service holds the info to distinguish a service
 	Service interface {
 		SubmitFile(*bytes.Buffer, string) (*dtos.SubmitResponse, error)
+		SendFileApi(*bytes.Buffer,  string) (*http.Response, error)
 		GetSubmissionStatus(string) (*dtos.SubmissionStatusResponse, error)
 		GetSampleFileInfo(string, ...dtos.FileMetaInfo) (*dtos.SampleInfo, error)
 		GetSampleURLInfo(string, ...dtos.FileMetaInfo) (*dtos.SampleInfo, error)
@@ -93,6 +95,8 @@ func GetService(name string) Service {
 		return NewMetaDefenderService()
 	case SVCVmray:
 		return NewVmrayService()
+	case SVCGlasswall:
+		return NewGlasswallService()
 	}
 
 	return nil
