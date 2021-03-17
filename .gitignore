@@ -5,7 +5,6 @@
 *.so
 *.dylib
 icapeg
-go.sum
 send_bin_to_vm.sh
 
 # Test binary, built with `go test -c`

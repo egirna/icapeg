@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"errors"
 	"icapeg/config"
 	"icapeg/dtos"
 	"icapeg/service"
@@ -241,4 +242,23 @@ func doRemoteURLScan(scannerName, filename string, fmi dtos.FileMetaInfo, fileUR
 		return http.StatusOK, sampleInfo
 	}
 	return http.StatusNoContent, nil
+}
+
+//DoCDR send req to api return resp to client
+func DoCDR(scannerName string, f *bytes.Buffer, filename string) (*http.Response, error) {
+	svc := service.GetService(scannerName)
+	if svc == nil {
+		debugLogger.LogToFile("No such scanner vendors:", scannerName)
+		err := errors.New("No such scanner vendors:" + scannerName)
+
+		return nil, err
+	}
+
+	submitResp, err := svc.SendFileApi(f, filename) // submitting the file for analysing
+	if err != nil {
+		errorLogger.LogfToFile("Failed to submit url to %s: %s\n", scannerName, err.Error())
+		return nil, err
+	}
+
+	return submitResp, err
 }

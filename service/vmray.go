@@ -289,3 +289,26 @@ func (v *Vmray) RespSupported() bool {
 func (v *Vmray) ReqSupported() bool {
 	return v.reqSupported
 }
+func (g *Vmray) SendFileApi(f *bytes.Buffer, filename string) (*http.Response, error) {
+
+	urlStr := g.BaseURL
+
+	bodyBuf := &bytes.Buffer{}
+
+	req, err := http.NewRequest(http.MethodPost, urlStr, bodyBuf)
+	//fmt.Println(req)
+	if err != nil {
+		return nil, err
+	}
+
+		client := &http.Client{}
+	
+	resp, err := client.Do(req)
+	if err != nil {
+		errorLogger.LogToFile("service: Glasswall: failed to do request:", err.Error())
+		return nil, err
+	}
+    return resp, err
+
+
+}
