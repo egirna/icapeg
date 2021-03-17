@@ -2,12 +2,12 @@ package api
 
 import (
 	"bytes"
+	"errors"
 	"icapeg/config"
 	"icapeg/dtos"
 	"icapeg/service"
 	"icapeg/utils"
 	"net/http"
-	   "errors"
 	"time"
 )
 
@@ -245,65 +245,20 @@ func doRemoteURLScan(scannerName, filename string, fmi dtos.FileMetaInfo, fileUR
 }
 
 //DoCDR send req to api return resp to client
-func DoCDR(scannerName string,f *bytes.Buffer, filename string) (*http.Response, error) {
-     svc := service.GetService(scannerName)
-	 if svc == nil {
+func DoCDR(scannerName string, f *bytes.Buffer, filename string) (*http.Response, error) {
+	svc := service.GetService(scannerName)
+	if svc == nil {
 		debugLogger.LogToFile("No such scanner vendors:", scannerName)
-	    err := errors.New("No such scanner vendors:"+ scannerName)
+		err := errors.New("No such scanner vendors:" + scannerName)
 
-		return nil,	err
+		return nil, err
 	}
 
-	
 	submitResp, err := svc.SendFileApi(f, filename) // submitting the file for analysing
 	if err != nil {
 		errorLogger.LogfToFile("Failed to submit url to %s: %s\n", scannerName, err.Error())
-		return nil,err
-	}
-	/*
-	urlStr := "https://52.211.35.250/api/rebuild/file"
-
-	bodyBuf := &bytes.Buffer{}
-
-	bodyWriter := multipart.NewWriter(bodyBuf)
-
-	//bodyWriter.WriteField("apikey", g.APIKey)
-
-	part, err := bodyWriter.CreateFormFile("file", filename)
-
-	if err != nil {
 		return nil, err
 	}
 
-	io.Copy(part, bytes.NewReader(f.Bytes()))
-	if err := bodyWriter.Close(); err != nil {
-		errorLogger.LogToFile("failed to close writer", err.Error())
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, urlStr, bodyBuf)
-	//fmt.Println(req)
-	if err != nil {
-		return nil, err
-	}
-
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-	client := &http.Client{Transport: tr}
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	req = req.WithContext(ctx)
-
-	req.Header.Add("Content-Type", bodyWriter.FormDataContentType())
-
-	resp, err := client.Do(req)
-	if err != nil {
-		errorLogger.LogToFile("service: Glasswall: failed to do request:", err.Error())
-		return nil, err
-	}
-	//fmt.Println(http.StatusOK)
-
-	//fmt.Println(resp.Body)*/
 	return submitResp, err
 }
