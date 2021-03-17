@@ -19,6 +19,7 @@ type AppConfig struct {
 	BypassExtensions        []string
 	ProcessExtensions       []string
 	PreviewBytes            string
+	PreviewEnabled          bool
 	PropagateError          bool
 }
 
@@ -45,6 +46,7 @@ func Init() {
 		BypassExtensions:        viper.GetStringSlice("app.bypass_extensions"),
 		ProcessExtensions:       viper.GetStringSlice("app.process_extensions"),
 		PreviewBytes:            viper.GetString("app.preview_bytes"),
+		PreviewEnabled:          viper.GetBool("app.preview_enabled"),
 		PropagateError:          viper.GetBool("app.propagate_error"),
 	}
 

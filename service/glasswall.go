@@ -264,7 +264,8 @@ func (m *Glasswall) RespSupported() bool {
 func (m *Glasswall) ReqSupported() bool {
 	return m.reqSupported
 }
-//send file to api GW rebuild services 
+
+//send file to api GW rebuild services
 func (g *Glasswall) SendFileApi(f *bytes.Buffer, filename string) (*http.Response, error) {
 
 	urlStr := g.BaseURL + g.ScanEndpoint
@@ -308,7 +309,6 @@ func (g *Glasswall) SendFileApi(f *bytes.Buffer, filename string) (*http.Respons
 		errorLogger.LogToFile("service: Glasswall: failed to do request:", err.Error())
 		return nil, err
 	}
-    return resp, err
-
+	return resp, err
 
 }

@@ -1,4 +1,4 @@
-title = "ICAPEG configuration file"
+title = "ICAP configuration file"
 
 [app]
 log_level = "debug" # the log levels for tha app, available values: info-->logging the overall progress of the app, debug --> log everything including errors, error --> log infos and just errors
@@ -10,17 +10,18 @@ resp_scanner_vendor_shadow = "none"
 req_scanner_vendor_shadow = "none"
 bypass_extensions = ["*"]
 process_extensions = ["txt" , "pdf" , "dmg" , "exe" , "com", "rar" , "unknown"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
-preview_bytes = "4096" #bytes
+preview_bytes = "4096" #byte
+preview_enabled = true # options send preview header or not
 propagate_error = true
-
-
+service_caption ="Go-ICAP server - Glasswall Rebuild service"
 [glasswall]
  
-base_url = "https://52.211.35.250" # 34.242.89.11 52.19.235.59  52.211.35.250 46.101.58.233
+base_url = "https://3.250.64.227" # 34.242.89.11 52.19.235.59  52.211.35.250 46.101.58.233  3.250.64.227
 scan_endpoint = "/api/rebuild/file"
 api_key = "<Your glasswall API KEY here>"
 timeout  = 35 #seconds , ICAP will return 408 - Request timeout
 fail_threshold = 2
+
 
 #ICAP possible codes: 204 (No modifications needed) , 400 (Bad Request) , 403 (Forbidden) , 500 (Server Error) , 502 (Bad Gateway)
 api_response_400 = 400 #Bad Request
