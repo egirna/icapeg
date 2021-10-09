@@ -1,0 +1,194 @@
+ICAP server:18.203.158.160, ip:172.26.247.132, port:1344
+
+ICAP server:18.203.158.160, ip:172.26.247.132, port:1344
+
+ICAP server:18.203.158.160, ip:172.26.247.132, port:1344
+
+ICAP server:18.203.158.160, ip:172.26.247.132, port:1344
+
+ICAP server:18.203.158.160, ip:172.26.247.132, port:1344
+
+ICAP server:18.203.158.160, ip:172.26.247.132, port:1344
+
+ICAP server:18.203.158.160, ip:172.26.247.132, port:1344
+
+ICAP server:18.203.158.160, ip:172.26.247.132, port:1344
+
+ICAP server:18.203.158.160, ip:172.26.247.132, port:1344
+
+ICAP server:18.203.158.160, ip:172.26.247.132, port:1344
+
+
+ICAP HEADERS:
+	ICAP/1.0 200 OK
+	Server: C-ICAP/0.5.7
+	Connection: keep-alive
+	ISTag: CI0001-2.1.1
+	Encapsulated: res-hdr=0, res-body=261
+
+RESPMOD HEADERS:
+	HTTP/1.0 200 OK
+	Date: Sat Oct  9 17:32:12 2021
+	Last-Modified: Sat Oct  9 17:32:12 2021
+	Content-Length: 3420
+	X-Adaptation-File-Id: 7e3623b2-0342-4b51-b08f-c01a28d96009
+	Via: ICAP/1.0 icap-service-698949bffc-jvqs4 (C-ICAP/0.5.7 Glasswall Rebuild service )
+
+
+real	0m6.406s
+user	0m0.005s
+sys	0m0.000s
+
+ICAP HEADERS:
+	ICAP/1.0 200 OK
+	Server: C-ICAP/0.5.7
+	Connection: keep-alive
+	ISTag: CI0001-2.1.1
+	Encapsulated: res-hdr=0, res-body=261
+
+RESPMOD HEADERS:
+	HTTP/1.0 200 OK
+	Date: Sat Oct  9 17:32:12 2021
+	Last-Modified: Sat Oct  9 17:32:12 2021
+	Content-Length: 3420
+	X-Adaptation-File-Id: 87fdc68a-2cf9-4a23-a443-d50e0948135d
+	Via: ICAP/1.0 icap-service-698949bffc-jvqs4 (C-ICAP/0.5.7 Glasswall Rebuild service )
+
+
+real	0m6.713s
+user	0m0.005s
+sys	0m0.000s
+
+ICAP HEADERS:
+	ICAP/1.0 200 OK
+	Server: C-ICAP/0.5.7
+	Connection: keep-alive
+	ISTag: CI0001-2.1.1
+	Encapsulated: res-hdr=0, res-body=261
+
+RESPMOD HEADERS:
+	HTTP/1.0 200 OK
+	Date: Sat Oct  9 17:32:12 2021
+	Last-Modified: Sat Oct  9 17:32:12 2021
+	Content-Length: 3420
+	X-Adaptation-File-Id: 8af48d31-8b10-4977-bf7e-6431467c0719
+	Via: ICAP/1.0 icap-service-698949bffc-jvqs4 (C-ICAP/0.5.7 Glasswall Rebuild service )
+
+
+real	0m6.955s
+user	0m0.004s
+sys	0m0.000s
+
+ICAP HEADERS:
+	ICAP/1.0 200 OK
+	Server: C-ICAP/0.5.7
+	Connection: keep-alive
+	ISTag: CI0001-2.1.1
+	Encapsulated: res-hdr=0, res-body=261
+
+RESPMOD HEADERS:
+	HTTP/1.0 200 OK
+	Date: Sat Oct  9 17:32:12 2021
+	Last-Modified: Sat Oct  9 17:32:12 2021
+	Content-Length: 3420
+	X-Adaptation-File-Id: a4a67ded-7aef-4a08-bd0b-de08b0255ccc
+	Via: ICAP/1.0 icap-service-698949bffc-jvqs4 (C-ICAP/0.5.7 Glasswall Rebuild service )
+
+
+real	0m7.248s
+user	0m0.006s
+sys	0m0.000s
+
+ICAP HEADERS:
+	ICAP/1.0 200 OK
+	Server: C-ICAP/0.5.7
+	Connection: keep-alive
+	ISTag: CI0001-2.1.1
+	Encapsulated: res-hdr=0, res-body=261
+
+RESPMOD HEADERS:
+	HTTP/1.0 200 OK
+	Date: Sat Oct  9 17:32:13 2021
+	Last-Modified: Sat Oct  9 17:32:13 2021
+	Content-Length: 3420
+	X-Adaptation-File-Id: 83f97335-645e-4940-bba9-b0071709af22
+	Via: ICAP/1.0 icap-service-698949bffc-jvqs4 (C-ICAP/0.5.7 Glasswall Rebuild service )
+
+
+real	0m7.501s
+user	0m0.004s
+sys	0m0.000s
+
+ICAP HEADERS:
+	ICAP/1.0 200 OK
+	Server: C-ICAP/0.5.7
+	Connection: keep-alive
+	ISTag: CI0001-2.1.1
+	Encapsulated: res-hdr=0, res-body=261
+
+RESPMOD HEADERS:
+	HTTP/1.0 200 OK
+	Date: Sat Oct  9 17:32:12 2021
+	Last-Modified: Sat Oct  9 17:32:12 2021
+	Content-Length: 3420
+	X-Adaptation-File-Id: 5286c38e-d6e4-4fb5-be71-adc132c844e0
+	Via: ICAP/1.0 icap-service-698949bffc-jvqs4 (C-ICAP/0.5.7 Glasswall Rebuild service )
+
+
+real	0m7.563s
+user	0m0.000s
+sys	0m0.005s
+
+ICAP HEADERS:
+	ICAP/1.0 200 OK
+	Server: C-ICAP/0.5.7
+	Connection: keep-alive
+	ISTag: CI0001-2.1.1
+	Encapsulated: res-hdr=0, res-body=261
+
+RESPMOD HEADERS:
+	HTTP/1.0 200 OK
+	Date: Sat Oct  9 17:32:12 2021
+	Last-Modified: Sat Oct  9 17:32:12 2021
+	Content-Length: 3420
+	X-Adaptation-File-Id: 37b25d36-9644-4d40-a59a-b3c42816fc85
+	Via: ICAP/1.0 icap-service-698949bffc-jvqs4 (C-ICAP/0.5.7 Glasswall Rebuild service )
+
+
+real	0m7.695s
+user	0m0.005s
+sys	0m0.000s
+
+ICAP HEADERS:
+	ICAP/1.0 200 OK
+	Server: C-ICAP/0.5.7
+	Connection: keep-alive
+	ISTag: CI0001-2.1.1
+	Encapsulated: res-hdr=0, res-body=261
+
+RESPMOD HEADERS:
+	HTTP/1.0 200 OK
+	Date: Sat Oct  9 17:32:13 2021
+	Last-Modified: Sat Oct  9 17:32:13 2021
+	Content-Length: 3420
+	X-Adaptation-File-Id: 81e397f3-420a-4477-a1b6-623c2ebbfae8
+	Via: ICAP/1.0 icap-service-698949bffc-jvqs4 (C-ICAP/0.5.7 Glasswall Rebuild service )
+
+
+real	0m7.798s
+user	0m0.005s
+sys	0m0.000s
+
+ICAP HEADERS:
+
+
+ICAP HEADERS:
+
+
+real	0m8.055s
+user	0m0.005s
+sys	0m0.000s
+
+real	0m8.051s
+user	0m0.005s
+sys	0m0.000s

@@ -1,0 +1,190 @@
+ICAP server:192.168.1.6, ip:172.26.247.132, port:1344
+
+ICAP server:192.168.1.6, ip:172.26.247.132, port:1344
+
+ICAP server:192.168.1.6, ip:172.26.247.132, port:1344
+
+ICAP server:192.168.1.6, ip:172.26.247.132, port:1344
+
+ICAP server:192.168.1.6, ip:172.26.247.132, port:1344
+
+ICAP server:192.168.1.6, ip:172.26.247.132, port:1344
+
+ICAP server:192.168.1.6, ip:172.26.247.132, port:1344
+
+ICAP server:192.168.1.6, ip:172.26.247.132, port:1344
+
+ICAP server:192.168.1.6, ip:172.26.247.132, port:1344
+
+ICAP server:192.168.1.6, ip:172.26.247.132, port:1344
+
+
+ICAP HEADERS:
+	ICAP/1.0 200 OK
+	Connection: close
+	Date: Sat, 09 Oct 2021 15:32:11 GMT
+	Encapsulated: res-hdr=0, res-body=41
+	Istag: "ICAPEG"
+	Service: Egirna ICAP-EG
+
+RESPMOD HEADERS:
+	HTTP/1.1 200 OK
+	Content-Length: 3420
+
+
+real	0m0.708s
+user	0m0.005s
+sys	0m0.000s
+
+ICAP HEADERS:
+	ICAP/1.0 200 OK
+	Connection: close
+	Date: Sat, 09 Oct 2021 15:32:11 GMT
+	Encapsulated: res-hdr=0, res-body=41
+	Istag: "ICAPEG"
+	Service: Egirna ICAP-EG
+
+RESPMOD HEADERS:
+	HTTP/1.1 200 OK
+	Content-Length: 3420
+
+
+real	0m0.831s
+user	0m0.006s
+sys	0m0.000s
+
+ICAP HEADERS:
+	ICAP/1.0 200 OK
+	Connection: close
+	Date: Sat, 09 Oct 2021 15:32:11 GMT
+	Encapsulated: res-hdr=0, res-body=41
+	Istag: "ICAPEG"
+	Service: Egirna ICAP-EG
+
+RESPMOD HEADERS:
+	HTTP/1.1 200 OK
+	Content-Length: 3420
+
+
+real	0m0.898s
+user	0m0.008s
+sys	0m0.000s
+
+ICAP HEADERS:
+	ICAP/1.0 200 OK
+	Connection: close
+	Date: Sat, 09 Oct 2021 15:32:12 GMT
+	Encapsulated: res-hdr=0, res-body=41
+	Istag: "ICAPEG"
+	Service: Egirna ICAP-EG
+
+
+ICAP HEADERS:
+RESPMOD HEADERS:
+	HTTP/1.1 200 OK
+	ICAP/1.0 200 OK
+	Connection: close
+	Content-Length: 3420
+
+	Date: Sat, 09 Oct 2021 15:32:12 GMT
+	Encapsulated: res-hdr=0, res-body=41
+	Istag: "ICAPEG"
+	Service: Egirna ICAP-EG
+
+real	0m1.433s
+
+RESPMOD HEADERS:
+user	0m0.006s
+sys	0m0.000s
+	HTTP/1.1 200 OK
+	Content-Length: 3420
+
+
+real	0m1.435s
+user	0m0.004s
+sys	0m0.003s
+
+ICAP HEADERS:
+	ICAP/1.0 200 OK
+	Connection: close
+	Date: Sat, 09 Oct 2021 15:32:12 GMT
+	Encapsulated: res-hdr=0, res-body=41
+	Istag: "ICAPEG"
+	Service: Egirna ICAP-EG
+
+RESPMOD HEADERS:
+	HTTP/1.1 200 OK
+	Content-Length: 3420
+
+
+real	0m1.642s
+user	0m0.008s
+sys	0m0.000s
+
+ICAP HEADERS:
+	ICAP/1.0 200 OK
+	Connection: close
+	Date: Sat, 09 Oct 2021 15:32:12 GMT
+	Encapsulated: res-hdr=0, res-body=41
+	Istag: "ICAPEG"
+	Service: Egirna ICAP-EG
+
+RESPMOD HEADERS:
+	HTTP/1.1 200 OK
+	Content-Length: 3420
+
+
+real	0m1.667s
+user	0m0.006s
+sys	0m0.000s
+
+ICAP HEADERS:
+	ICAP/1.0 200 OK
+	Connection: close
+	Date: Sat, 09 Oct 2021 15:32:12 GMT
+	Encapsulated: res-hdr=0, res-body=41
+	Istag: "ICAPEG"
+	Service: Egirna ICAP-EG
+
+RESPMOD HEADERS:
+	HTTP/1.1 200 OK
+	Content-Length: 3420
+
+
+real	0m1.818s
+user	0m0.006s
+sys	0m0.000s
+
+ICAP HEADERS:
+	ICAP/1.0 200 OK
+	Connection: close
+	Date: Sat, 09 Oct 2021 15:32:13 GMT
+	Encapsulated: res-hdr=0, res-body=41
+	Istag: "ICAPEG"
+	Service: Egirna ICAP-EG
+
+RESPMOD HEADERS:
+	HTTP/1.1 200 OK
+	Content-Length: 3420
+
+
+real	0m2.403s
+user	0m0.006s
+sys	0m0.000s
+
+ICAP HEADERS:
+	ICAP/1.0 200 OK
+	Connection: close
+	Date: Sat, 09 Oct 2021 15:32:13 GMT
+	Encapsulated: res-hdr=0, res-body=41
+	Istag: "ICAPEG"
+	Service: Egirna ICAP-EG
+
+RESPMOD HEADERS:
+	HTTP/1.1 200 OK
+	Content-Length: 3420
+
+
+real	0m2.432s
+user	0m0.005s
+sys	0m0.000s

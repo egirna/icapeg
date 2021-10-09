@@ -298,8 +298,9 @@ func (g *Glasswall) SendFileApi(f *bytes.Buffer, filename string) (*http.Respons
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 	client := &http.Client{Transport: tr}
-	ctx, cancel := context.WithTimeout(context.Background(), g.Timeout)
-	defer cancel()
+	ctx, _ := context.WithTimeout(context.Background(), g.Timeout)
+
+	// defer cancel() commit cancel must be on goroutine
 	req = req.WithContext(ctx)
 
 	req.Header.Add("Content-Type", bodyWriter.FormDataContentType())
