@@ -5,7 +5,7 @@ log_level = "debug" # the log levels for tha app, available values: info-->loggi
 port = 1344
 max_filesize = 10000000 #bytes 
 resp_scanner_vendor = "glasswall" # Supported vendors for respmod of ICAP: "virustotal", "metadefender" , "vmray" , "clamav" , "none"- none specifies, respmod will be bypassing everything
-req_scanner_vendor = "none" # Supported vendors for reqmod of ICAP: "virustotal" , "vmray",
+req_scanner_vendor = "glasswall" # Supported vendors for reqmod of ICAP: "virustotal" , "vmray",
 resp_scanner_vendor_shadow = "none"
 req_scanner_vendor_shadow = "none"
 bypass_extensions = ["*"]
@@ -16,10 +16,10 @@ propagate_error = true
 service_caption ="Go-ICAP server - Glasswall Rebuild service"
 [glasswall]
  
-base_url = "https://3.250.64.227" # 34.242.89.11 52.19.235.59  52.211.35.250 46.101.58.233  3.250.64.227
+base_url = "http://1.2.3.4" # 
 scan_endpoint = "/api/rebuild/file"
-api_key = "<Your glasswall API KEY here>"
-timeout  = 35 #seconds , ICAP will return 408 - Request timeout
+api_key = "<api key>"
+timeout  = 300 #seconds , ICAP will return 408 - Request timeout
 fail_threshold = 2
 
 
@@ -62,7 +62,7 @@ ok_file_status = ["ok"]
 base_url = "https://api.metadefender.com/v4"
 scan_endpoint = "/file"
 report_endpoint = "/file"
-api_key = "<Your metadefender API KEY here>"
+api_key = "54fcb5feeb572c1231ea93a179b8361a"
 timeout  = 10 #seconds
 fail_threshold = 2
 status_check_interval = 2 #seconds, the time interval after which the submission status check will be called

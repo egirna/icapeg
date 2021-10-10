@@ -156,7 +156,11 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 				w.WriteHeader(http.StatusForbidden, newResp, true)
 
 			} else {
-				bodybyte, _ := ioutil.ReadAll(resp.Body)
+				defer resp.Body.Close()
+				bodybyte, err := ioutil.ReadAll(resp.Body)
+				if err != nil {
+					fmt.Println(err)
+				}
 
 				newResp := &http.Response{
 					StatusCode: http.StatusOK,
