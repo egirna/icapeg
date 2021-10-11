@@ -8,14 +8,14 @@ import (
 func TestTransformMetaDefenderToSubmitResponse(t *testing.T) {
 	type testSample struct {
 		sr *dtos.MetaDefenderScanFileResponse
-		result *dtos.SubmitResponse
+		submitResp *dtos.SubmitResponse
 	}
 	sampleTable := []testSample{
 		{
 			sr: &dtos.MetaDefenderScanFileResponse{
 				DataID: "1",
 			},
-			result: &dtos.SubmitResponse{
+			submitResp: &dtos.SubmitResponse{
 				SubmissionID: "1",
 				SubmissionSampleID: "1",
 				SubmissionExists: true,
@@ -25,7 +25,7 @@ func TestTransformMetaDefenderToSubmitResponse(t *testing.T) {
 			sr: &dtos.MetaDefenderScanFileResponse{
 				DataID: "2",
 			},
-			result: &dtos.SubmitResponse{
+			submitResp: &dtos.SubmitResponse{
 				SubmissionID: "2",
 				SubmissionSampleID: "2",
 				SubmissionExists: true,
@@ -35,7 +35,7 @@ func TestTransformMetaDefenderToSubmitResponse(t *testing.T) {
 			sr: &dtos.MetaDefenderScanFileResponse{
 				DataID: "",
 			},
-			result: &dtos.SubmitResponse{
+			submitResp: &dtos.SubmitResponse{
 				SubmissionID: "",
 				SubmissionSampleID: "",
 				SubmissionExists: false,
@@ -44,7 +44,7 @@ func TestTransformMetaDefenderToSubmitResponse(t *testing.T) {
 	}
 	for _, sample := range sampleTable {
 		got := TransformMetaDefenderToSubmitResponse(sample.sr)
-		want := sample.result
+		want := sample.submitResp
 
 		if got != want {
 			if sample.sr.DataID == "" && got.SubmissionExists{
@@ -59,6 +59,56 @@ func TestTransformMetaDefenderToSubmitResponse(t *testing.T) {
 				t.Errorf("TransformMetaDefenderToSubmitResponse Failed for %s , wanted: %s got: %s",
 					"SubmissionSampleID", want.SubmissionSampleID, got.SubmissionSampleID)
 			}
+		}
+	}
+}
+
+func TestTransformMetaDefenderToSubmissionStatusResponse(t *testing.T) {
+	type testSample struct {
+		vr *dtos.MetaDefenderReportResponse
+		subStatResp *dtos.SubmissionStatusResponse
+	}
+	sampleTable := []testSample{
+		{
+			vr: &dtos.MetaDefenderReportResponse{
+				ScanResults : dtos.MetaDefenderScanResults{
+					ProgressPercentage: 50,
+				},
+
+			},
+			subStatResp: &dtos.SubmissionStatusResponse{
+				SubmissionFinished: false,
+			},
+		},
+		{
+			vr: &dtos.MetaDefenderReportResponse{
+				ScanResults : dtos.MetaDefenderScanResults{
+					ProgressPercentage: 100,
+				},
+
+			},
+			subStatResp: &dtos.SubmissionStatusResponse{
+				SubmissionFinished: true,
+			},
+		},
+		{
+			vr: &dtos.MetaDefenderReportResponse{
+				ScanResults : dtos.MetaDefenderScanResults{
+					ProgressPercentage: 150,
+				},
+
+			},
+			subStatResp: &dtos.SubmissionStatusResponse{
+				SubmissionFinished: true,
+			},
+		},
+	}
+	for _, sample := range sampleTable {
+		got := TransformMetaDefenderToSubmissionStatusResponse(sample.vr)
+		want := sample.subStatResp
+		if got.SubmissionFinished != want.SubmissionFinished {
+			t.Errorf("TransformMetaDefenderToSubmissionStatusResponse Failed for %s , wanted: %v got: %v",
+				"SubmissionFinished", want.SubmissionFinished, got.SubmissionFinished)
 		}
 	}
 }
