@@ -32,7 +32,7 @@ func TestTransformVirusTotalToSubmitResponse(t *testing.T) {
 		got := TransformVirusTotalToSubmitResponse(sample.sr)
 		want := sample.submitResp
 		if got.SubmissionExists != want.SubmissionExists {
-			t.Errorf("TransformMetaDefenderToSubmitResponse Failed for %s , wanted: %v got: %v",
+			t.Errorf("TransformVirusTotalToSubmitResponse Failed for %s , wanted: %v got: %v",
 				"SubmissionExists", want.SubmissionExists, got.SubmissionExists)
 		}
 	}
@@ -84,13 +84,56 @@ func TestTransformVirusTotalToSampleInfo(t *testing.T) {
 		got := TransformVirusTotalToSampleInfo(sample.vr, sample.fmi, sample.failThreshold)
 		want := sample.result
 		if got.SubmissionFinished != want.SubmissionFinished {
-			t.Errorf("TransformMetaDefenderToSampleInfo Failed for %s , wanted: %v got: %v",
+			t.Errorf("TransformVirusTotalToSampleInfo Failed for %s , wanted: %v got: %v",
 				"SubmissionFinished", want.SubmissionFinished, got.SubmissionFinished)
 		}
 		if got.SampleSeverity != want.SampleSeverity {
-			t.Errorf("TransformMetaDefenderToSampleInfo Failed for %s , wanted: %v got: %v",
+			t.Errorf("TransformVirusTotalToSampleInfo Failed for %s , wanted: %v got: %v",
 				"SampleSeverity", want.SampleSeverity, got.SampleSeverity)
 		}
 	}
 }
+
+func TestTransformVirusTotalToSubmissionStatusResponse(t *testing.T) {
+	type testSample struct {
+		vr *dtos.VirusTotalReportResponse
+		subStatResp *dtos.SubmissionStatusResponse
+	}
+	sampleTable := []testSample{
+		{
+			vr: &dtos.VirusTotalReportResponse{
+				ResponseCode: 0,
+			},
+			subStatResp: &dtos.SubmissionStatusResponse{
+				SubmissionFinished: false,
+			},
+		},
+		{
+			vr: &dtos.VirusTotalReportResponse{
+				ResponseCode: 2,
+			},
+			subStatResp: &dtos.SubmissionStatusResponse{
+				SubmissionFinished: true,
+			},
+		},
+		{
+			vr: &dtos.VirusTotalReportResponse{
+				ResponseCode: 5,
+
+			},
+			subStatResp: &dtos.SubmissionStatusResponse{
+				SubmissionFinished: true,
+			},
+		},
+	}
+	for _, sample := range sampleTable {
+		got := TransformVirusTotalToSubmissionStatusResponse(sample.vr)
+		want := sample.subStatResp
+		if got.SubmissionFinished != want.SubmissionFinished {
+			t.Errorf("TransformVirusTotalToSubmissionStatusResponse Failed for %s , wanted: %v got: %v",
+				"SubmissionFinished", want.SubmissionFinished, got.SubmissionFinished)
+		}
+	}
+}
+
 
