@@ -63,6 +63,81 @@ func TestTransformMetaDefenderToSubmitResponse(t *testing.T) {
 	}
 }
 
+func TestTransformMetaDefenderToSampleInfo(t *testing.T) {
+	type testSample struct {
+		mr *dtos.MetaDefenderReportResponse
+		fmi dtos.FileMetaInfo
+		failThreshold int
+		result *dtos.SampleInfo
+	}
+	sampleTable := []testSample{
+		{
+			mr: &dtos.MetaDefenderReportResponse{
+				ScanResults : dtos.MetaDefenderScanResults{
+					TotalDetectedAvs: 50,
+					ProgressPercentage: 120,
+				},
+			},
+			failThreshold: 30,
+			result: &dtos.SampleInfo{
+				SampleSeverity: MetaDefenderSampleSeverityMalicious,
+				SubmissionFinished: true,
+			},
+		},
+		{
+			mr: &dtos.MetaDefenderReportResponse{
+				ScanResults : dtos.MetaDefenderScanResults{
+					TotalDetectedAvs: 50,
+					ProgressPercentage: 120,
+				},
+			},
+			failThreshold: 70,
+			result: &dtos.SampleInfo{
+				SampleSeverity: MetaDefenderSampleSeverityOk,
+				SubmissionFinished: true,
+			},
+		},
+		{
+			mr: &dtos.MetaDefenderReportResponse{
+				ScanResults : dtos.MetaDefenderScanResults{
+					TotalDetectedAvs: 50,
+					ProgressPercentage: 120,
+				},
+			},
+			failThreshold: 70,
+			result: &dtos.SampleInfo{
+				SampleSeverity: MetaDefenderSampleSeverityOk,
+				SubmissionFinished: true,
+			},
+		},
+		{
+			mr: &dtos.MetaDefenderReportResponse{
+				ScanResults : dtos.MetaDefenderScanResults{
+					TotalDetectedAvs: 50,
+					ProgressPercentage: 80,
+				},
+			},
+			failThreshold: 70,
+			result: &dtos.SampleInfo{
+				SampleSeverity: MetaDefenderSampleSeverityOk,
+				SubmissionFinished: false,
+			},
+		},
+	}
+	for _, sample := range sampleTable {
+		got := TransformMetaDefenderToSampleInfo(sample.mr, sample.fmi, sample.failThreshold)
+		want := sample.result
+		if got.SubmissionFinished != want.SubmissionFinished {
+			t.Errorf("TransformMetaDefenderToSampleInfo Failed for %s , wanted: %v got: %v",
+				"SubmissionFinished", want.SubmissionFinished, got.SubmissionFinished)
+		}
+		if got.SampleSeverity != want.SampleSeverity {
+			t.Errorf("TransformMetaDefenderToSampleInfo Failed for %s , wanted: %v got: %v",
+				"SampleSeverity", want.SampleSeverity, got.SampleSeverity)
+		}
+	}
+}
+
 func TestTransformMetaDefenderToSubmissionStatusResponse(t *testing.T) {
 	type testSample struct {
 		vr *dtos.MetaDefenderReportResponse
