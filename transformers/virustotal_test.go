@@ -37,3 +37,60 @@ func TestTransformVirusTotalToSubmitResponse(t *testing.T) {
 		}
 	}
 }
+
+func TestTransformVirusTotalToSampleInfo(t *testing.T) {
+	type testSample struct {
+		vr *dtos.VirusTotalReportResponse
+		fmi dtos.FileMetaInfo
+		failThreshold int
+		result *dtos.SampleInfo
+	}
+	sampleTable := []testSample{
+		{
+			vr: &dtos.VirusTotalReportResponse{
+				Positives: 50,
+				ResponseCode: 4,
+			},
+			failThreshold: 30,
+			result: &dtos.SampleInfo{
+				SampleSeverity: VirusTotalSampleSeverityMalicious,
+				SubmissionFinished: true,
+			},
+		},
+		{
+			vr: &dtos.VirusTotalReportResponse{
+				Positives: 50,
+				ResponseCode: 4,
+			},
+			failThreshold: 70,
+			result: &dtos.SampleInfo{
+				SampleSeverity:  MetaDefenderSampleSeverityOk,
+				SubmissionFinished: true,
+			},
+		},
+		{
+			vr: &dtos.VirusTotalReportResponse{
+				Positives: 50,
+				ResponseCode: 0,
+			},
+			failThreshold: 70,
+			result: &dtos.SampleInfo{
+				SampleSeverity: MetaDefenderSampleSeverityOk,
+				SubmissionFinished: false,
+			},
+		},
+	}
+	for _, sample := range sampleTable {
+		got := TransformVirusTotalToSampleInfo(sample.vr, sample.fmi, sample.failThreshold)
+		want := sample.result
+		if got.SubmissionFinished != want.SubmissionFinished {
+			t.Errorf("TransformMetaDefenderToSampleInfo Failed for %s , wanted: %v got: %v",
+				"SubmissionFinished", want.SubmissionFinished, got.SubmissionFinished)
+		}
+		if got.SampleSeverity != want.SampleSeverity {
+			t.Errorf("TransformMetaDefenderToSampleInfo Failed for %s , wanted: %v got: %v",
+				"SampleSeverity", want.SampleSeverity, got.SampleSeverity)
+		}
+	}
+}
+
