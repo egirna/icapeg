@@ -141,6 +141,39 @@ func TestFileExtension(t *testing.T) {
 
 }
 
+func TestFileName(t *testing.T) {
+
+	type testSample struct {
+		req *http.Request
+		ext string
+	}
+
+	sampleTable := []testSample{
+		{
+			req: &http.Request{RequestURI: "http://somehost.com/file1.pdf?someparam=someval"},
+			ext: "file1.pdf",
+		},
+		{
+			req: &http.Request{RequestURI: "http://somehost.com/file2.exe"},
+			ext: "file2.exe",
+		},
+		{
+			req: &http.Request{RequestURI: "http://somehost.com/"},
+			ext: "",
+		},
+	}
+
+	for _, sample := range sampleTable {
+		got := GetFileName(sample.req)
+		want := sample.ext
+
+		if got != want {
+			t.Errorf("GetFileExtension Failed for %s , wanted: %s got: %s", sample.req.RequestURI, want, got)
+		}
+	}
+
+}
+
 func TestInStringSlice(t *testing.T) {
 	type testSample struct {
 		stringSlice []string
