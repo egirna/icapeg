@@ -6,6 +6,7 @@ import (
 	"testing"
 )
 
+//unit test
 func TestTransformVmrayToSubmitResponse(t *testing.T) {
 	type testSample struct {
 		vsr *dtos.VmraySubmitResponse
