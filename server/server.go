@@ -21,6 +21,7 @@ func StartServer() error {
 	config.Init()
 	icap.HandleFunc("/respmod", api.ToICAPEGResp)
 	icap.HandleFunc("/reqmod", api.ToICAPEGReq)
+	icap.HandleFunc("/gw_rebuild", api.ToICAPEGResp)
 
 	http.HandleFunc("/", api.ErrorPageHanlder)
 

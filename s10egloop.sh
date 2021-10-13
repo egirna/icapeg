@@ -7,7 +7,8 @@ for i in $(seq $countmain); do
 count=30
 for i in $(seq $count); do
 filerb="./reb$i.pdf"
-touch "$filerb"  && rm "$filerb" && time  c-icap-client -i 192.168.1.6  -p 1344 -s respmod  -f ./test.pdf -o "$filerb" -v &
+touch "$filerb"  && rm "$filerb" && time  c-icap-client -i 192.168.1.9  -p 1344 -s gw_rebuild  -f ./test.pdf -o "$filerb" -v &
+wait
 done
 wait
 done

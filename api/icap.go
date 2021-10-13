@@ -176,6 +176,26 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			return
 
 		}
+		// dummy servise
+		if appCfg.RespScannerVendor == "dummy" {
+			bodybyte, err := ioutil.ReadAll(buf)
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			newResp := &http.Response{
+				StatusCode: http.StatusOK,
+				Status:     http.StatusText(http.StatusOK),
+				Header: http.Header{
+					"Content-Length": []string{strconv.Itoa(len(string(bodybyte)))},
+				},
+			}
+			w.WriteHeader(http.StatusOK, newResp, true)
+			w.Write(bodybyte)
+
+			return
+
+		}
 		status, sampleInfo := doScan(appCfg.RespScannerVendor, filename, fmi, buf, "") // scan the file for any anomalies
 
 		if status == http.StatusOK && sampleInfo != nil {
