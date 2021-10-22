@@ -2,14 +2,13 @@ package api
 
 import (
 	"bytes"
+	"icapeg/icap"
 	"icapeg/service"
 	"icapeg/utils"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
-
-	"github.com/egirna/icap"
 )
 
 func doRemoteOPTIONS(req *icap.Request, w icap.ResponseWriter, vendor, shadowVendor, mode string) {
