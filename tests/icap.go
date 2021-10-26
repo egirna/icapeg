@@ -15,7 +15,7 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/egirna/icap"
+	"icapeg/icap"
 )
 
 const (
