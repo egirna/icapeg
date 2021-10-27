@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	ic "github.com/egirna/icap-client"
+	ic "icapeg/icap-client"
 )
 
 // The service names

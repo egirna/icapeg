@@ -5,8 +5,7 @@ import (
 	"icapeg/utils"
 	"net/http"
 	"time"
-
-	ic "github.com/egirna/icap-client"
+	ic "icapeg/icap-client"
 	"github.com/spf13/viper"
 )
 

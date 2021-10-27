@@ -20,11 +20,6 @@ github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZm
 github.com/dgryski/go-sip13 v0.0.0-20181026042036-e10d5fee7954/go.mod h1:vAd38F8PWV+bWy6jNmig1y/TA+kYO4g3RSRF0IAv0no=
 github.com/dutchcoders/go-clamd v0.0.0-20170520113014-b970184f4d9e h1:rcHHSQqzCgvlwP0I/fQ8rQMn/MpHE5gWSLdtpxtP6KQ=
 github.com/dutchcoders/go-clamd v0.0.0-20170520113014-b970184f4d9e/go.mod h1:Byz7q8MSzSPkouskHJhX0er2mZY/m0Vj5bMeMCkkyY4=
-github.com/egirna/icap v0.0.0-20181108071049-d5ee18bd70bc/go.mod h1:FdVN2WHg7zOHhJ7kZQdDorfFhIfqZaHttjAzDDvAXHE=
-github.com/egirna/icap v0.3.1 h1:xY+xowm9uliOFs3oOCWeW9a+beJ2tILaBsx++leg+2g=
-github.com/egirna/icap v0.3.1/go.mod h1:T2t2LrvnaXlEqdX+5iUM6S516uIP9TIexi9KRyM3RuM=
-github.com/egirna/icap-client v0.1.1 h1:UURZRA7+36bBmMgJZHB+W4d3hfp20pDUA/QL794C0ck=
-github.com/egirna/icap-client v0.1.1/go.mod h1:6yHhnak1cKRyhDoRxnzlRKJbOTXPgh9Oe3tOs7Sq3vw=
 github.com/fsnotify/fsnotify v1.4.7 h1:IXs+QLmnXW2CcXuY+8Mzv/fWEsPGWxqefPtCP5CnV9I=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
