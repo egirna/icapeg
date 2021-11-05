@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	ic "github.com/egirna/icap-client"
+	ic "icapeg/icap-client"
 )
 
 func TestICAPeg(t *testing.T) {
