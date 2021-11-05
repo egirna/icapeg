@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"icapeg/config"
 	"icapeg/dtos"
+	"icapeg/icap"
 	"icapeg/logger"
 	"icapeg/service"
 	"icapeg/utils"
@@ -14,8 +15,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-
-	"github.com/egirna/icap"
 )
 
 var (

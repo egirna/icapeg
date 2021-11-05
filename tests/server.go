@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/egirna/icap"
+	"icapeg/icap"
 )
 
 const (
