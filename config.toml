@@ -1,31 +1,53 @@
-title = "ICAPEG configuration file"
+title = "ICAP configuration file"
 
 [app]
-log_level = "info" # the log levels for tha app, available values: info-->logging the overall progress of the app, debug --> log everything including errors, error --> log infos and just errors
+log_level = "debug" # the log levels for tha app, available values: info-->logging the overall progress of the app, debug --> log everything including errors, error --> log infos and just errors
 port = 1344
-max_filesize = 10000000 #bytes
-resp_scanner_vendor = "clamav" # Supported vendors for respmod of ICAP: "virustotal", "metadefender" , "vmray" , "clamav" , "none"- none specifies, respmod will be bypassing everything
-req_scanner_vendor = "none" # Supported vendors for reqmod of ICAP: "virustotal" , "vmray",
+max_filesize = 10000000 #bytes 
+resp_scanner_vendor = "dummy" # Supported vendors for respmod of ICAP: "virustotal", "metadefender" , "vmray" , "clamav" , "none"- none specifies, respmod will be bypassing everything
+req_scanner_vendor = "dummy" # Supported vendors for reqmod of ICAP: "virustotal" , "vmray",
 resp_scanner_vendor_shadow = "none"
 req_scanner_vendor_shadow = "none"
 bypass_extensions = ["*"]
 process_extensions = ["txt" , "pdf" , "dmg" , "exe" , "com", "rar" , "unknown"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
-preview_bytes = "0" #bytes
+preview_bytes = "4096" #byte
+preview_enabled = false # options send preview header or not
 propagate_error = true
+service_caption ="Go-ICAP server - Glasswall Rebuild service"
+[glasswall]
+ 
+base_url = "http://1.2.3.4" # 
+scan_endpoint = "/api/rebuild/file"
+api_key = "<api key>"
+timeout  = 300 #seconds , ICAP will return 408 - Request timeout
+fail_threshold = 2
+
+[dummy]
+ 
+base_url = "dummy" # 
+scan_endpoint = "dummy"
+api_key = "<api key>"
+timeout  = 300 #seconds , ICAP will return 408 - Request timeout
+fail_threshold = 2
+#ICAP possible codes: 204 (No modifications needed) , 400 (Bad Request) , 403 (Forbidden) , 500 (Server Error) , 502 (Bad Gateway)
+api_response_400 = 400 #Bad Request
+api_response_403 = 403 #Forbidden
+api_response_415 = 204 #Unsupported Media Type
+api_response_422 = 204 #Unprocessable Entity
 
 [icap_something]
 base_url = "icap://127.0.0.1:1345"
-reqmod_endpoint = "/reqmod-icapeg"
-respmod_endpoint = "/respmod-icapeg"
+reqmod_endpoint = "/reqmod"
+respmod_endpoint = "/respmod"
 options_endpoint = ""
-timeout = 50# seconds, the whole allowed life span of an ICAP request
+timeout = 50 # seconds, the whole allowed life span of an ICAP request
 
 [icap_somethingelse]
 base_url = "icap://127.0.0.1:1346"
-reqmod_endpoint = "/reqmod-icapeg"
-respmod_endpoint = "/respmod-icapeg"
+reqmod_endpoint = "/reqmod"
+respmod_endpoint = "/respmod"
 options_endpoint = ""
-timeout = 50# seconds, the whole allowed life span of an ICAP request
+timeout = 50 # seconds, the whole allowed life span of an ICAP request
 
 [virustotal]
 base_url = "https://www.virustotal.com/vtapi/v2"
@@ -46,7 +68,7 @@ ok_file_status = ["ok"]
 base_url = "https://api.metadefender.com/v4"
 scan_endpoint = "/file"
 report_endpoint = "/file"
-api_key = "<Your metadefender API KEY here>"
+api_key = "54fcb5feeb572c1231ea93a179b8361a"
 timeout  = 10 #seconds
 fail_threshold = 2
 status_check_interval = 2 #seconds, the time interval after which the submission status check will be called
@@ -66,6 +88,8 @@ status_check_timeout = 300 #seconds, the total time duration after which the the
 bad_file_status = ["malicious", "suspicious", "blacklisted"]
 ok_file_status = ["not_suspicious" , "whitelisted", "unknown"]
 api_key = "<Your vmray API KEY here>"
+
+
 
 
 

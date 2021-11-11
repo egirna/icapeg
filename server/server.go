@@ -4,23 +4,23 @@ import (
 	"fmt"
 	"icapeg/api"
 	"icapeg/config"
+	"icapeg/icap"
 	"icapeg/logger"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-
-	"github.com/egirna/icap"
 )
 
+//https://github.com/k8-proxy/k8-rebuild-rest-api
 // StartServer starts the icap server
 func StartServer() error {
 
 	config.Init()
-
-	icap.HandleFunc("/respmod-icapeg", api.ToICAPEGResp)
-	icap.HandleFunc("/reqmod-icapeg", api.ToICAPEGReq)
+	icap.HandleFunc("/respmod", api.ToICAPEGResp)
+	icap.HandleFunc("/reqmod", api.ToICAPEGReq)
+	icap.HandleFunc("/gw_rebuild", api.ToICAPEGResp)
 
 	http.HandleFunc("/", api.ErrorPageHanlder)
 

@@ -3,8 +3,10 @@ package api
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"icapeg/config"
 	"icapeg/dtos"
+	"icapeg/icap"
 	"icapeg/logger"
 	"icapeg/service"
 	"icapeg/utils"
@@ -13,8 +15,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-
-	"github.com/egirna/icap"
 )
 
 var (
@@ -25,10 +25,10 @@ var (
 
 // ToICAPEGResp is the ICAP Response Mode Handler:
 func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
+
 	h := w.Header()
 	h.Set("ISTag", utils.ISTag)
 	h.Set("Service", "Egirna ICAP-EG")
-
 	infoLogger.LogfToFile("Request received---> METHOD:%s URL:%s\n", req.Method, req.RawURL)
 
 	appCfg := config.App()
@@ -49,15 +49,19 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 
 		h.Set("Methods", utils.ICAPModeResp)
 		h.Set("Allow", "204")
-		if pb, _ := strconv.Atoi(appCfg.PreviewBytes); pb > 0 {
-			h.Set("Preview", appCfg.PreviewBytes)
+		// Add preview if preview_enabled is true in config
+		if appCfg.PreviewEnabled == true {
+			if pb, _ := strconv.Atoi(appCfg.PreviewBytes); pb >= 0 {
+				h.Set("Preview", appCfg.PreviewBytes)
+			}
 		}
+
 		h.Set("Transfer-Preview", utils.Any)
+
 		w.WriteHeader(http.StatusOK, nil, false)
+
 	case utils.ICAPModeResp:
-
 		defer req.Response.Body.Close()
-
 		if val, exist := req.Header["Allow"]; !exist || (len(val) > 0 && val[0] != utils.NoModificationStatusCodeStr) { // following RFC3507, if the request has Allow: 204 header, it is to be checked and if it doesn't exists, return the request as it is to the ICAP client, https://tools.ietf.org/html/rfc3507#section-4.6
 			debugLogger.LogToFile("Processing not required for this request")
 			w.WriteHeader(http.StatusNoContent, nil, false)
@@ -123,7 +127,6 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
-
 		// preparing the file meta informations
 		filename := utils.GetFileName(req.Request)
 		fileExt := utils.GetFileExtension(req.Request)
@@ -132,14 +135,66 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			FileType: fileExt,
 			FileSize: float64(buf.Len()),
 		}
-
 		/* If the shadow virus scanner wants to run independently */
 		if appCfg.RespScannerVendor == utils.NoVendor && appCfg.RespScannerVendorShadow != utils.NoVendor {
 			go doShadowScan(filename, fmi, buf, "")
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
+		// Gw rebuid servise req api , resp icap client
+		if appCfg.RespScannerVendor == "glasswall" {
 
+			filename = "test"
+			resp, err := DoCDR("glasswall", buf, filename)
+			if err != nil {
+				fmt.Println(err)
+				newResp := &http.Response{
+					StatusCode: http.StatusForbidden,
+					Status:     http.StatusText(http.StatusForbidden),
+				}
+				w.WriteHeader(http.StatusForbidden, newResp, true)
+
+			} else {
+				defer resp.Body.Close()
+				bodybyte, err := ioutil.ReadAll(resp.Body)
+				if err != nil {
+					fmt.Println(err)
+				}
+
+				newResp := &http.Response{
+					StatusCode: http.StatusOK,
+					Status:     http.StatusText(http.StatusOK),
+					Header: http.Header{
+						"Content-Length": []string{strconv.Itoa(len(string(bodybyte)))},
+					},
+				}
+				w.WriteHeader(http.StatusOK, newResp, true)
+				w.Write(bodybyte)
+
+			}
+			return
+
+		}
+		// dummy servise
+		if appCfg.RespScannerVendor == "dummy" {
+			bodybyte, err := ioutil.ReadAll(buf)
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			newResp := &http.Response{
+				StatusCode: http.StatusOK,
+				Status:     http.StatusText(http.StatusOK),
+				Header: http.Header{
+					"Content-Length": []string{strconv.Itoa(len(string(bodybyte)))},
+				},
+			}
+			w.WriteHeader(http.StatusOK, newResp, true)
+			w.Write(bodybyte)
+
+			return
+
+		}
 		status, sampleInfo := doScan(appCfg.RespScannerVendor, filename, fmi, buf, "") // scan the file for any anomalies
 
 		if status == http.StatusOK && sampleInfo != nil {
@@ -164,9 +219,12 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 		w.WriteHeader(status, nil, false) // \
 
 	case "ERRDUMMY":
+		fmt.Println("ERRDUMMY")
 		w.WriteHeader(http.StatusBadRequest, nil, false)
 		debugLogger.LogToFile("Malformed request")
 	default:
+		fmt.Println("default")
+
 		w.WriteHeader(http.StatusMethodNotAllowed, nil, false)
 		debugLogger.LogfToFile("Invalid request method %s- respmod\n", req.Method)
 	}
