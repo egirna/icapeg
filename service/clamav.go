@@ -4,12 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"icapeg/dtos"
+	"icapeg/readValues"
 	"icapeg/utils"
 	"io"
 	"time"
 
 	"github.com/dutchcoders/go-clamd"
-	"github.com/spf13/viper"
 )
 
 // the clamav constants
@@ -28,12 +28,12 @@ type Clamav struct {
 }
 
 // NewClamavService returns a new populated instance of the clamav service
-func NewClamavService() LocalService {
+func NewClamavService(serviceName string) LocalService {
 	return &Clamav{
-		SocketPath:    viper.GetString("clamav.socket_path"),
-		WaitTimeOut:   viper.GetDuration("clamav.wait_timeout") * time.Second,
-		badFileStatus: viper.GetStringSlice("clamav.bad_file_status"),
-		okFileStatus:  viper.GetStringSlice("clamav.ok_file_status"),
+		SocketPath:    readValues.ReadValuesString(serviceName + "socket_path"),
+		WaitTimeOut:   readValues.ReadValuesDuration(serviceName+"wait_timeout") * time.Second,
+		badFileStatus: readValues.ReadValuesSlice(serviceName + "bad_file_status"),
+		okFileStatus:  readValues.ReadValuesSlice(serviceName + "ok_file_status"),
 		respSupported: true,
 		reqSupported:  false,
 	}

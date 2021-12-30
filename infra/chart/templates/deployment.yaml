@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "trackableappname" . }}
+  annotations: {}
+  labels:
+    app: {{ template "appname" . }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ template "appname" . }}
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      annotations:
+        checksum/application-secrets: "{{ .Values.application.secretChecksum }}"
+{{- if .Values.podAnnotations }}
+{{ toYaml .Values.podAnnotations | indent 8 }}
+{{- end }}
+      labels:
+        app: {{ template "appname" . }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        image: "{{ .Values.image.icap.repository }}:{{ .Values.image.icap.tag }}"
+        imagePullPolicy: {{ .Values.image.icap.pullPolicy }}
+        securityContext:
+          capabilities:
+            drop:
+              - all
+            add:
+              - NET_BIND_SERVICE
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 2000
+        {{- if .Values.application.icap.secrets }}
+        envFrom:
+        - secretRef:
+            name: {{ .Values.application.icap.secretName }}
+        {{- end }}
+        env:
+        {{- with .Values.application.icap.env }}
+        {{- range $key, $val := . }}
+        {{- if $val }}
+          - name: "{{ tpl $key $  }}"
+            value: "{{ tpl $val $  }}"
+        {{- end }}
+        {{- end }}
+        {{- end }}
+        
+        ports:
+          - containerPort: 1344
+          - containerPort: 1345
+        {{- if .Values.livenessProbe }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.livenessProbe.path }}
+            port: {{ .Values.service.icap.internalPort }}
+            scheme: {{ .Values.livenessProbe.scheme }}
+          initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
+          timeoutSeconds: {{ .Values.livenessProbe.timeoutSeconds }}
+          periodSeconds: 30
+        {{- end }}
+        {{- if .Values.readinessProbe }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.readinessProbe.path }}
+            port: {{ .Values.service.icap.internalPort }}  
+            scheme: {{ .Values.readinessProbe.scheme }}
+          initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+          timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+          periodSeconds: 30
+        {{- end }}
+        resources:
+{{ toYaml .Values.resources.icap | indent 12 }}
+      {{- if .Values.hostAliases }}
+      {{- with .Values.hostAliases }}
+      hostAliases:
+      {{- range $key, $val :=  . }}
+      - ip: {{ $key }}
+        hostnames:
+        {{- range $hostname := $val }}
+        - {{ $hostname }}
+        {{- end -}}
+      {{- end}}
+      {{- end}}
+      {{- end}}
+        

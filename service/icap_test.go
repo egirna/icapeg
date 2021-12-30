@@ -20,8 +20,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/egirna/icap"
-	ic "github.com/egirna/icap-client"
+	"icapeg/icap"
+	ic "icapeg/icap-client"
 )
 
 const (

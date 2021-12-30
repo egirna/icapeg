@@ -2,12 +2,11 @@ package service
 
 import (
 	"fmt"
+	ic "icapeg/icap-client"
+	"icapeg/readValues"
 	"icapeg/utils"
 	"net/http"
 	"time"
-
-	ic "github.com/egirna/icap-client"
-	"github.com/spf13/viper"
 )
 
 func init() {
@@ -29,11 +28,11 @@ type RemoteICAPService struct {
 // NewRemoteICAPService populates and returns a new RemoteICAPService instance
 func NewRemoteICAPService(name string) *RemoteICAPService {
 	return &RemoteICAPService{
-		url:             viper.GetString(fmt.Sprintf("%s.base_url", name)),
-		respmodEndpoint: viper.GetString(fmt.Sprintf("%s.respmod_endpoint", name)),
-		reqmodEndpoint:  viper.GetString(fmt.Sprintf("%s.reqmod_endpoint", name)),
-		optionsEndpoint: viper.GetString(fmt.Sprintf("%s.options_endpoint", name)),
-		timeout:         viper.GetDuration(fmt.Sprintf("%s.timeout", name)) * time.Second,
+		url:             readValues.ReadValuesString(fmt.Sprintf("%s.base_url", name)),
+		respmodEndpoint: readValues.ReadValuesString(fmt.Sprintf("%s.respmod_endpoint", name)),
+		reqmodEndpoint:  readValues.ReadValuesString(fmt.Sprintf("%s.reqmod_endpoint", name)),
+		optionsEndpoint: readValues.ReadValuesString(fmt.Sprintf("%s.options_endpoint", name)),
+		timeout:         readValues.ReadValuesDuration(fmt.Sprintf("%s.timeout", name)) * time.Second,
 		requestHeader:   http.Header{},
 	}
 }

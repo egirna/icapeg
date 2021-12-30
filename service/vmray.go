@@ -7,14 +7,13 @@ import (
 	"errors"
 	"fmt"
 	"icapeg/dtos"
+	"icapeg/readValues"
 	"icapeg/transformers"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"time"
-
-	"github.com/spf13/viper"
 )
 
 type (
@@ -38,21 +37,21 @@ type (
 )
 
 // NewVmrayService populates a new vmray instance as a service
-func NewVmrayService() Service {
+func NewVmrayService(serviceName string) Service {
 	return &Vmray{
-		BaseURL:                  viper.GetString("vmray.base_url"),
-		Timeout:                  viper.GetDuration("vmray.timeout") * time.Second,
-		APIKey:                   viper.GetString("vmray.api_key"),
-		SubmitEndpoint:           viper.GetString("vmray.submit_endpoint"),
-		GetSampleEndpoint:        viper.GetString("vmray.get_sample_endpoint"),
-		SubmissionStatusEndpoint: viper.GetString("vmray.submission_status_endpoint"),
-		statusCheckInterval:      viper.GetDuration("vmray.status_check_interval") * time.Second,
-		statusCheckTimeout:       viper.GetDuration("vmray.status_check_timeout") * time.Second,
-		badFileStatus:            viper.GetStringSlice("vmray.bad_file_status"),
-		okFileStatus:             viper.GetStringSlice("vmray.ok_file_status"),
+		BaseURL:                  readValues.ReadValuesString(serviceName + "base_url"),
+		Timeout:                  readValues.ReadValuesDuration(serviceName+"timeout") * time.Second,
+		APIKey:                   readValues.ReadValuesString(serviceName + "api_key"),
+		SubmitEndpoint:           readValues.ReadValuesString(serviceName + "submit_endpoint"),
+		GetSampleEndpoint:        readValues.ReadValuesString(serviceName + "get_sample_endpoint"),
+		SubmissionStatusEndpoint: readValues.ReadValuesString(serviceName + "submission_status_endpoint"),
+		statusCheckInterval:      readValues.ReadValuesDuration(serviceName+"status_check_interval") * time.Second,
+		statusCheckTimeout:       readValues.ReadValuesDuration(serviceName+"status_check_timeout") * time.Second,
+		badFileStatus:            readValues.ReadValuesSlice(serviceName + "bad_file_status"),
+		okFileStatus:             readValues.ReadValuesSlice(serviceName + "ok_file_status"),
 		statusEndPointExists:     true,
-		respSupported:            true,
-		reqSupported:             true,
+		respSupported:            readValues.ReadValuesBool(serviceName + ".resp_mode"),
+		reqSupported:             readValues.ReadValuesBool(serviceName + ".req_mode"),
 	}
 }
 
@@ -288,4 +287,26 @@ func (v *Vmray) RespSupported() bool {
 // ReqSupported returns the reqSupported field of the service
 func (v *Vmray) ReqSupported() bool {
 	return v.reqSupported
+}
+func (g *Vmray) SendFileApi(f *bytes.Buffer, filename string) (*http.Response, error) {
+
+	urlStr := g.BaseURL
+
+	bodyBuf := &bytes.Buffer{}
+
+	req, err := http.NewRequest(http.MethodPost, urlStr, bodyBuf)
+	//fmt.Println(req)
+	if err != nil {
+		return nil, err
+	}
+
+	client := &http.Client{}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		errorLogger.LogToFile("service: Glasswall: failed to do request:", err.Error())
+		return nil, err
+	}
+	return resp, err
+
 }
