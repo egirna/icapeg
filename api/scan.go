@@ -11,10 +11,10 @@ import (
 	"time"
 )
 
-func doScan(scannerName, filename string, fmi dtos.FileMetaInfo, buf *bytes.Buffer, fileURL string) (int, *dtos.SampleInfo) {
+func doScan(scannerName, serviceName string, filename string, fmi dtos.FileMetaInfo, buf *bytes.Buffer, fileURL string) (int, *dtos.SampleInfo) {
 
 	if config.App().RespScannerVendorShadow != utils.NoVendor || config.App().ReqScannerVendorShadow != utils.NoVendor {
-		go doShadowScan(filename, fmi, buf, fileURL)
+		go doShadowScan(scannerName, serviceName, filename, fmi, buf, fileURL)
 	}
 
 	newBuf := utils.CopyBuffer(buf)
@@ -22,20 +22,20 @@ func doScan(scannerName, filename string, fmi dtos.FileMetaInfo, buf *bytes.Buff
 	var sts int
 	var si *dtos.SampleInfo
 
-	localService := service.IsServiceLocal(scannerName)
+	localService := service.IsServiceLocal(scannerName, serviceName)
 
 	if localService && buf != nil { // if the scanner is installed locally
-		sts, si = doLocalScan(scannerName, fmi, newBuf)
+		sts, si = doLocalScan(scannerName, serviceName, fmi, newBuf)
 	}
 
 	if !localService { // if the scanner is an external service requiring API calls.
 
 		if buf == nil && fileURL != "" { // indicates this is a URL scan request
-			sts, si = doRemoteURLScan(scannerName, filename, fmi, fileURL)
+			sts, si = doRemoteURLScan(scannerName, serviceName, filename, fmi, fileURL)
 		}
 
 		if buf != nil && fileURL == "" { // indicates this is a File scan request
-			sts, si = doRemoteFileScan(scannerName, filename, fmi, newBuf)
+			sts, si = doRemoteFileScan(scannerName, serviceName, filename, fmi, newBuf)
 		}
 
 	}
@@ -43,8 +43,8 @@ func doScan(scannerName, filename string, fmi dtos.FileMetaInfo, buf *bytes.Buff
 	return sts, si
 }
 
-func doLocalScan(scannerName string, fmi dtos.FileMetaInfo, buf *bytes.Buffer) (int, *dtos.SampleInfo) {
-	lsvc := service.GetLocalService(scannerName)
+func doLocalScan(scannerName string, serviceName string, fmi dtos.FileMetaInfo, buf *bytes.Buffer) (int, *dtos.SampleInfo) {
+	lsvc := service.GetLocalService(scannerName, serviceName)
 
 	if lsvc == nil {
 		debugLogger.LogToFile("No such scanner vendors:", scannerName)
@@ -71,9 +71,9 @@ func doLocalScan(scannerName string, fmi dtos.FileMetaInfo, buf *bytes.Buffer) (
 	return http.StatusNoContent, nil
 }
 
-func doRemoteFileScan(scannerName, filename string, fmi dtos.FileMetaInfo, buf *bytes.Buffer) (int, *dtos.SampleInfo) {
+func doRemoteFileScan(scannerName, serviceName string, filename string, fmi dtos.FileMetaInfo, buf *bytes.Buffer) (int, *dtos.SampleInfo) {
 
-	svc := service.GetService(scannerName)
+	svc := service.GetService(scannerName, serviceName)
 
 	if svc == nil {
 		debugLogger.LogToFile("No such scanner vendors:", scannerName)
@@ -159,8 +159,8 @@ func doRemoteFileScan(scannerName, filename string, fmi dtos.FileMetaInfo, buf *
 	return http.StatusNoContent, nil
 }
 
-func doRemoteURLScan(scannerName, filename string, fmi dtos.FileMetaInfo, fileURL string) (int, *dtos.SampleInfo) {
-	svc := service.GetService(scannerName)
+func doRemoteURLScan(scannerName, serrviceName string, filename string, fmi dtos.FileMetaInfo, fileURL string) (int, *dtos.SampleInfo) {
+	svc := service.GetService(scannerName, serrviceName)
 
 	if svc == nil {
 		debugLogger.LogToFile("No such scanner vendors:", scannerName)
@@ -245,8 +245,8 @@ func doRemoteURLScan(scannerName, filename string, fmi dtos.FileMetaInfo, fileUR
 }
 
 //DoCDR send req to api return resp to client
-func DoCDR(scannerName string, f *bytes.Buffer, filename string) (*http.Response, error) {
-	svc := service.GetService(scannerName)
+func DoCDR(scannerName string, serviceName string, f *bytes.Buffer, filename string) (*http.Response, error) {
+	svc := service.GetService(scannerName, serviceName)
 	if svc == nil {
 		debugLogger.LogToFile("No such scanner vendors:", scannerName)
 		err := errors.New("No such scanner vendors:" + scannerName)

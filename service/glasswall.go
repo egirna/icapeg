@@ -7,15 +7,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"icapeg/config"
 	"icapeg/dtos"
+	"icapeg/readValues"
 	"icapeg/transformers"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"time"
-
-	"github.com/spf13/viper"
 )
 
 // scan_endpoint = "/file"
@@ -36,29 +36,39 @@ type Glasswall struct {
 	statusEndPointExists bool
 	respSupported        bool
 	reqSupported         bool
+	policy               string
 }
 
 // NewGlasswallService returns a new populated instance of the Glasswall service
-func NewGlasswallService() Service {
+func NewGlasswallService(serviceName string) Service {
 	return &Glasswall{
-		BaseURL:              viper.GetString("Glasswall.base_url"),
-		Timeout:              viper.GetDuration("Glasswall.timeout") * time.Second,
-		APIKey:               "888",
-		ScanEndpoint:         viper.GetString("Glasswall.scan_endpoint"),
-		ReportEndpoint:       "/",
-		FailThreshold:        viper.GetInt("Glasswall.fail_threshold"),
-		statusCheckInterval:  2 * time.Second,
-		statusCheckTimeout:   viper.GetDuration("Glasswall.status_check_timeout") * time.Second,
-		badFileStatus:        viper.GetStringSlice("Glasswall.bad_file_status"),
-		okFileStatus:         viper.GetStringSlice("Glasswall.ok_file_status"),
-		statusEndPointExists: false,
-		respSupported:        true,
-		reqSupported:         true,
+		BaseURL:             readValues.ReadValuesString(serviceName + ".base_url"),
+		Timeout:             readValues.ReadValuesDuration(serviceName+".timeout") * time.Second,
+		APIKey:              readValues.ReadValuesString(serviceName + ".api_key"),
+		ScanEndpoint:        readValues.ReadValuesString(serviceName + ".scan_endpoint"),
+		ReportEndpoint:      "/",
+		FailThreshold:       readValues.ReadValuesInt(serviceName + ".fail_threshold"),
+		statusCheckInterval: 2 * time.Second,
+		//statusCheckTimeout:   readValues.ReadValuesDuration("glasswall.status_check_timeout") * time.Second,
+		//badFileStatus:        readValues.ReadValuesSlice("glasswall.bad_file_status"),
+		//okFileStatus:         readValues.ReadValuesSlice("glasswall.ok_file_status"),
+		//statusEndPointExists: false,
+		respSupported: readValues.ReadValuesBool(serviceName + ".resp_mode"),
+		reqSupported:  readValues.ReadValuesBool(serviceName + ".req_mode"),
+		policy:        readValues.ReadValuesString(serviceName + ".policy"),
 	}
 }
 
 // SubmitFile calls the submission api for Glasswall
-
+func initSecure() bool {
+	var insecureFlag bool
+	if config.App().VerifyServerCert {
+		insecureFlag = false
+	} else {
+		insecureFlag = true
+	}
+	return insecureFlag
+}
 func (g *Glasswall) SubmitFile(f *bytes.Buffer, filename string) (*dtos.SubmitResponse, error) {
 
 	urlStr := g.BaseURL + g.ScanEndpoint
@@ -88,7 +98,7 @@ func (g *Glasswall) SubmitFile(f *bytes.Buffer, filename string) (*dtos.SubmitRe
 	}
 
 	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: initSecure()},
 	}
 	client := &http.Client{Transport: tr}
 	ctx, cancel := context.WithTimeout(context.Background(), g.Timeout)
@@ -135,7 +145,7 @@ func (g *Glasswall) SubmitFile(f *bytes.Buffer, filename string) (*dtos.SubmitRe
 func (m *Glasswall) GetSampleFileInfo(sampleID string, filemetas ...dtos.FileMetaInfo) (*dtos.SampleInfo, error) {
 
 	urlStr := m.BaseURL + fmt.Sprintf(m.ReportEndpoint+"/"+sampleID)
-	//urlStr := v.BaseURL + fmt.Sprintf(viper.GetString("Glasswall.report_endpoint"), viper.GetString("Glasswall.api_key"), sampleID)
+	//urlStr := v.BaseURL + fmt.Sprintf(viper.GetString("glasswall.report_endpoint"), viper.GetString("glasswall.api_key"), sampleID)
 
 	req, err := http.NewRequest(http.MethodGet, urlStr, nil)
 
@@ -191,7 +201,7 @@ func (m *Glasswall) GetSubmissionStatus(submissionID string) (*dtos.SubmissionSt
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("apikey", viper.GetString("Glasswall.api_key"))
+	req.Header.Add("apikey", readValues.ReadValuesString("glasswall.api_key"))
 	client := http.Client{}
 	ctx, cancel := context.WithTimeout(context.Background(), m.Timeout)
 	defer cancel()
@@ -276,6 +286,9 @@ func (g *Glasswall) SendFileApi(f *bytes.Buffer, filename string) (*http.Respons
 
 	bodyWriter.WriteField("apikey", g.APIKey)
 
+	//adding policy in the request
+	bodyWriter.WriteField("contentManagementFlagJson", g.policy)
+
 	part, err := bodyWriter.CreateFormFile("file", filename)
 
 	if err != nil {
@@ -295,7 +308,7 @@ func (g *Glasswall) SendFileApi(f *bytes.Buffer, filename string) (*http.Respons
 	}
 
 	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: initSecure()},
 	}
 	client := &http.Client{Transport: tr}
 	ctx, _ := context.WithTimeout(context.Background(), g.Timeout)
@@ -304,6 +317,7 @@ func (g *Glasswall) SendFileApi(f *bytes.Buffer, filename string) (*http.Respons
 	req = req.WithContext(ctx)
 
 	req.Header.Add("Content-Type", bodyWriter.FormDataContentType())
+	//req.Form.Add("contentManagementFlagJson", g.policy)
 
 	resp, err := client.Do(req)
 	if err != nil {

@@ -1,0 +1,28 @@
+{{- if .Values.scale.icap.enabled -}}
+apiVersion: autoscaling/v2beta2
+kind: HorizontalPodAutoscaler 
+metadata: 
+  name: {{ template "fullname" . }}
+  labels:
+    app: {{ template "appname" . }}
+spec: 
+  maxReplicas: {{ .Values.scale.icap.MaxReplicaCount }}
+  minReplicas: {{ .Values.scale.icap.MinReplicaCount }}  
+  scaleTargetRef: 
+    apiVersion: apps/v1
+    kind: Deployment 
+    name: {{ template "trackableappname" . }}
+  metrics: 
+  - type: Resource 
+    resource: 
+      name: cpu
+      target: 
+        type: Utilization
+        averageUtilization: 75
+  - type: Resource 
+    resource: 
+      name: memory
+      target: 
+        type: Utilization
+        averageUtilization: 75
+{{- end -}}

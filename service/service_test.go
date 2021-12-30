@@ -14,31 +14,36 @@ import (
 
 func TestGetService(t *testing.T) {
 	type testSample struct {
+		vendor  string
 		svcName string
 		svc     Service
 	}
 
 	sampleTable := []testSample{
 		{
+			vendor:  "virustotal",
 			svcName: "virustotal",
-			svc:     NewVirusTotalService(),
+			svc:     NewVirusTotalService("virustotal"),
 		},
 		{
+			vendor:  "vmray",
 			svcName: "vmray",
-			svc:     NewVmrayService(),
+			svc:     NewVmrayService("vmray"),
 		},
 		{
+			vendor:  "metadefender",
 			svcName: "metadefender",
-			svc:     NewMetaDefenderService(),
+			svc:     NewMetaDefenderService("metadefender"),
 		},
 		{
+			vendor:  "somename",
 			svcName: "somename",
 			svc:     nil,
 		},
 	}
 
 	for _, sample := range sampleTable {
-		svc := GetService(sample.svcName)
+		svc := GetService(sample.vendor, sample.svcName)
 
 		gotType := reflect.TypeOf(svc)
 		wantType := reflect.TypeOf(sample.svc)
@@ -51,23 +56,26 @@ func TestGetService(t *testing.T) {
 
 func TestLocalService(t *testing.T) {
 	type testSample struct {
+		vendor  string
 		svcName string
 		svc     LocalService
 	}
 
 	sampleTable := []testSample{
 		{
+			vendor:  "calmav",
 			svcName: "clamav",
-			svc:     NewClamavService(),
+			svc:     NewClamavService("clamav"),
 		},
 		{
+			vendor:  "someone",
 			svcName: "somename",
 			svc:     nil,
 		},
 	}
 
 	for _, sample := range sampleTable {
-		svc := GetLocalService(sample.svcName)
+		svc := GetLocalService(sample.vendor, sample.svcName)
 
 		gotType := reflect.TypeOf(svc)
 		wantType := reflect.TypeOf(sample.svc)
@@ -79,27 +87,31 @@ func TestLocalService(t *testing.T) {
 
 func TestIsServiceLocal(t *testing.T) {
 	type testSample struct {
+		vendor  string
 		svcName string
 		isLocal bool
 	}
 
 	sampleTable := []testSample{
 		{
+			vendor:  "clamav",
 			svcName: "clamav",
 			isLocal: true,
 		},
 		{
+			vendor:  "virustotal",
 			svcName: "virustotal",
 			isLocal: false,
 		},
 		{
+			vendor:  "someone",
 			svcName: "somename",
 			isLocal: false,
 		},
 	}
 
 	for _, sample := range sampleTable {
-		got := IsServiceLocal(sample.svcName)
+		got := IsServiceLocal(sample.vendor, sample.svcName)
 		want := sample.isLocal
 
 		if got != want {

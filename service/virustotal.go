@@ -7,14 +7,13 @@ import (
 	"errors"
 	"fmt"
 	"icapeg/dtos"
+	"icapeg/readValues"
 	"icapeg/transformers"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"time"
-
-	"github.com/spf13/viper"
 )
 
 // VirusTotal represents the informations regarding the virustotal service
@@ -37,23 +36,23 @@ type VirusTotal struct {
 }
 
 // NewVirusTotalService returns a new populated instance of the virustotal service
-func NewVirusTotalService() Service {
+func NewVirusTotalService(serviceName string) Service {
 	return &VirusTotal{
-		BaseURL:              viper.GetString("virustotal.base_url"),
-		Timeout:              viper.GetDuration("virustotal.timeout") * time.Second,
-		APIKey:               viper.GetString("virustotal.api_key"),
-		FileScanEndpoint:     viper.GetString("virustotal.file_scan_endpoint"),
-		URLScanEndpoint:      viper.GetString("virustotal.url_scan_endpoint"),
-		FileReportEndpoint:   viper.GetString("virustotal.file_report_endpoint"),
-		URLReportEndpoint:    viper.GetString("virustotal.url_report_endpoint"),
-		FailThreshold:        viper.GetInt("virustotal.fail_threshold"),
-		statusCheckInterval:  viper.GetDuration("virustotal.status_check_interval") * time.Second,
-		statusCheckTimeout:   viper.GetDuration("virustotal.status_check_timeout") * time.Second,
-		badFileStatus:        viper.GetStringSlice("virustotal.bad_file_status"),
-		okFileStatus:         viper.GetStringSlice("virustotal.ok_file_status"),
+		BaseURL:              readValues.ReadValuesString(serviceName + ".base_url"),
+		Timeout:              readValues.ReadValuesDuration(serviceName+".timeout") * time.Second,
+		APIKey:               readValues.ReadValuesString(serviceName + ".api_key"),
+		FileScanEndpoint:     readValues.ReadValuesString(serviceName + ".file_scan_endpoint"),
+		URLScanEndpoint:      readValues.ReadValuesString(serviceName + ".url_scan_endpoint"),
+		FileReportEndpoint:   readValues.ReadValuesString(serviceName + ".file_report_endpoint"),
+		URLReportEndpoint:    readValues.ReadValuesString(serviceName + ".url_report_endpoint"),
+		FailThreshold:        readValues.ReadValuesInt(serviceName + ".fail_threshold"),
+		statusCheckInterval:  readValues.ReadValuesDuration(serviceName+".status_check_interval") * time.Second,
+		statusCheckTimeout:   readValues.ReadValuesDuration(serviceName+".status_check_timeout") * time.Second,
+		badFileStatus:        readValues.ReadValuesSlice(serviceName + ".bad_file_status"),
+		okFileStatus:         readValues.ReadValuesSlice(serviceName + ".ok_file_status"),
 		statusEndPointExists: false,
-		respSupported:        true,
-		reqSupported:         true,
+		respSupported:        readValues.ReadValuesBool(serviceName + ".resp_mode"),
+		reqSupported:         readValues.ReadValuesBool(serviceName + ".req_mode"),
 	}
 }
 
@@ -288,7 +287,7 @@ func (v *VirusTotal) GetSampleURLInfo(sampleID string, filemetas ...dtos.FileMet
 // GetSubmissionStatus returns the submission status of a submitted sample
 func (v *VirusTotal) GetSubmissionStatus(submissionID string) (*dtos.SubmissionStatusResponse, error) {
 
-	urlStr := v.BaseURL + fmt.Sprintf(viper.GetString("virustotal.report_endpoint"), viper.GetString("virustotal.api_key"), submissionID)
+	urlStr := v.BaseURL + fmt.Sprintf(readValues.ReadValuesString("virustotal.report_endpoint"), readValues.ReadValuesString("virustotal.api_key"), submissionID)
 
 	req, err := http.NewRequest(http.MethodGet, urlStr, nil)
 
@@ -360,7 +359,7 @@ func (v *VirusTotal) ReqSupported() bool {
 }
 func (g *VirusTotal) SendFileApi(f *bytes.Buffer, filename string) (*http.Response, error) {
 
-	urlStr := g.BaseURL 
+	urlStr := g.BaseURL
 
 	bodyBuf := &bytes.Buffer{}
 
@@ -370,14 +369,13 @@ func (g *VirusTotal) SendFileApi(f *bytes.Buffer, filename string) (*http.Respon
 		return nil, err
 	}
 
-		client := &http.Client{}
-	
+	client := &http.Client{}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		errorLogger.LogToFile("service: Glasswall: failed to do request:", err.Error())
 		return nil, err
 	}
-    return resp, err
-
+	return resp, err
 
 }

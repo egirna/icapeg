@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"icapeg/dtos"
+	"icapeg/readValues"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -12,7 +13,6 @@ import (
 	"strings"
 
 	"github.com/h2non/filetype"
-	"github.com/spf13/viper"
 )
 
 // The template names
@@ -130,9 +130,9 @@ func GetScannerVendorSpecificCfg(mode, cfgField string) string {
 
 	switch mode {
 	case ICAPModeResp:
-		absoluteCfgField = fmt.Sprintf("%s.%s", viper.GetString("app.resp_scanner_vendor"), cfgField)
+		absoluteCfgField = fmt.Sprintf("%s.%s", readValues.ReadValuesString("app.resp_scanner_vendor"), cfgField)
 	case ICAPModeReq:
-		absoluteCfgField = fmt.Sprintf("%s.%s", viper.GetString("app.req_scanner_vendor"), cfgField)
+		absoluteCfgField = fmt.Sprintf("%s.%s", readValues.ReadValuesString("app.req_scanner_vendor"), cfgField)
 	}
 
 	return absoluteCfgField
@@ -140,7 +140,7 @@ func GetScannerVendorSpecificCfg(mode, cfgField string) string {
 
 // IfPropagateError returns one of the given parameter depending on the propagate error configuration
 func IfPropagateError(thenStatus, elseStatus int) int {
-	if viper.GetBool("app.propagate_error") {
+	if readValues.ReadValuesBool("app.propagate_error") {
 		return thenStatus
 	}
 

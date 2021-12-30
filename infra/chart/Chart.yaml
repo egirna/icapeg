@@ -1,0 +1,4 @@
+apiVersion: v1
+description: Helm chart to deploy Gallwall ICAP server
+name: icap-server
+version: 1.0.0

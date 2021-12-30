@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"icapeg/dtos"
+	"icapeg/readValues"
 	"icapeg/transformers"
 	"io/ioutil"
 	"net/http"
@@ -36,21 +37,21 @@ type MetaDefender struct {
 }
 
 // NewMetaDefenderService returns a new populated instance of the metadefender service
-func NewMetaDefenderService() Service {
+func NewMetaDefenderService(serviceName string) Service {
 	return &MetaDefender{
-		BaseURL:              viper.GetString("metadefender.base_url"),
-		Timeout:              viper.GetDuration("metadefender.timeout") * time.Second,
-		APIKey:               viper.GetString("metadefender.api_key"),
-		ScanEndpoint:         viper.GetString("metadefender.scan_endpoint"),
-		ReportEndpoint:       viper.GetString("metadefender.report_endpoint"),
-		FailThreshold:        viper.GetInt("metadefender.fail_threshold"),
-		statusCheckInterval:  viper.GetDuration("metadefender.status_check_interval") * time.Second,
-		statusCheckTimeout:   viper.GetDuration("metadefender.status_check_timeout") * time.Second,
-		badFileStatus:        viper.GetStringSlice("metadefender.bad_file_status"),
-		okFileStatus:         viper.GetStringSlice("metadefender.ok_file_status"),
+		BaseURL:              readValues.ReadValuesString(serviceName + "base_url"),
+		Timeout:              readValues.ReadValuesDuration(serviceName+"timeout") * time.Second,
+		APIKey:               readValues.ReadValuesString(serviceName + "api_key"),
+		ScanEndpoint:         readValues.ReadValuesString(serviceName + "scan_endpoint"),
+		ReportEndpoint:       readValues.ReadValuesString(serviceName + "report_endpoint"),
+		FailThreshold:        viper.GetInt(serviceName + "fail_threshold"),
+		statusCheckInterval:  readValues.ReadValuesDuration(serviceName+"status_check_interval") * time.Second,
+		statusCheckTimeout:   readValues.ReadValuesDuration(serviceName+"status_check_timeout") * time.Second,
+		badFileStatus:        readValues.ReadValuesSlice(serviceName + "bad_file_status"),
+		okFileStatus:         readValues.ReadValuesSlice(serviceName + "ok_file_status"),
 		statusEndPointExists: false,
-		respSupported:        true,
-		reqSupported:         false,
+		respSupported:        readValues.ReadValuesBool(serviceName + ".resp_mode"),
+		reqSupported:         readValues.ReadValuesBool(serviceName + ".req_mode"),
 	}
 }
 
@@ -113,7 +114,7 @@ func (m *MetaDefender) SubmitFile(f *bytes.Buffer, filename string) (*dtos.Submi
 func (m *MetaDefender) GetSampleFileInfo(sampleID string, filemetas ...dtos.FileMetaInfo) (*dtos.SampleInfo, error) {
 
 	urlStr := m.BaseURL + fmt.Sprintf(m.ReportEndpoint+"/"+sampleID)
-	//urlStr := v.BaseURL + fmt.Sprintf(viper.GetString("metadefender.report_endpoint"), viper.GetString("metadefender.api_key"), sampleID)
+	//urlStr := v.BaseURL + fmt.Sprintf(readValues.ReadValuesString("metadefender.report_endpoint"), readValues.ReadValuesString("metadefender.api_key"), sampleID)
 
 	req, err := http.NewRequest(http.MethodGet, urlStr, nil)
 
@@ -169,7 +170,7 @@ func (m *MetaDefender) GetSubmissionStatus(submissionID string) (*dtos.Submissio
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("apikey", viper.GetString("metadefender.api_key"))
+	req.Header.Add("apikey", readValues.ReadValuesString("metadefender.api_key"))
 	client := http.Client{}
 	ctx, cancel := context.WithTimeout(context.Background(), m.Timeout)
 	defer cancel()
@@ -254,14 +255,13 @@ func (g *MetaDefender) SendFileApi(f *bytes.Buffer, filename string) (*http.Resp
 		return nil, err
 	}
 
-		client := &http.Client{}
-	
+	client := &http.Client{}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		errorLogger.LogToFile("service: Glasswall: failed to do request:", err.Error())
 		return nil, err
 	}
-    return resp, err
-
+	return resp, err
 
 }

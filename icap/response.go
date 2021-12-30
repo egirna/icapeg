@@ -118,7 +118,6 @@ func (w *respWriter) WriteHeader(code int, httpMessage interface{}, hasBody bool
 			encap = "null-body=0"
 		}
 	}
-
 	w.header.Set("Encapsulated", encap)
 	if _, ok := w.header["Date"]; !ok {
 		w.Header().Set("Date", time.Now().UTC().Format(http.TimeFormat))
@@ -140,7 +139,6 @@ func (w *respWriter) WriteHeader(code int, httpMessage interface{}, hasBody bool
 	}
 
 	w.wroteHeader = true
-
 	if hasBody {
 		w.cw = httputil.NewChunkedWriter(w.conn.buf.Writer)
 	}
@@ -162,30 +160,62 @@ func (w *respWriter) finishRequest() {
 
 // httpRequestHeader returns the headers for an HTTP request
 // as a slice of bytes in a form suitable for including in an ICAP message.
+//func httpRequestHeader(req *http.Request) (hdr []byte, err error) {
+//	buf := new(bytes.Buffer)
+//
+//	if req.URL == nil {
+//		if err != nil {
+//			return nil, errors.New("icap: httpRequestHeader called on Request with no URL")
+//		}
+//	}
+//	fmt.Println("asdf")
+//	host := "www.example.com"
+//	fmt.Println(host)
+//	if host == "" {
+//		host = req.Host
+//	}
+//	req.Header.Set("Host", host)
+//
+//	uri := req.URL.String()
+//	fmt.Println(uri)
+//
+//	fmt.Fprintf(buf, "%s %s %s\r\n", valueOrDefault(req.Method, "GET"), uri, valueOrDefault(req.Proto, "HTTP/1.1"))
+//	req.Header.WriteSubset(buf, map[string]bool{
+//		"Transfer-Encoding": true,
+//		"Content-Length":    true,
+//	})
+//	io.WriteString(buf, "\r\n")
+//
+//	return buf.Bytes(), nil
+//}
+
 func httpRequestHeader(req *http.Request) (hdr []byte, err error) {
 	buf := new(bytes.Buffer)
-
-	if req.URL == nil {
+	if req.Proto == "" {
+		req.Proto = "HTTP/1.1"
+	}
+	_, err = fmt.Fprintf(buf, "%s %s %s\r\n", req.Method, req.URL, req.Proto)
+	if err != nil {
+		return nil, err
+	}
+	if _, xIcap206Exists := req.Header["X-Icap-206"]; xIcap206Exists {
+		err := req.Header.Write(buf)
 		if err != nil {
-			return nil, errors.New("icap: httpRequestHeader called on Request with no URL")
+			return nil, err
+		}
+	} else {
+		err := req.Header.WriteSubset(buf, map[string]bool{
+			"Transfer-Encoding": true,
+			"Content-Length":    false,
+		})
+		if err != nil {
+			return nil, err
 		}
 	}
-
-	host := req.URL.Host
-	if host == "" {
-		host = req.Host
+	_, err = io.WriteString(buf, "\r\n")
+	if err != nil {
+		return nil, err
 	}
-	req.Header.Set("Host", host)
-
-	uri := req.URL.String()
-
-	fmt.Fprintf(buf, "%s %s %s\r\n", valueOrDefault(req.Method, "GET"), uri, valueOrDefault(req.Proto, "HTTP/1.1"))
-	req.Header.WriteSubset(buf, map[string]bool{
-		"Transfer-Encoding": true,
-		"Content-Length":    true,
-	})
-	io.WriteString(buf, "\r\n")
-
 	return buf.Bytes(), nil
 }
 
@@ -193,7 +223,6 @@ func httpRequestHeader(req *http.Request) (hdr []byte, err error) {
 // as a slice of bytes.
 func httpResponseHeader(resp *http.Response) (hdr []byte, err error) {
 	buf := new(bytes.Buffer)
-
 	// Status line
 	text := resp.Status
 	if text == "" {
@@ -206,17 +235,25 @@ func httpResponseHeader(resp *http.Response) (hdr []byte, err error) {
 	if proto == "" {
 		proto = "HTTP/1.1"
 	}
-	fmt.Fprintf(buf, "%s %d %s\r\n", proto, resp.StatusCode, text)
-	if _, xIcap206Exists := resp.Header["X-Icap-206"]; xIcap206Exists {
-		resp.Header.Write(buf)
-	} else {
-		resp.Header.WriteSubset(buf, map[string]bool{
-			"Transfer-Encoding": true,
-			"Content-Length":    false,
-		})
+	_, err = fmt.Fprintf(buf, "%s %s\r\n", proto, text)
+	if err != nil {
+		return nil, err
 	}
-	io.WriteString(buf, "\r\n")
-
+	if _, xIcap206Exists := resp.Header["X-Icap-206"]; xIcap206Exists {
+		err := resp.Header.Write(buf)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		err := resp.Header.WriteSubset(buf, map[string]bool{})
+		if err != nil {
+			return nil, err
+		}
+	}
+	_, err = io.WriteString(buf, "\r\n")
+	if err != nil {
+		return nil, err
+	}
 	return buf.Bytes(), nil
 }
 
