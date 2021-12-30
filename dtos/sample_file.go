@@ -20,7 +20,7 @@ type (
 	SubmissionStatusResponse struct {
 		SubmissionFinished bool
 	}
-	// TemplateData represents the data needed to be show in the custom html template
+	// TemplateData represents the data needed to be show in the glasswall html template
 	TemplateData struct {
 		FileName     string `json:"file_name"`
 		Severity     string `json:"severity"`

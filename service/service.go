@@ -25,7 +25,7 @@ type (
 	// Service holds the info to distinguish a service
 	Service interface {
 		SubmitFile(*bytes.Buffer, string) (*dtos.SubmitResponse, error)
-		SendFileApi(*bytes.Buffer,  string) (*http.Response, error)
+		SendFileApi(*bytes.Buffer, string) (*http.Response, error)
 		GetSubmissionStatus(string) (*dtos.SubmissionStatusResponse, error)
 		GetSampleFileInfo(string, ...dtos.FileMetaInfo) (*dtos.SampleInfo, error)
 		GetSampleURLInfo(string, ...dtos.FileMetaInfo) (*dtos.SampleInfo, error)
@@ -70,14 +70,14 @@ var (
 )
 
 // IsServiceLocal determines if a service is local or not
-func IsServiceLocal(name string) bool {
-	svc := GetService(name)
+func IsServiceLocal(vendor string, serviceName string) bool {
+	svc := GetService(vendor, serviceName)
 
 	if svc != nil {
 		return false
 	}
 
-	lsvc := GetLocalService(name)
+	lsvc := GetLocalService(vendor, serviceName)
 
 	if lsvc != nil {
 		return true
@@ -87,26 +87,26 @@ func IsServiceLocal(name string) bool {
 }
 
 // GetService returns a service based on the service name
-func GetService(name string) Service {
-	switch name {
+//change name to vendor and add parameter service name
+func GetService(vendor string, serviceName string) Service {
+	switch vendor {
 	case SVCVirusTotal:
-		return NewVirusTotalService()
+		return NewVirusTotalService(serviceName)
 	case SVCMetaDefender:
-		return NewMetaDefenderService()
+		return NewMetaDefenderService(serviceName)
 	case SVCVmray:
-		return NewVmrayService()
+		return NewVmrayService(serviceName)
 	case SVCGlasswall:
-		return NewGlasswallService()
+		return NewGlasswallService(serviceName)
 	}
-
 	return nil
 }
 
 // GetLocalService returns a local service based on the name
-func GetLocalService(name string) LocalService {
-	switch name {
+func GetLocalService(vendor string, serviceName string) LocalService {
+	switch vendor {
 	case SVCClamav:
-		return NewClamavService()
+		return NewClamavService(serviceName)
 	}
 
 	return nil

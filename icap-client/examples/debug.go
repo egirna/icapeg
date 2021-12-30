@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	ic "github.com/egirna/icap-client"
+	ic "icapeg/icap-client"
 )
 
 func reqmodInDebug() {

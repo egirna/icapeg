@@ -118,7 +118,7 @@ func doShadowREQMOD(svc service.ICAPService, httpReq http.Request) {
 
 }
 
-func doShadowScan(filename string, fmi dtos.FileMetaInfo, buf *bytes.Buffer, fileURL string) {
+func doShadowScan(vendor string, serviceName string, filename string, fmi dtos.FileMetaInfo, buf *bytes.Buffer, fileURL string) {
 
 	newBuf := utils.CopyBuffer(buf)
 
@@ -133,20 +133,20 @@ func doShadowScan(filename string, fmi dtos.FileMetaInfo, buf *bytes.Buffer, fil
 	var sts int
 	var si *dtos.SampleInfo
 
-	localService := service.IsServiceLocal(scannerName)
+	localService := service.IsServiceLocal(vendor, scannerName)
 
 	if localService && buf != nil { // if the scanner is installed locally
-		sts, si = doLocalScan(scannerName, fmi, newBuf)
+		sts, si = doLocalScan(scannerName, serviceName, fmi, newBuf)
 	}
 
 	if !localService { // if the scanner is an external service requiring API calls.
 
 		if buf == nil && fileURL != "" { // indicates this is a URL scan request
-			sts, si = doRemoteURLScan(scannerName, filename, fmi, fileURL)
+			sts, si = doRemoteURLScan(scannerName, serviceName, filename, fmi, fileURL)
 		}
 
 		if buf != nil && fileURL == "" { // indicates this is a File scan request
-			sts, si = doRemoteFileScan(scannerName, filename, fmi, newBuf)
+			sts, si = doRemoteFileScan(scannerName, serviceName, filename, fmi, newBuf)
 		}
 
 	}

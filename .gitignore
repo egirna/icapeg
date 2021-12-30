@@ -22,3 +22,7 @@ vendor/
 
 # Logs
 logs.txt
+
+# Env file
+app.env
+.vscode

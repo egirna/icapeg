@@ -15,15 +15,15 @@ import (
 
 //https://github.com/k8-proxy/k8-rebuild-rest-api
 // StartServer starts the icap server
+
 func StartServer() error {
 
+	//any request even the service doesn't exist in toml file, it will go to api.ToICAPEGServe
+	//and there, the request will be filtered to check if the service exists or not
 	config.Init()
-	icap.HandleFunc("/respmod", api.ToICAPEGResp)
-	icap.HandleFunc("/reqmod", api.ToICAPEGReq)
-	icap.HandleFunc("/gw_rebuild", api.ToICAPEGResp)
+	icap.HandleFunc("/", api.ToICAPEGServe)
 
 	http.HandleFunc("/", api.ErrorPageHanlder)
-
 	logger.SetLogLevel(config.App().LogLevel)
 	logr := logger.NewLogger()
 

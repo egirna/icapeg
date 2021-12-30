@@ -1,0 +1,23 @@
+{{- if .Values.service.icap.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: icap-service
+  labels:
+    app: {{ .Values.icapservice.applabel }}
+spec:
+  type: LoadBalancer
+  selector:
+    app: {{ template "appname" . }}
+  # The node port is hard coded to match the load balancer. In the future we want to be template it.
+  ports:
+  - port: 1344
+    protocol: TCP
+    name: openport
+    targetPort: 1344
+  - port: 1345
+    protocol: TCP
+    name: tlsport
+    targetPort: 1345
+
+{{- end -}}

@@ -29,8 +29,9 @@ func (e *badStringError) Error() string { return fmt.Sprintf("%s %q", e.what, e.
 
 // A Request represents a parsed ICAP request.
 type Request struct {
-	Method     string               // REQMOD, RESPMOD, OPTIONS, etc.
-	RawURL     string               // The URL given in the request.
+	Method string // REQMOD, RESPMOD, OPTIONS, etc.
+	RawURL string // The URL given in the request.
+	//Service    string               // The Service given in the request.
 	URL        *url.URL             // Parsed URL.
 	Proto      string               // The protocol version.
 	Header     textproto.MIMEHeader // The ICAP header
@@ -143,13 +144,10 @@ func ReadRequest(b *bufio.ReadWriter) (req *Request, err error) {
 
 	var bodyReader io.ReadCloser = emptyReader(0)
 	if hasBody {
+		moreBody := false
 		if p := req.Header.Get("Preview"); p != "" {
-			moreBody := false
-			
-			if previewSize, err := strconv.Atoi(p); err != nil && previewSize > 0 {
-				moreBody = true
-			}
-			
+			moreBody = true
+
 			req.Preview, err = ioutil.ReadAll(newChunkedReader(b))
 			if err != nil {
 				if strings.Contains(err.Error(), "ieof") {
