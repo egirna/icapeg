@@ -35,7 +35,7 @@ preview_bytes = "" #byte
 preview_enabled = false # options send preview header or not
 propagate_error = true
 service_caption ="Go-ICAP server - glasswall Rebuild service"
-services= ["gw_rebuild" , "echo"]
+services= ["gw_rebuild" , "echo","virustotal"]
 verify_server_cert=false
 
 [gw_rebuild]
@@ -48,6 +48,27 @@ api_key = "<api key>"
 timeout  = 300 #seconds , ICAP will return 408 - Request timeout
 fail_threshold = 2
 policy= ""
+
+[virustotal]
+vendor = "virustotal"
+req_mode=true # enable support for ICAP request mode
+resp_mode=true # enable support for ICAP response mode
+base_url = "https://www.virustotal.com/api/v3" #
+scan_endpoint = "/files"
+api_key = "<api key>"
+timeout  = 300 #seconds , ICAP will return 408 - Request timeout
+fail_threshold = 2
+policy= ""
+file_scan_endpoint = "/files"
+url_scan_endpoint = "/url/scan"
+file_report_endpoint = "/file/report?apikey=%s&resource=%s"
+url_report_endpoint = "/url/report?apikey=%s&resource=%s"
+file_analysis_endpoint="/analyses/"
+status_check_interval = 10 #seconds, the time interval after which the submission status check will be called
+status_check_timeout = 300 #seconds, the total time duration after which the the status check should be stopped, if not finished
+bad_file_status = ["malicious"]
+ok_file_status = ["ok"]
+
 
 [echo]
 req_mode=true

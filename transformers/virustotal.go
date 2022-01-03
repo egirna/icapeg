@@ -13,30 +13,33 @@ const (
 )
 
 // TransformVirusTotalToSubmitResponse transforms a virustotal scan response to generic sample response
-func TransformVirusTotalToSubmitResponse(sr *dtos.VirusTotalScanFileResponse) *dtos.SubmitResponse {
+func TransformVirusTotalToSubmitResponse(sr *dtos.VtUploadData) *dtos.SubmitResponse {
 	submitResp := &dtos.SubmitResponse{}
-	if sr.ResponseCode == 1 {
+	/*if sr.ResponseCode == 1 {
 		submitResp.SubmissionExists = true
-	}
+	}*/
 	// submitResp.SubmissionID = sr.ScanID
-	submitResp.SubmissionID = sr.Resource // NOTE: this is done just for now, as virustotal doesn't make query with it's scan-id but rather it's resource id
-	submitResp.SubmissionSampleID = sr.Resource
+	submitResp.SubmissionExists = true
+	submitResp.SubmissionID = sr.Id // NOTE: this is done just for now, as virustotal doesn't make query with it's scan-id but rather it's resource id
+	submitResp.SubmissionSampleID = sr.Id
 	return submitResp
 }
 
 // TransformVirusTotalToSampleInfo transforms a virustotal report response to generic sample info response
-func TransformVirusTotalToSampleInfo(vr *dtos.VirusTotalReportResponse, fmi dtos.FileMetaInfo, failThreshold int) *dtos.SampleInfo {
+func TransformVirusTotalToSampleInfo(vr *dtos.VirusTotalReportResponseV3, fmi dtos.FileMetaInfo, failThreshold int) *dtos.SampleInfo {
 
 	svrty := VirusTotalSampleSeverityOk
-	vtiScore := fmt.Sprintf("%d/%d", vr.Positives, vr.Total)
+	total := 73
+	positives := vr.Data.Attributes.Stats.Suspicious + vr.Data.Attributes.Stats.Malicious + vr.Data.Attributes.Stats.Harmless
+	vtiScore := fmt.Sprintf("%d/%d", positives, total)
 
-	if vr.Positives > failThreshold {
+	if int(positives) > failThreshold {
 		svrty = VirusTotalSampleSeverityMalicious
 	}
-
-	submissionFinished := true
-	if vr.ResponseCode < 1 {
-		submissionFinished = false
+	submissionFinished := false
+	if vr.Data.Attributes.Status == "completed" {
+		//fmt.Println(vr.Data)
+		submissionFinished = true
 	}
 
 	return &dtos.SampleInfo{

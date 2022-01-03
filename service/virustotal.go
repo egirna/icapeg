@@ -22,6 +22,7 @@ type VirusTotal struct {
 	Timeout              time.Duration
 	APIKey               string
 	FileScanEndpoint     string
+	FileAnalysisEndpoint string
 	URLScanEndpoint      string
 	FileReportEndpoint   string
 	URLReportEndpoint    string
@@ -38,21 +39,22 @@ type VirusTotal struct {
 // NewVirusTotalService returns a new populated instance of the virustotal service
 func NewVirusTotalService(serviceName string) Service {
 	return &VirusTotal{
-		BaseURL:              readValues.ReadValuesString(serviceName + ".base_url"),
-		Timeout:              readValues.ReadValuesDuration(serviceName+".timeout") * time.Second,
-		APIKey:               readValues.ReadValuesString(serviceName + ".api_key"),
-		FileScanEndpoint:     readValues.ReadValuesString(serviceName + ".file_scan_endpoint"),
-		URLScanEndpoint:      readValues.ReadValuesString(serviceName + ".url_scan_endpoint"),
-		FileReportEndpoint:   readValues.ReadValuesString(serviceName + ".file_report_endpoint"),
-		URLReportEndpoint:    readValues.ReadValuesString(serviceName + ".url_report_endpoint"),
-		FailThreshold:        readValues.ReadValuesInt(serviceName + ".fail_threshold"),
-		statusCheckInterval:  readValues.ReadValuesDuration(serviceName+".status_check_interval") * time.Second,
-		statusCheckTimeout:   readValues.ReadValuesDuration(serviceName+".status_check_timeout") * time.Second,
-		badFileStatus:        readValues.ReadValuesSlice(serviceName + ".bad_file_status"),
-		okFileStatus:         readValues.ReadValuesSlice(serviceName + ".ok_file_status"),
+		BaseURL:              readValues.ReadValuesString("virustotal.base_url"),
+		Timeout:              readValues.ReadValuesDuration("virustotal.timeout") * time.Second,
+		APIKey:               readValues.ReadValuesString("virustotal.api_key"),
+		FileScanEndpoint:     readValues.ReadValuesString("virustotal.file_scan_endpoint"),
+		URLScanEndpoint:      readValues.ReadValuesString("virustotal.url_scan_endpoint"),
+		FileAnalysisEndpoint: readValues.ReadValuesString("virustotal.file_analysis_endpoint"),
+		FileReportEndpoint:   readValues.ReadValuesString("virustotal.file_report_endpoint"),
+		URLReportEndpoint:    readValues.ReadValuesString("virustotal.url_report_endpoint"),
+		FailThreshold:        readValues.ReadValuesInt("virustotal.fail_threshold"),
+		statusCheckInterval:  readValues.ReadValuesDuration("virustotal.status_check_interval") * time.Second,
+		statusCheckTimeout:   readValues.ReadValuesDuration("virustotal.status_check_timeout") * time.Second,
+		badFileStatus:        readValues.ReadValuesSlice("virustotal.bad_file_status"),
+		okFileStatus:         readValues.ReadValuesSlice("virustotal.ok_file_status"),
 		statusEndPointExists: false,
-		respSupported:        readValues.ReadValuesBool(serviceName + ".resp_mode"),
-		reqSupported:         readValues.ReadValuesBool(serviceName + ".req_mode"),
+		respSupported:        true,
+		reqSupported:         true,
 	}
 }
 
@@ -65,20 +67,19 @@ func (v *VirusTotal) SubmitFile(f *bytes.Buffer, filename string) (*dtos.SubmitR
 
 	bodyWriter := multipart.NewWriter(bodyBuf)
 
-	bodyWriter.WriteField("apikey", v.APIKey)
+	//bodyWriter.WriteField("apikey", v.APIKey)
 
 	part, err := bodyWriter.CreateFormFile("file", filename)
 
 	if err != nil {
 		return nil, err
 	}
-
+	//("Before or after?")
 	io.Copy(part, bytes.NewReader(f.Bytes()))
 	if err := bodyWriter.Close(); err != nil {
 		errorLogger.LogToFile("failed to close writer", err.Error())
 		return nil, err
 	}
-
 	req, err := http.NewRequest(http.MethodPost, urlStr, bodyBuf)
 
 	if err != nil {
@@ -91,12 +92,13 @@ func (v *VirusTotal) SubmitFile(f *bytes.Buffer, filename string) (*dtos.SubmitR
 	req = req.WithContext(ctx)
 
 	req.Header.Add("Content-Type", bodyWriter.FormDataContentType())
-
+	req.Header.Add("x-apikey", v.APIKey)
 	resp, err := client.Do(req)
 	if err != nil {
 		errorLogger.LogToFile("service: virustotal: failed to do request:", err.Error())
 		return nil, err
 	}
+
 
 	if resp.StatusCode != http.StatusOK {
 		bdy, _ := ioutil.ReadAll(resp.Body)
@@ -110,13 +112,16 @@ func (v *VirusTotal) SubmitFile(f *bytes.Buffer, filename string) (*dtos.SubmitR
 		return nil, errors.New(bdyStr)
 	}
 
-	scanResp := dtos.VirusTotalScanFileResponse{}
+	scanResp := dtos.VirusTotalUploadResponse{}
 
 	if err := json.NewDecoder(resp.Body).Decode(&scanResp); err != nil {
 		return nil, err
 	}
 
-	return transformers.TransformVirusTotalToSubmitResponse(&scanResp), nil
+	//v.FileAnalysis(f, scanResp.Data.Id)
+
+	return transformers.TransformVirusTotalToSubmitResponse(&scanResp.Data), nil
+	//return nil, nil
 }
 
 // SubmitURL calls the submission api for virustotal
@@ -167,20 +172,21 @@ func (v *VirusTotal) SubmitURL(fileURL, filename string) (*dtos.SubmitResponse, 
 		return nil, errors.New(bdyStr)
 	}
 
-	scanResp := dtos.VirusTotalScanFileResponse{}
+	scanResp := dtos.VirusTotalUploadResponse{}
 
 	if err := json.NewDecoder(resp.Body).Decode(&scanResp); err != nil {
+		fmt.Println("Have I reach here")
 		return nil, err
 	}
 
-	return transformers.TransformVirusTotalToSubmitResponse(&scanResp), nil
+	return transformers.TransformVirusTotalToSubmitResponse(&scanResp.Data), nil
 }
 
 // GetSampleFileInfo returns the submitted sample file's info
 func (v *VirusTotal) GetSampleFileInfo(sampleID string, filemetas ...dtos.FileMetaInfo) (*dtos.SampleInfo, error) {
 
-	urlStr := v.BaseURL + fmt.Sprintf(v.FileReportEndpoint, v.APIKey, sampleID)
-
+	urlStr := v.BaseURL + v.FileAnalysisEndpoint + sampleID
+	//fmt.Println(urlStr, "Report is hereeee")
 	req, err := http.NewRequest(http.MethodGet, urlStr, nil)
 
 	if err != nil {
@@ -191,9 +197,8 @@ func (v *VirusTotal) GetSampleFileInfo(sampleID string, filemetas ...dtos.FileMe
 	ctx, cancel := context.WithTimeout(context.Background(), v.Timeout)
 	defer cancel()
 	req = req.WithContext(ctx)
-
+	req.Header.Add("x-apikey", v.APIKey)
 	resp, err := client.Do(req)
-
 	if err != nil {
 		return nil, err
 	}
@@ -214,19 +219,23 @@ func (v *VirusTotal) GetSampleFileInfo(sampleID string, filemetas ...dtos.FileMe
 		return nil, errors.New(bdyStr)
 	}
 
-	sampleResp := dtos.VirusTotalReportResponse{}
+	sampleResp := dtos.VirusTotalReportResponseV3{}
+	/*bdy, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println(string(bdy))*/
+	//fmt.Println(resp.Body)
 
 	if err := json.NewDecoder(resp.Body).Decode(&sampleResp); err != nil {
+		fmt.Println("Error here")
 		return nil, err
 	}
 
 	fm := dtos.FileMetaInfo{}
-
 	if len(filemetas) > 0 {
 		fm = filemetas[0]
 	}
 
 	return transformers.TransformVirusTotalToSampleInfo(&sampleResp, fm, v.FailThreshold), nil
+	//return nil, nil
 
 }
 
@@ -268,7 +277,7 @@ func (v *VirusTotal) GetSampleURLInfo(sampleID string, filemetas ...dtos.FileMet
 		return nil, errors.New(bdyStr)
 	}
 
-	sampleResp := dtos.VirusTotalReportResponse{}
+	sampleResp := dtos.VirusTotalReportResponseV3{}
 
 	if err := json.NewDecoder(resp.Body).Decode(&sampleResp); err != nil {
 		return nil, err
@@ -281,6 +290,7 @@ func (v *VirusTotal) GetSampleURLInfo(sampleID string, filemetas ...dtos.FileMet
 	}
 
 	return transformers.TransformVirusTotalToSampleInfo(&sampleResp, fm, v.FailThreshold), nil
+	//return nil, nil
 
 }
 
@@ -321,6 +331,69 @@ func (v *VirusTotal) GetSubmissionStatus(submissionID string) (*dtos.SubmissionS
 	}
 
 	return transformers.TransformVirusTotalToSubmissionStatusResponse(&sampleResp), nil
+}
+
+// SubmitFile calls the submission api for virustotal
+func (v *VirusTotal) FileAnalysis(f *bytes.Buffer, id string) (*dtos.SubmitResponse, error) {
+
+	urlStr := v.BaseURL + v.FileAnalysisEndpoint + id
+
+	bodyBuf := &bytes.Buffer{}
+
+	bodyWriter := multipart.NewWriter(bodyBuf)
+
+	//bodyWriter.WriteField("apikey", v.APIKey)
+
+	req, err := http.NewRequest(http.MethodGet, urlStr, bodyBuf)
+
+	if err != nil {
+		return nil, err
+	}
+
+	client := http.Client{}
+	ctx, cancel := context.WithTimeout(context.Background(), v.Timeout)
+	defer cancel()
+	req = req.WithContext(ctx)
+	fmt.Println(req)
+	req.Header.Add("Content-Type", bodyWriter.FormDataContentType())
+	req.Header.Add("x-apikey", v.APIKey)
+	fmt.Println(req)
+
+	fmt.Println("Am I here?")
+	resp, err := client.Do(req)
+	fmt.Println("The response is ", resp)
+	if err != nil {
+		errorLogger.LogToFile("service: virustotal: failed to do request:", err.Error())
+		return nil, err
+	}
+	fmt.Println(resp.StatusCode)
+	//fmt.Println(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		bdy, _ := ioutil.ReadAll(resp.Body)
+		bdyStr := ""
+		if string(bdy) == "" {
+			bdyStr = http.StatusText(resp.StatusCode)
+		} else {
+			bdyStr = string(bdy)
+
+		}
+		return nil, errors.New(bdyStr)
+	}
+	bdy, _ := ioutil.ReadAll(resp.Body)
+
+	fmt.Println("The response body is ", string(bdy))
+	//scanResp := dtos.VirusTotalUploadResponse{}
+	/*
+		if err := json.NewDecoder(resp.Body).Decode(&scanResp); err != nil {
+			fmt.Println("did i reach here?")
+			fmt.Println(scanResp)
+			return nil, err
+		}*/
+	//fmt.Println(scanResp.Data.Type)
+	fmt.Println("ME HERE But who?")
+	//return transformers.TransformVirusTotalToSubmitResponse(&scanResp), nil
+	return nil, nil
 }
 
 // GetStatusCheckInterval returns the status_check_interval duration of the service
@@ -364,7 +437,6 @@ func (g *VirusTotal) SendFileApi(f *bytes.Buffer, filename string) (*http.Respon
 	bodyBuf := &bytes.Buffer{}
 
 	req, err := http.NewRequest(http.MethodPost, urlStr, bodyBuf)
-	//fmt.Println(req)
 	if err != nil {
 		return nil, err
 	}
@@ -372,6 +444,7 @@ func (g *VirusTotal) SendFileApi(f *bytes.Buffer, filename string) (*http.Respon
 	client := &http.Client{}
 
 	resp, err := client.Do(req)
+	fmt.Println(req)
 	if err != nil {
 		errorLogger.LogToFile("service: Glasswall: failed to do request:", err.Error())
 		return nil, err

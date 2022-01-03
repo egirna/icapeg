@@ -12,6 +12,13 @@ type (
 		Md5          string `json:"md5"`
 		VerboseMsg   string `json:"verbose_msg"`
 	}
+	VtUploadData struct {
+		Type string `json:"type"`
+		Id   string `json:"id"`
+	}
+	VirusTotalUploadResponse struct {
+		Data VtUploadData `json:"data"`
+	}
 	// Scanner represents the antivirus scanner data in the report response payload of virustotal
 	Scanner struct {
 		Detected bool   `json:"detected"`
@@ -88,7 +95,33 @@ type (
 		Panda                 Scanner `json:"Panda"`
 		Qihoo360              Scanner `json:"Qihoo-360"`
 	}
-
+	Fileinfo struct {
+		Sha256 string `json:"sha256"`
+		Sha1   string `json:"sha1"`
+		Md5    string `json:"md5"`
+		Size   string `json:"size"`
+	}
+	Stats struct {
+		Confirmed_timeout int64 `json:"confirmed-timeout"`
+		Failure           int64 `json:"failure"`
+		Harmless          int64 `json:"harmless"`
+		Malicious         int64 `json:"malicious"`
+		Suspicious        int64 `json:"suspicious"`
+		Timeout           int64 `json:"timeout"`
+		Type_unsupported  int64 `json:"type-unsupported"`
+		Undetected        int64 `json:"undetected"`
+	}
+	Data struct {
+		Attributes struct {
+			Date   int64  `json:"date"`
+			Status string `json:"status"`
+			Stats  Stats  `json:"stats"`
+		}
+	}
+	VirusTotalReportResponseV3 struct {
+		Meta Meta `json:"meta"`
+		Data Data `json:"data"`
+	}
 	// VirusTotalReportResponse represents the report response payload of the virustotal service
 	VirusTotalReportResponse struct {
 		Scans        Scans  `json:"scans"`
@@ -103,5 +136,14 @@ type (
 		Positives    int    `json:"positives"`
 		Sha256       string `json:"sha256"`
 		Md5          string `json:"md5"`
+	}
+
+	Meta struct {
+		FileInfo struct {
+			Md5    string `json:"md5"`
+			Sha1   string `json:"sha1"`
+			Sha256 string `json:"sha256"`
+			Size   int64  `json:"size"`
+		} `json:"file_info"`
 	}
 )
