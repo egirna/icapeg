@@ -2,14 +2,18 @@ package service
 
 import (
 	"bytes"
-	"icapeg/config"
-	"icapeg/dtos"
-	"icapeg/logger"
 	"io"
 	"net/http"
 	"time"
 
+	"icapeg/dtos"
 	ic "icapeg/icap-client"
+	"icapeg/logger"
+	"icapeg/service/clamav"
+	"icapeg/service/glasswall"
+	"icapeg/service/metadefender"
+	"icapeg/service/virustotal"
+	"icapeg/service/vmray"
 )
 
 // The service names
@@ -25,7 +29,7 @@ type (
 	// Service holds the info to distinguish a service
 	Service interface {
 		SubmitFile(*bytes.Buffer, string) (*dtos.SubmitResponse, error)
-		SendFileApi(*bytes.Buffer, string) (*http.Response, error)
+		SendFileApi(*bytes.Buffer, string, string) (*http.Response, int, bool, string, error)
 		GetSubmissionStatus(string) (*dtos.SubmissionStatusResponse, error)
 		GetSampleFileInfo(string, ...dtos.FileMetaInfo) (*dtos.SampleInfo, error)
 		GetSampleURLInfo(string, ...dtos.FileMetaInfo) (*dtos.SampleInfo, error)
@@ -65,13 +69,9 @@ type (
 	}
 )
 
-var (
-	errorLogger = logger.NewLogger(logger.LogLevelError, logger.LogLevelDebug)
-)
-
 // IsServiceLocal determines if a service is local or not
-func IsServiceLocal(vendor string, serviceName string) bool {
-	svc := GetService(vendor, serviceName)
+func IsServiceLocal(vendor string, serviceName string, logger *logger.ZLogger) bool {
+	svc := GetService(vendor, serviceName, logger)
 
 	if svc != nil {
 		return false
@@ -87,17 +87,17 @@ func IsServiceLocal(vendor string, serviceName string) bool {
 }
 
 // GetService returns a service based on the service name
-//change name to vendor and add parameter service name
-func GetService(vendor string, serviceName string) Service {
+// change name to vendor and add parameter service name
+func GetService(vendor string, serviceName string, logger *logger.ZLogger) Service {
 	switch vendor {
 	case SVCVirusTotal:
-		return NewVirusTotalService(serviceName)
+		return virustotal.NewVirusTotalService(serviceName, logger)
 	case SVCMetaDefender:
-		return NewMetaDefenderService(serviceName)
+		return metadefender.NewMetaDefenderService(serviceName, logger)
 	case SVCVmray:
-		return NewVmrayService(serviceName)
+		return vmray.NewVmrayService(serviceName, logger)
 	case SVCGlasswall:
-		return NewGlasswallService(serviceName)
+		return glasswall.NewGlasswallService(serviceName, logger)
 	}
 	return nil
 }
@@ -106,7 +106,7 @@ func GetService(vendor string, serviceName string) Service {
 func GetLocalService(vendor string, serviceName string) LocalService {
 	switch vendor {
 	case SVCClamav:
-		return NewClamavService(serviceName)
+		return clamav.NewClamavService(serviceName)
 	}
 
 	return nil
@@ -114,9 +114,5 @@ func GetLocalService(vendor string, serviceName string) LocalService {
 
 // GetICAPService returns a remote ICAP service based on the name
 func GetICAPService(name string) ICAPService {
-	if config.App().LogLevel == logger.LogLevelDebug {
-		ic.SetDebugMode(true)
-		ic.SetDebugOutput(logger.LogFile())
-	}
 	return NewRemoteICAPService(name)
 }

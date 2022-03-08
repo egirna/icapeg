@@ -4,13 +4,15 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
-	"icapeg/dtos"
-	"icapeg/readValues"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
+
+	"icapeg/config"
+	"icapeg/dtos"
+	"icapeg/readValues"
 
 	"github.com/h2non/filetype"
 )
@@ -44,13 +46,16 @@ func GetMimeExtension(data []byte) string {
 
 // GetFileName returns the filename from the http request
 func GetFileName(req *http.Request) string {
-	//req.RequestURI  inserting dummy response if the http request is nil
+	// req.RequestURI  inserting dummy response if the http request is nil
 	var Requrl string
-	if req == nil {
-		Requrl = "http://www.example/images/sampletest.pdf"
+	if req == nil || req.RequestURI == "" {
+		Requrl = "http://www.example/images/unnamed_file"
 
 	} else {
 		Requrl = req.RequestURI
+		if Requrl[len(Requrl)-1] == '/' {
+			Requrl = Requrl[0 : len(Requrl)-1]
+		}
 
 	}
 	u, _ := url.Parse(Requrl)
@@ -60,7 +65,7 @@ func GetFileName(req *http.Request) string {
 	if len(uu) > 0 {
 		return uu[len(uu)-1]
 	}
-	return ""
+	return "unnamed_file"
 }
 
 // GetFileExtension returns the file extension of the concerned file of the http request
@@ -181,4 +186,12 @@ func CopyBuffer(buf *bytes.Buffer) *bytes.Buffer {
 		return bytes.NewBuffer(buf.Bytes())
 	}
 	return nil
+}
+
+// InitSecure set insecure flag based on user input
+func InitSecure() bool {
+	if !config.App().VerifyServerCert {
+		return true
+	}
+	return false
 }

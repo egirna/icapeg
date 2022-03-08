@@ -13,7 +13,7 @@ import (
 
 func TestICAPeg(t *testing.T) {
 	// initializing the test configurations
-	config.InitTestConfig()
+	//config.InitTestConfig()
 
 	// making the stop channel to control the stoppage of the test servers
 	stop := make(chan os.Signal, 1)
@@ -33,8 +33,8 @@ func TestICAPeg(t *testing.T) {
 	// Preparing the Remote ICAP servers and its required configurations
 
 	appCfg := config.App()
-	appCfg.RespScannerVendor = "icap_something"
-	appCfg.ReqScannerVendor = "icap_something"
+	//appCfg.RespScannerVendor = "icap_something"
+	//appCfg.ReqScannerVendor = "icap_something"
 	appCfg.RespScannerVendorShadow = "icap_somethingelse"
 	appCfg.ReqScannerVendorShadow = "icap_somethingelse"
 
@@ -141,20 +141,19 @@ func makeDownloadFileHTTPResponse(req *http.Request) (*http.Response, error) {
 func getThirdPartyServers() []*httptest.Server {
 	tss := []*httptest.Server{}
 
-	respmodService := config.App().RespScannerVendor
-	reqmodService := config.App().ReqScannerVendor
-
-	if respmodService == serviceVirustotal || reqmodService == serviceVirustotal {
-		tss = append(tss, getVirusTotalMockServer())
-	}
-
-	if respmodService == serviceVmray || reqmodService == serviceVmray {
-		tss = append(tss, getVmrayMockServer())
-	}
-
-	if respmodService == serviceMetadefender || reqmodService == serviceMetadefender {
-		tss = append(tss, getMetaDefenderMockServer())
-	}
+	//respmodService := config.App().RespScannerVendor
+	//reqmodService := config.App().ReqScannerVendor
+	//if respmodService == serviceVirustotal || reqmodService == serviceVirustotal {
+	//	tss = append(tss, getVirusTotalMockServer())
+	//}
+	//
+	//if respmodService == serviceVmray || reqmodService == serviceVmray {
+	//	tss = append(tss, getVmrayMockServer())
+	//}
+	//
+	//if respmodService == serviceMetadefender || reqmodService == serviceMetadefender {
+	//	tss = append(tss, getMetaDefenderMockServer())
+	//}
 
 	return tss
 
