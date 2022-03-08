@@ -279,7 +279,7 @@ func ToICAPEGServe(w icap.ResponseWriter, req *icap.Request, zlogger *logger.ZLo
 					w.Write(buf.Bytes())
 				}
 			} else {
-				tmpl, _ := template.ParseFiles("service/glasswall/unprocessable-file.html")
+				tmpl, _ := template.ParseFiles("service/unprocessable-file.html")
 				htmlBuf := &bytes.Buffer{}
 				tmpl.Execute(htmlBuf, &errorPage{
 					Reason:       "The Max file size is exceeded",
@@ -505,7 +505,7 @@ func ToICAPEGServe(w icap.ResponseWriter, req *icap.Request, zlogger *logger.ZLo
 					w.Write(buf.Bytes())
 				}
 			} else {
-				tmpl, _ := template.ParseFiles("service/glasswall/unprocessable-file.html")
+				tmpl, _ := template.ParseFiles("service/unprocessable-file.html")
 				htmlBuf := &bytes.Buffer{}
 				tmpl.Execute(htmlBuf, &errorPage{
 					Reason:       "The Max file size is exceeded",
