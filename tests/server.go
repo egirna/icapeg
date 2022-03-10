@@ -2,8 +2,6 @@ package tests
 
 import (
 	"fmt"
-	"icapeg/api"
-	"icapeg/config"
 	"log"
 	"net/http"
 	"os"
@@ -11,7 +9,14 @@ import (
 	"syscall"
 	"time"
 
+	"icapeg/api"
+	"icapeg/config"
+	"icapeg/logger"
+
 	"icapeg/icap"
+
+	"github.com/rs/zerolog"
+	zLog "github.com/rs/zerolog/log"
 )
 
 const (
@@ -23,10 +28,14 @@ const (
 // startTestServer starts a test server
 func startTestServer(stop chan os.Signal) error {
 
-	icap.HandleFunc("/respmod-icapeg", api.ToICAPEGResp)
-	icap.HandleFunc("/reqmod-icapeg", api.ToICAPEGReq)
+	lr := zLog.Logger
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	zLogger := &logger.ZLogger{Logger: lr}
+	withICAPLogger := logger.LoggingHandlerICAPFactory(zLogger)
+	withHTTPLogger := logger.LoggingHandlerHTTPFactory(zLogger)
 
-	http.HandleFunc("/", api.ErrorPageHanlder)
+	icap.Handle("/", withICAPLogger(api.ToICAPEGServe))
+	http.Handle("/", withHTTPLogger(api.ErrorPageHandler))
 
 	log.Println("Starting the ICAP server...")
 

@@ -1,181 +1,155 @@
 package logger
 
 import (
-	"log"
+	"bufio"
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
 	"os"
+	"time"
 
-	"github.com/davecgh/go-spew/spew"
+	"icapeg/config"
+
+	"github.com/rs/zerolog"
+	zlog "github.com/rs/zerolog/log"
 )
 
-// The log levels
 const (
-	LogLevelInfo  = "info"
-	LogLevelDebug = "debug"
-	LogLevelError = "error"
-	LogLevelNone  = "none"
+	minLogLengthToFlush int = 1048576
+	minTimeToFlush          = 10
+	srvName                 = "icap-server"
 )
 
-// Logger is the one responsible for perfoming the log writes
-type Logger struct {
-	AllowedLogLevels map[string]bool
+type ZLogger struct {
+	Logger           zerolog.Logger
+	LogContent       *bytes.Buffer
+	LogFlushTime     float64
+	LoggingServerURL string
+	LogStartTime     time.Time
+	LoggingServer    *LoggingServer
+	FileID           string
+	LogMetaData      map[string]string
+	TransitionID     string
 }
 
-var (
-	logFile  *os.File
-	logLevel string
-)
-
-// NewLogger is the factory function for generating a new Logger instance
-func NewLogger(allowedLogLevels ...string) *Logger {
-	l := &Logger{
-		AllowedLogLevels: make(map[string]bool),
-	}
-
-	for _, ll := range allowedLogLevels {
-		l.AllowedLogLevels[ll] = true
-	}
-	return l
+// ExceedLoggingTime : ExceedLoggingTime checks if minimum time is reached to send logs to logging server.
+func (z *ZLogger) ExceedLoggingTime() bool {
+	duration := time.Since(z.LogStartTime).Seconds()
+	return duration >= z.LogFlushTime*minTimeToFlush && len(z.LogContent.Bytes()) > 0
 }
 
-// SetLogLevel sets the log level for the app
-func SetLogLevel(l string) {
-	logLevel = l
+// ExceedLogSize : ExceedLogSize checks if log content exceeds min length to send logs to logging server.
+func (z *ZLogger) ExceedLogSize() bool {
+	return len(z.LogContent.Bytes()) > minLogLengthToFlush
 }
 
-// SetLogFile prepares a text file for logs
-func SetLogFile(filename string) error {
-	if filename == "" {
-		filename = "logs.txt"
+// FlushLogs : flushes logs to logging server
+func (z *ZLogger) FlushLogs() {
+	zlog.Debug().Msgf("flushing logs")
+	toFlush := false
+	if z.ExceedLoggingTime() {
+		toFlush = true
+		elapsed := time.Since(z.LogStartTime)
+		zlog.Debug().Dur("duration", elapsed).Str("value", "flushing as its logging flush time exceeds").
+			Msg("send_logs_to_logging_server")
 	}
-	f, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if z.ExceedLogSize() {
+		toFlush = true
+		elapsed := time.Since(z.LogStartTime)
+		zlog.Debug().Dur("duration", elapsed).Str("value", "flushing as its logging file size content length exceeds").
+			Msg("send_logs_to_logging_server")
+	}
+
+	if toFlush {
+		tLog, err := z.readLogFiles()
+		if err != nil {
+			elapsed := time.Since(z.LogStartTime)
+			zlog.Error().Dur("duration", elapsed).Err(err).Str("value", "could not read log lines").Msgf("read_logs_failed")
+			return
+		}
+		_, err = z.sendLogs(tLog)
+		if err != nil {
+			elapsed := time.Since(z.LogStartTime)
+			zlog.Error().Dur("duration", elapsed).Err(err).Str("value", "error flushing logs to logging server").Msgf("flush_logs_failed")
+			return
+		}
+		z.LogContent.Reset()
+		z.LogStartTime = time.Now()
+	}
+}
+
+// readLogFiles : read the content of the log file and create a glasswall log format
+func (z *ZLogger) readLogFiles() (tLog TransactionalLog, err error) {
+	tLog.Events.Logs = map[string]TransactionalLogEvent{}
+	tLog.Events.Type = srvName
+	tLog.Metadata = z.LogMetaData
+
+	scanner := bufio.NewScanner(z.LogContent)
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		c := zLogOutput{}
+		b := scanner.Bytes()
+		err = json.Unmarshal(b, &c)
+		if err != nil {
+			return TransactionalLog{}, fmt.Errorf("could not unmarshall logs %v", err)
+		}
+		tLog.Events.Logs[c.Message] = TransactionalLogEvent{
+			Value:        c.Value,
+			Duration:     c.Duration,
+			ErrorMessage: c.ErrorMessage,
+			Time:         c.Time,
+		}
+		tLog.Events.Duration += c.Duration
+	}
+	return
+}
+
+// SendLogs : sends glasswall formatted logs to logging service
+func (z *ZLogger) sendLogs(tLog TransactionalLog) ([]byte, error) {
+	body, err := json.Marshal(tLog)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("could not marshal transactional logs %v", err)
 	}
-	logFile = f
-	return nil
+	postRequest, err := http.NewRequest(http.MethodPost, z.LoggingServerURL, bytes.NewReader(body))
+	if err != nil {
+		return nil, fmt.Errorf("could not create post request %v", err)
+	}
+	postRequest.Header.Set("Content-Type", "text/plain")
+	response, err := z.LoggingServer.client.Do(postRequest)
+	if err != nil {
+		return nil, fmt.Errorf("could not send logs to the server: %v", err)
+	}
+	defer response.Body.Close()
+	return body, nil
 }
 
-// LogToScreen logs the parameters to screen
-func (l *Logger) LogToScreen(a ...interface{}) {
-
-	if logLevel == LogLevelNone {
-		return
+// NewZLogger : create new zero logger object
+func NewZLogger(conf *config.AppConfig) (*ZLogger, error) {
+	zLogger := new(ZLogger)
+	hostname, err := os.Hostname()
+	if err != nil {
+		return nil, fmt.Errorf("could not get the host name %v", err)
 	}
-
-	if _, allowed := l.AllowedLogLevels[logLevel]; !allowed && len(l.AllowedLogLevels) > 0 {
-		return
+	logMetaData := map[string]string{
+		"processed-by": hostname,
+		"service_name": srvName,
 	}
-
-	log.SetOutput(os.Stdout)
-	log.Println(a...)
-}
-
-// LogToFile logs the parameters to the log file
-func (l *Logger) LogToFile(a ...interface{}) {
-
-	if logLevel == LogLevelNone {
-		return
+	zLogger.LoggingServerURL = conf.LoggingServerURL
+	zLogger.LogFlushTime = conf.LoggingFlushDuration
+	zLogger.LogStartTime = time.Now()
+	// setting time format in logs to be in Epoch
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	// setting the log level
+	zLevel, err := zerolog.ParseLevel(conf.LogLevel)
+	if err != nil {
+		return nil, fmt.Errorf("log level %s provided is not supported by zerolog: %w", conf.LogLevel, err)
 	}
-
-	if _, allowed := l.AllowedLogLevels[logLevel]; !allowed && len(l.AllowedLogLevels) > 0 {
-		return
-	}
-
-	log.SetOutput(logFile)
-	log.Println(a...)
-}
-
-// LogfToScreen logs the formatted parameters to screen
-func (l *Logger) LogfToScreen(str string, a ...interface{}) {
-
-	if logLevel == LogLevelNone {
-		return
-	}
-
-	if _, allowed := l.AllowedLogLevels[logLevel]; !allowed && len(l.AllowedLogLevels) > 0 {
-		return
-	}
-
-	log.SetOutput(os.Stdout)
-	log.Printf(str, a...)
-}
-
-// LogfToFile logs the formatted parameters to the log file
-func (l *Logger) LogfToFile(str string, a ...interface{}) {
-
-	if logLevel == LogLevelNone {
-		return
-	}
-
-	if _, allowed := l.AllowedLogLevels[logLevel]; !allowed && len(l.AllowedLogLevels) > 0 {
-		return
-	}
-
-	log.SetOutput(logFile)
-	log.Printf(str, a...)
-}
-
-// LogToAll logs the given parameters to both the screen and the file
-func (l *Logger) LogToAll(a ...interface{}) {
-
-	if logLevel == LogLevelNone {
-		return
-	}
-
-	if _, allowed := l.AllowedLogLevels[logLevel]; !allowed && len(l.AllowedLogLevels) > 0 {
-		return
-	}
-
-	log.SetOutput(os.Stdout)
-	log.Println(a...)
-	log.SetOutput(logFile)
-	log.Println(a...)
-}
-
-// LogfToAll logs the given formatted parameters to both the screen and the file
-func (l *Logger) LogfToAll(str string, a ...interface{}) {
-
-	if logLevel == LogLevelNone {
-		return
-	}
-
-	if _, allowed := l.AllowedLogLevels[logLevel]; !allowed && len(l.AllowedLogLevels) > 0 {
-		return
-	}
-
-	log.SetOutput(os.Stdout)
-	log.Printf(str, a...)
-	log.SetOutput(logFile)
-	log.Printf(str, a...)
-}
-
-// LogFatalToScreen logs the given parameters to the screen with a fatal
-func LogFatalToScreen(a ...interface{}) {
-	log.SetOutput(os.Stdout)
-	log.Fatal(a...)
-}
-
-// LogFatalToFile logs the given parameters to the file with a fatal
-func LogFatalToFile(a ...interface{}) {
-	log.SetOutput(logFile)
-	log.Fatal(a...)
-}
-
-// DumpToFile spew dumps the parameters to the file
-func (l *Logger) DumpToFile(a ...interface{}) {
-
-	if logLevel == LogLevelNone {
-		return
-	}
-
-	if _, allowed := l.AllowedLogLevels[logLevel]; !allowed && len(l.AllowedLogLevels) > 0 {
-		return
-	}
-
-	spew.Fdump(logFile, a...)
-}
-
-// LogFile returns the log file instance
-func LogFile() *os.File {
-	return logFile
+	zLogger.LogContent = &bytes.Buffer{}
+	zerolog.SetGlobalLevel(zLevel)
+	multiWriter := zerolog.MultiLevelWriter(zLogger.LogContent, zerolog.ConsoleWriter{Out: os.Stdout})
+	zlog.Logger = zerolog.New(multiWriter).With().Timestamp().Logger()
+	zLogger.LoggingServer = NewLoggerClient()
+	zLogger.LogMetaData = logMetaData
+	return zLogger, nil
 }

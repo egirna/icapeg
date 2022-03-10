@@ -2,11 +2,12 @@ package readValues
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
 	"log"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/spf13/viper"
 )
 
 // ReadValuesInt is used to get the int value of from toml or from env vars

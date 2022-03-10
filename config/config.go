@@ -2,17 +2,20 @@ package config
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
 	"icapeg/readValues"
 	"os"
 	"strings"
+
+	"github.com/spf13/viper"
 )
 
 // AppConfig represents the app configuration
 type AppConfig struct {
-	Port        int
-	MaxFileSize int
-	LogLevel    string
+	Port                 int
+	LogLevel             string
+	LoggingServerURL     string
+	LoggingFlushDuration float64
+	WriteLogsToConsole   bool
 	//RespScannerVendor       string
 	//ReqScannerVendor        string
 	RespScannerVendorShadow string
@@ -37,11 +40,10 @@ func Init() {
 		fmt.Println("app section doesn't exist in config file")
 	}
 	appCfg = AppConfig{
-		Port:        readValues.ReadValuesInt("app.port"),
-		MaxFileSize: readValues.ReadValuesInt("app.max_filesize"),
-		LogLevel:    readValues.ReadValuesString("app.log_level"),
-		//RespScannerVendor:       strings.ToLower(readValues.ReadValuesString("app.resp_scanner_vendor")),
-		//ReqScannerVendor:        strings.ToLower(readValues.ReadValuesString("app.req_scanner_vendor")),
+		Port:                    readValues.ReadValuesInt("app.port"),
+		LogLevel:                readValues.ReadValuesString("app.log_level"),
+		LoggingServerURL:        readValues.ReadValuesString("app.log_service_url"),
+		WriteLogsToConsole:      readValues.ReadValuesBool("app.write_logs_to_console"),
 		RespScannerVendorShadow: strings.ToLower(readValues.ReadValuesString("app.resp_scanner_vendor_shadow")),
 		ReqScannerVendorShadow:  strings.ToLower(readValues.ReadValuesString("app.req_scanner_vendor_shadow")),
 		BypassExtensions:        readValues.ReadValuesSlice("app.bypass_extensions"),
@@ -51,6 +53,12 @@ func Init() {
 		PropagateError:          readValues.ReadValuesBool("app.propagate_error"),
 		VerifyServerCert:        readValues.ReadValuesBool("app.verify_server_cert"),
 		services:                readValues.ReadValuesSlice("app.services"),
+	}
+	for i := 0; i < len(appCfg.services); i++ {
+		if readValues.ReadValuesInt(appCfg.services[i]+".max_filesize") < 0 {
+			fmt.Println("max_filesize value in config.toml file is not valid")
+			os.Exit(1)
+		}
 	}
 	//this loop to make sure that all services in the array of services has sections in the config file and from request mode and response mode
 	//there is one at least from them are enabled in every service
@@ -70,9 +78,10 @@ func Init() {
 // InitTestConfig initializes the app with the test config file (for integration test)
 func InitTestConfig() {
 	appCfg = AppConfig{
-		Port:        readValues.ReadValuesInt("app.port"),
-		MaxFileSize: readValues.ReadValuesInt("app.max_filesize"),
-		LogLevel:    readValues.ReadValuesString("app.log_level"),
+		Port:                 readValues.ReadValuesInt("app.port"),
+		LogLevel:             readValues.ReadValuesString("app.log_level"),
+		LoggingServerURL:     readValues.ReadValuesString("app.log_service_url"),
+		LoggingFlushDuration: float64(readValues.ReadValuesInt("app.log_flush_duration")),
 		//RespScannerVendor:       strings.ToLower(readValues.ReadValuesString("app.resp_scanner_vendor")),
 		//ReqScannerVendor:        strings.ToLower(readValues.ReadValuesString("app.req_scanner_vendor")),
 		RespScannerVendorShadow: strings.ToLower(readValues.ReadValuesString("app.resp_scanner_vendor_shadow")),

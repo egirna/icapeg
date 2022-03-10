@@ -3,19 +3,24 @@ package api
 import (
 	"encoding/json"
 	"fmt"
-	"icapeg/dtos"
-	"icapeg/utils"
 	"net/http"
 	"strconv"
+
+	"icapeg/dtos"
+	"icapeg/logger"
+	"icapeg/utils"
+
+	zLog "github.com/rs/zerolog/log"
 )
 
-// ErrorPageHanlder is the http handler for the error page
-func ErrorPageHanlder(w http.ResponseWriter, r *http.Request) {
+// ErrorPageHandler is the http handler for the error page
+func ErrorPageHandler(w http.ResponseWriter, r *http.Request, logger *logger.ZLogger) {
 
 	data := dtos.TemplateData{}
 
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		errorLogger.LogToFile("Failed to decode template data for error page handler: ", err.Error())
+
+		zLog.Logger.Error().Msgf("failed to decode template data for error page handler: %s", err.Error())
 		fmt.Fprint(w, "SOMETHING WENT WRONG")
 		return
 	}
@@ -29,3 +34,13 @@ func ErrorPageHanlder(w http.ResponseWriter, r *http.Request) {
 	w.Write(htmlBuf.Bytes())
 
 }
+
+type (
+	errorPage struct {
+		Reason                    string `json:"reason"`
+		XAdaptationFileId         string `json:"x-adaptation-file-id"`
+		XSdkEngineVersion         string `json:"x-sdk-engine-version"`
+		RequestedURL              string `json:"requested_url"`
+		XGlasswallCloudApiVersion string `json:"x-glasswall-cloud-api-version"`
+	}
+)

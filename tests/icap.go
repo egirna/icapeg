@@ -71,7 +71,7 @@ func remoteICAPMockRespmod(w icap.ResponseWriter, req *icap.Request) {
 
 		defer req.Response.Body.Close()
 
-		if val, exist := req.Header["Allow"]; !exist || (len(val) > 0 && val[0] != utils.NoModificationStatusCodeStr) {
+		if val, exist := req.Header["Allow"]; !exist || (len(val) > 0 && val[0] != strconv.Itoa(utils.NoModificationStatusCodeStr)) {
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
@@ -146,7 +146,7 @@ func remoteICAPMockReqmod(w icap.ResponseWriter, req *icap.Request) {
 		remoteICAPMockOptions(w, req, utils.ICAPModeReq)
 	case utils.ICAPModeReq:
 
-		if val, exist := req.Header["Allow"]; !exist || (len(val) > 0 && val[0] != utils.NoModificationStatusCodeStr) {
+		if val, exist := req.Header["Allow"]; !exist || (len(val) > 0 && val[0] != strconv.Itoa(utils.NoModificationStatusCodeStr)) {
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}

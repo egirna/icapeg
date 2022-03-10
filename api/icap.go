@@ -2,7 +2,18 @@ package api
 
 import (
 	"bytes"
+	"compress/gzip"
 	"fmt"
+	"html/template"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"net/textproto"
+	"strconv"
+	"strings"
+	"time"
+
+	"icapeg/api/ContentTypes"
 	"icapeg/config"
 	"icapeg/dtos"
 	"icapeg/icap"
@@ -10,21 +21,12 @@ import (
 	"icapeg/readValues"
 	"icapeg/service"
 	"icapeg/utils"
-	"io"
-	"io/ioutil"
-	"net/http"
-	"strconv"
-	"strings"
+
+	zLog "github.com/rs/zerolog/log"
 )
 
-var (
-	infoLogger  = logger.NewLogger(logger.LogLevelInfo, logger.LogLevelDebug, logger.LogLevelError)
-	debugLogger = logger.NewLogger(logger.LogLevelDebug)
-	errorLogger = logger.NewLogger(logger.LogLevelError, logger.LogLevelDebug)
-)
-
-//isServiceExists is a func which get the array of service which is the config file
-//and return true if the service which included in the request exists, rather than that it returns false
+// isServiceExists is a func which get the array of service which is the config file
+// and return true if the service which included in the request exists, rather than that it returns false
 func isServiceExists(path string) bool {
 	services := readValues.ReadValuesSlice("app.services")
 	for i := 0; i < len(services); i++ {
@@ -35,77 +37,141 @@ func isServiceExists(path string) bool {
 	return false
 }
 
+//adding headers to the logs
+func addHeadersToLogs(headers textproto.MIMEHeader, elapsed time.Duration) {
+	for key, element := range headers {
+		res := key + " : "
+		for i := 0; i < len(element); i++ {
+			res += element[i]
+			if i != len(element)-1 {
+				res += ", "
+			}
+		}
+		zLog.Debug().Dur("duration", elapsed).Str("value", "ICAP request header").
+			Msgf(res)
+	}
+}
+
+func getMethodName(methodName string) string {
+	if methodName == "REQMOD" {
+		methodName = "req_mode"
+	} else if methodName == "RESPMOD" {
+		methodName = "resp_mode"
+	}
+	return methodName
+}
+
+func is204Allowed(headers textproto.MIMEHeader) bool {
+	Is204Allowed := false
+	if _, exist := headers["Allow"]; exist &&
+		headers.Get("Allow") == strconv.Itoa(utils.NoModificationStatusCodeStr) {
+		Is204Allowed = true
+	}
+	return Is204Allowed
+}
+
+func getVendorName(serviceName string) string {
+	vendor := serviceName + ".vendor"
+	vendor = readValues.ReadValuesString(vendor)
+	return vendor
+}
+
+func getEnabledMethods(serviceName string) string {
+	var allMethods []string
+	if readValues.ReadValuesBool(serviceName + ".resp_mode") {
+		allMethods = append(allMethods, "RESPMOD")
+	}
+	if readValues.ReadValuesBool(serviceName + ".req_mode") {
+		allMethods = append(allMethods, "REQMOD")
+	}
+	if len(allMethods) == 1 {
+		return allMethods[0]
+	}
+	return allMethods[0] + ", " + allMethods[1]
+}
+
 // ToICAPEGServe is the ICAP Request Handler for all modes and services:
-func ToICAPEGServe(w icap.ResponseWriter, req *icap.Request) {
-	//checking if the service doesn't exist in toml file
-	//if it does not exist, the response will be 404 ICAP Service Not Found
+func ToICAPEGServe(w icap.ResponseWriter, req *icap.Request, zlogger *logger.ZLogger) {
+
+	// setting up logging for each request
+	elapsed := time.Since(zlogger.LogStartTime)
+
+	//adding headers to the log
+	addHeadersToLogs(req.Header, elapsed)
+
+	// checking if the service doesn't exist in toml file
+	// if it does not exist, the response will be 404 ICAP Service Not Found
 	serviceName := req.URL.Path[1:len(req.URL.Path)]
 	if !isServiceExists(serviceName) {
 		w.WriteHeader(http.StatusNotFound, nil, false)
 		return
 	}
 
-	//this variable is used to check if the link(route) exists
-	fullLink := readValues.ReadValuesString(serviceName+".base_url") +
-		readValues.ReadValuesString(serviceName+".scan_endpoint")
-	//making http request to check if it exists
-	resp, err := http.Get(fullLink)
-	if err != nil {
-		print(err.Error())
-	} else {
-		if resp.StatusCode == 404 {
-			w.WriteHeader(http.StatusNotFound, nil, false)
-			return
-		}
-	}
-	//checking if request method is allowed or not
-	methodName := req.Method
-	if methodName == "REQMOD" {
-		methodName = "req_mode"
-	} else if methodName == "RESPMOD" {
-		methodName = "resp_mode"
-	}
+	serviceMAxFileSize := readValues.ReadValuesInt(serviceName + ".max_filesize")
+
+	// checking if request method is allowed or not
+	methodName := getMethodName(req.Method)
 	if methodName != "OPTIONS" {
 		isMethodEnabled := readValues.ReadValuesBool(serviceName + "." + methodName)
 		if !isMethodEnabled {
+			zLog.Debug().Dur("duration", elapsed).Str("value", methodName+" is not enabled").
+				Msgf("this_method_is_not_enabled_in_GO_ICAP_configuration")
 			w.WriteHeader(http.StatusMethodNotAllowed, nil, false)
 			return
 		}
 	}
-	vendor := serviceName + ".vendor"
-	vendor = readValues.ReadValuesString(vendor)
+
+	vendor := getVendorName(serviceName)
+
 	h := w.Header()
-	h.Set("ISTag", utils.ISTag)
-	h.Set("Service", "Egirna ICAP-EG")
-	infoLogger.LogfToFile("Request received---> METHOD:%s URL:%s\n", req.Method, req.RawURL)
-	//println("Request received---> METHOD:%s URL:%s\n", req.Method, req.RawURL)
+	h.Set("ISTag", readValues.ReadValuesString(serviceName+".service_tag"))
+	h.Set("Service", readValues.ReadValuesString(serviceName+".service_caption"))
+	zLog.Info().Dur("duration", elapsed).Str("value", fmt.Sprintf("with method:%s url:%s", req.Method, req.RawURL)).Msgf("request_received_on_icap")
+
 	appCfg := config.App()
+
+	Is204Allowed := is204Allowed(req.Header)
+
+	isShadowServiceEnabled := readValues.ReadValuesBool(serviceName + ".shadow_service")
+
+	if isShadowServiceEnabled {
+		zLog.Debug().Dur("duration", elapsed).Str("value", "processing not required for this request").
+			Msgf("shadow_service_is_enabled")
+		if Is204Allowed { // following RFC3507, if the request has Allow: 204 header, it is to be checked and if it doesn't exists, return the request as it is to the ICAP client, https://tools.ietf.org/html/rfc3507#section-4.6
+			elapsed = time.Since(zlogger.LogStartTime)
+			zLog.Debug().Dur("duration", elapsed).Str("value", "the file won't be modified").
+				Msgf("request_received_on_icap_with_header_204")
+			w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
+		} else {
+			if req.Method == "REQMOD" {
+				w.WriteHeader(utils.OkStatusCodeStr, req.Request, true)
+				tempBody, _ := ioutil.ReadAll(req.Request.Body)
+				w.Write(tempBody)
+				req.Request.Body = io.NopCloser(bytes.NewBuffer(tempBody))
+			} else if req.Method == "RESPMOD" {
+				w.WriteHeader(utils.OkStatusCodeStr, req.Response, true)
+				tempBody, _ := ioutil.ReadAll(req.Response.Body)
+				w.Write(tempBody)
+				req.Response.Body = io.NopCloser(bytes.NewBuffer(tempBody))
+			}
+		}
+	}
+
 	switch req.Method {
 	case utils.ICAPModeOptions:
 
 		/* If any remote icap is enabled, the work flow is controlled by the remote icap */
 		if strings.HasPrefix(vendor, utils.ICAPPrefix) {
-			doRemoteOPTIONS(req, w, vendor, appCfg.RespScannerVendorShadow, utils.ICAPModeResp)
+			doRemoteOPTIONS(req, w, vendor, appCfg.RespScannerVendorShadow, utils.ICAPModeResp, zlogger)
 			return
 		} else if strings.HasPrefix(appCfg.RespScannerVendorShadow, utils.ICAPPrefix) { // if the shadow wants to run independently
 			siSvc := service.GetICAPService(appCfg.RespScannerVendorShadow)
 			siSvc.SetHeader(req.Header)
 			updateEmptyOptionsEndpoint(siSvc, utils.ICAPModeResp)
-			go doShadowOPTIONS(siSvc)
+			go doShadowOPTIONS(siSvc, zlogger)
 		}
-		//getting Methods which enabled in the service
-		var allMethods []string
-		if readValues.ReadValuesBool(serviceName + ".resp_mode") {
-			allMethods = append(allMethods, "RESPMOD")
-		}
-		if readValues.ReadValuesBool(serviceName + ".req_mode") {
-			allMethods = append(allMethods, "REQMOD")
-		}
-		if len(allMethods) == 1 {
-			h.Set("Methods", allMethods[0])
-		} else {
-			h.Set("Methods", allMethods[0]+", "+allMethods[1])
-		}
+		// getting Methods which enabled in the service
+		h.Set("Methods", getEnabledMethods(serviceName))
 
 		h.Set("Allow", "204")
 		// Add preview if preview_enabled is true in config
@@ -121,73 +187,118 @@ func ToICAPEGServe(w icap.ResponseWriter, req *icap.Request) {
 
 	case utils.ICAPModeResp:
 		defer req.Response.Body.Close()
-		//misunderstanding of RFC, to be fixed later
-		//if val, exist := req.Header["Allow"]; !exist || (len(val) > 0 && val[0] != utils.NoModificationStatusCodeStr) { // following RFC3507, if the request has Allow: 204 header, it is to be checked and if it doesn't exists, return the request as it is to the ICAP client, https://tools.ietf.org/html/rfc3507#section-4.6
+		if req.Request == nil {
+			req.Request = &http.Request{}
+		}
+		// misunderstanding of RFC, to be fixed later
+		// if val, exist := req.Header["Allow"]; !exist || (len(val) > 0 && val[0] != utils.NoModificationStatusCodeStr) { // following RFC3507, if the request has Allow: 204 header, it is to be checked and if it doesn't exists, return the request as it is to the ICAP client, https://tools.ietf.org/html/rfc3507#section-4.6
 		//	debugLogger.LogToFile("Processing not required for this request")
 		//	w.WriteHeader(http.StatusNoContent, nil, false)
 		//	return
-		//}
+		// }
 
-		//change body to service name
+		// change body to service name
 		/* If any remote icap is enabled, the work flow is controlled by the remote icap */
-		if strings.HasPrefix(vendor, utils.ICAPPrefix) {
+		/*if strings.HasPrefix(vendor, utils.ICAPPrefix) {
 			doRemoteRESPMOD(req, w, vendor, appCfg.RespScannerVendorShadow)
 			return
-		}
+		}*/
 
 		/* If the shadow icap wants to run independently */
-		if vendor == utils.NoVendor && strings.HasPrefix(appCfg.RespScannerVendorShadow, utils.ICAPPrefix) {
+		/*if vendor == utils.NoVendor && strings.HasPrefix(appCfg.RespScannerVendorShadow, utils.ICAPPrefix) {
 			siSvc := service.GetICAPService(appCfg.RespScannerVendorShadow)
 			siSvc.SetHeader(req.Header)
 			shadowHTTPResp := utils.GetHTTPResponseCopy(req.Response)
-			go doShadowRESPMOD(siSvc, *req.Request, shadowHTTPResp)
+			go doShadowRESPMOD(siSvc, *req.Request, shadowHTTPResp, zLog)
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
-		}
+		}*/
 
-		if vendor == utils.NoVendor && appCfg.RespScannerVendorShadow == utils.NoVendor { // if no scanner name provided, then bypass everything
-			debugLogger.LogToFile("No respmod scanner provided...bypassing everything")
-			w.WriteHeader(http.StatusNoContent, nil, false)
-			return
-		}
+		// if vendor == utils.NoVendor && appCfg.RespScannerVendorShadow == utils.NoVendor { // if no scanner name provided, then bypass everything
+		//	debugLogger.LogToFile("No respmod scanner provided...bypassing everything")
+		//	w.WriteHeader(http.StatusNoContent, nil, false)
+		//	return
+		// }
 
 		// getting the content type to determine if the response is for a file, and if so, if its allowed to be processed
 		// according to the configuration
-
+		if req.Request == nil {
+			req.Request = &http.Request{}
+		}
 		ct := utils.GetMimeExtension(req.Preview)
 		processExts := appCfg.ProcessExtensions
 		bypassExts := appCfg.BypassExtensions
 
 		if utils.InStringSlice(ct, bypassExts) { // if the extension is bypassable
-			debugLogger.LogToFile("Processing not required for file type-", ct)
-			debugLogger.LogToFile("Reason: Belongs bypassable extensions")
+			elapsed = time.Since(zlogger.LogStartTime)
+			zLog.Debug().Dur("duration", elapsed).Str("value", fmt.Sprintf("processing not required for file type- %s", ct)).Msgf("belongs_bypassable_extensions")
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
 
 		if utils.InStringSlice(utils.Any, bypassExts) && !utils.InStringSlice(ct, processExts) { // if extension does not belong to "All bypassable except the processable ones" group
-			debugLogger.LogToFile("Processing not required for file type-", ct)
-			debugLogger.LogToFile("Reason: Doesn't belong to processable extensions")
+			elapsed = time.Since(zlogger.LogStartTime)
+			zLog.Debug().Dur("duration", elapsed).Str("value", fmt.Sprintf("processing not required for file type- %s", ct)).Msgf("dont_belong_to_processable_extensions")
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
 
 		// copying the file to a buffer for scanner vendor processing as the file is allowed according the co figuration
-
 		buf := &bytes.Buffer{}
 
 		if _, err := io.Copy(buf, req.Response.Body); err != nil {
-			errorLogger.LogToFile("Failed to copy the response body to buffer: ", err.Error())
+			elapsed = time.Since(zlogger.LogStartTime)
+			zLog.Error().Dur("duration", elapsed).Err(err).Str("value", "Failed to copy the response body to buffer").Msgf("read_request_body_error")
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
-
-		if buf.Len() > appCfg.MaxFileSize {
-			debugLogger.LogToFile("File size too large")
-			w.WriteHeader(http.StatusNoContent, nil, false)
+		isGzip := false
+		if req.Response.Header.Get("Content-Encoding") == "gzip" {
+			isGzip = true
+			reader, _ := gzip.NewReader(buf)
+			// Empty byte slice.
+			var result []byte
+			result, err := ioutil.ReadAll(reader)
+			if err != nil {
+				elapsed = time.Since(zlogger.LogStartTime)
+				zLog.Error().Dur("duration", elapsed).Err(err).Str("value", "failed to decompress input file").Msgf("decompress_gz_file_failed")
+				w.WriteHeader(http.StatusBadRequest, nil, false)
+				return
+			}
+			buf = bytes.NewBuffer(result)
+		}
+		if serviceMAxFileSize != 0 && buf.Len() > serviceMAxFileSize {
+			elapsed = time.Since(zlogger.LogStartTime)
+			zLog.Debug().Dur("duration", elapsed).Str("value", fmt.Sprintf("file size exceeds max filesize limit %d", serviceMAxFileSize)).Msgf("large_file_size")
+			if readValues.ReadValuesBool(serviceName + ".return_original_if_max_file_size_exceeded") {
+				if Is204Allowed {
+					w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
+				} else {
+					req.Response.Body = io.NopCloser(buf)
+					w.WriteHeader(utils.OkStatusCodeStr, req.Response, true)
+					w.Write(buf.Bytes())
+				}
+			} else {
+				tmpl, _ := template.ParseFiles("service/glasswall/unprocessable-file.html")
+				htmlBuf := &bytes.Buffer{}
+				tmpl.Execute(htmlBuf, &errorPage{
+					Reason:       "The Max file size is exceeded",
+					RequestedURL: req.Request.RequestURI,
+				})
+				newResp := &http.Response{
+					StatusCode: http.StatusForbidden,
+					Status:     strconv.Itoa(http.StatusForbidden) + " " + http.StatusText(http.StatusForbidden),
+					Header: http.Header{
+						utils.ContentType:   []string{utils.HTMLContentType},
+						utils.ContentLength: []string{strconv.Itoa(htmlBuf.Len())},
+					},
+				}
+				w.WriteHeader(utils.OkStatusCodeStr, newResp, true)
+				w.Write(htmlBuf.Bytes())
+			}
 			return
 		}
-		// preparing the file meta informations
+		// preparing the file meta information
 		filename := utils.GetFileName(req.Request)
 		fileExt := utils.GetFileExtension(req.Request)
 		fmi := dtos.FileMetaInfo{
@@ -197,17 +308,17 @@ func ToICAPEGServe(w icap.ResponseWriter, req *icap.Request) {
 		}
 		/* If the shadow virus scanner wants to run independently */
 		if vendor == utils.NoVendor && appCfg.RespScannerVendorShadow != utils.NoVendor {
-			go doShadowScan(vendor, serviceName, filename, fmi, buf, "")
+			go doShadowScan(vendor, serviceName, filename, fmi, buf, "", zlogger)
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
 		// Gw rebuild service req api , resp ICAP client
 		if vendor == "glasswall" {
-
 			filename = "test"
-			resp, err := DoCDR(vendor, serviceName, buf, filename)
+			resp, statusCode, html, x_adaption_id, err := DoCDR(vendor, serviceName, buf, filename, req.Request.RequestURI, zlogger)
 			if err != nil {
-				fmt.Println(err)
+				zLog.Debug().Dur("duration", elapsed).Str("value", fmt.Sprintf("file wasn't processed")).
+					Msgf("forbidden")
 				newResp := &http.Response{
 					StatusCode: http.StatusForbidden,
 					Status:     http.StatusText(http.StatusForbidden),
@@ -218,14 +329,55 @@ func ToICAPEGServe(w icap.ResponseWriter, req *icap.Request) {
 				defer resp.Body.Close()
 				bodybyte, err := ioutil.ReadAll(resp.Body)
 				if err != nil {
-					fmt.Println(err)
+					elapsed = time.Since(zlogger.LogStartTime)
+					zLog.Error().Dur("duration", elapsed).Err(err).Str("value", "failed to read the response body from GW engine response").Msgf("read_response_body_from_glasswall_error")
+					w.WriteHeader(http.StatusInternalServerError, nil, false)
+					return
 				}
-
-				newResp := req.Response
-				newResp.Header.Set("Content-Length", strconv.Itoa(len(string(bodybyte))))
-				w.WriteHeader(http.StatusOK, newResp, true)
-				w.Write(bodybyte)
-
+				if isShadowServiceEnabled {
+					// add logs and reports here
+					return
+				} else {
+					if isGzip {
+						var newBuf bytes.Buffer
+						gz := gzip.NewWriter(&newBuf)
+						if _, err := gz.Write(bodybyte); err != nil {
+							elapsed = time.Since(zlogger.LogStartTime)
+							zLog.Error().Dur("duration", elapsed).Err(err).Str("value", "failed to decompress input file").Msgf("decompress_gz_file_failed")
+							w.WriteHeader(http.StatusInternalServerError, nil, false)
+							return
+						}
+						gz.Close()
+						bodybyte = newBuf.Bytes()
+					}
+					if html {
+						zLog.Error().Dur("duration", elapsed).Err(err).Str("value", "file wasn't processed because of cloud api failure").
+							Msgf("cloud_api_failure")
+						newResp := &http.Response{
+							StatusCode: http.StatusForbidden,
+							Status:     strconv.Itoa(http.StatusForbidden) + " " + http.StatusText(http.StatusForbidden),
+							Header: http.Header{
+								utils.ContentType:   []string{utils.HTMLContentType},
+								utils.ContentLength: []string{strconv.Itoa(len(string(bodybyte)))},
+							},
+						}
+						w.Header().Set("x-adaptation-file-id", x_adaption_id)
+						w.WriteHeader(utils.OkStatusCodeStr, newResp, true)
+						w.Write(bodybyte)
+						return
+					}
+					if statusCode == 204 && Is204Allowed {
+						w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
+						return
+					}
+					zLog.Info().Dur("duration", elapsed).Err(err).Str("value", "file was processed").
+						Msgf("file_processed_successfully")
+					newResp := req.Response
+					newResp.Header.Set(utils.ContentLength, strconv.Itoa(len(string(bodybyte))))
+					w.Header().Set("x-adaptation-file-id", x_adaption_id)
+					w.WriteHeader(utils.OkStatusCodeStr, newResp, true)
+					w.Write(bodybyte)
+				}
 			}
 			return
 
@@ -241,7 +393,7 @@ func ToICAPEGServe(w icap.ResponseWriter, req *icap.Request) {
 				StatusCode: http.StatusOK,
 				Status:     http.StatusText(http.StatusOK),
 				Header: http.Header{
-					"Content-Length": []string{strconv.Itoa(len(string(bodybyte)))},
+					utils.ContentLength: []string{strconv.Itoa(len(string(bodybyte)))},
 				},
 			}
 			w.WriteHeader(http.StatusOK, newResp, true)
@@ -250,10 +402,11 @@ func ToICAPEGServe(w icap.ResponseWriter, req *icap.Request) {
 			return
 
 		}
-		status, sampleInfo := doScan(vendor, serviceName, filename, fmi, buf, "") // scan the file for any anomalies
+		status, sampleInfo := doScan(vendor, serviceName, filename, fmi, buf, "", zlogger) // scan the file for any anomalies
 
 		if status == http.StatusOK && sampleInfo != nil {
-			infoLogger.LogfToFile("The file:%s is %s\n", filename, sampleInfo.SampleSeverity)
+			elapsed = time.Since(zlogger.LogStartTime)
+			zLog.Info().Dur("duration", elapsed).Str("value", fmt.Sprintf("The file:%s is %s", filename, sampleInfo.SampleSeverity)).Msgf("scanned_files_for_any_anomalies")
 			htmlBuf, newResp := utils.GetTemplateBufferAndResponse(utils.BadFileTemplate, &dtos.TemplateData{
 				FileName:     sampleInfo.FileName,
 				FileType:     sampleInfo.SampleType,
@@ -269,22 +422,31 @@ func ToICAPEGServe(w icap.ResponseWriter, req *icap.Request) {
 		}
 
 		if status == http.StatusNoContent {
-			infoLogger.LogfToFile("The file %s is good to go\n", filename)
+			elapsed = time.Since(zlogger.LogStartTime)
+			zLog.Info().Dur("duration", elapsed).Str("value", fmt.Sprintf("The file %s is good to go", filename)).Msgf("good_to_go")
 		}
 		w.WriteHeader(status, nil, false) // \
 
 	case utils.ICAPModeReq:
 		defer req.Request.Body.Close()
-		//misunderstanding of RFC, to be fixed later
-		//if val, exist := req.Header["Allow"]; !exist || (len(val) > 0 && val[0] != utils.NoModificationStatusCodeStr) { // following RFC3507, if the request has Allow: 204 header, it is to be checked and if it doesn't exists, return the request as it is to the ICAP client, https://tools.ietf.org/html/rfc3507#section-4.6
+		// misunderstanding of RFC, to be fixed later
+		// if val, exist := req.Header["Allow"]; !exist || (len(val) > 0 && val[0] != utils.NoModificationStatusCodeStr) { // following RFC3507, if the request has Allow: 204 header, it is to be checked and if it doesn't exists, return the request as it is to the ICAP client, https://tools.ietf.org/html/rfc3507#section-4.6
 		//	debugLogger.LogToFile("Processing not required for this request")
 		//	w.WriteHeader(http.StatusNoContent, nil, false)
 		//	return
-		//}
+		// }
+
+		// bypass CONNECT method scanning as a quick fix
+		if req.Request != nil {
+			if req.Request.Method == "CONNECT" {
+				w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
+				return
+			}
+		}
 
 		/* If any remote icap is enabled, the work flow is controlled by the remote icap */
 		if strings.HasPrefix(vendor, utils.ICAPPrefix) {
-			doRemoteRESPMOD(req, w, vendor, appCfg.RespScannerVendorShadow)
+			doRemoteRESPMOD(req, w, vendor, appCfg.RespScannerVendorShadow, zlogger)
 			return
 		}
 
@@ -293,13 +455,14 @@ func ToICAPEGServe(w icap.ResponseWriter, req *icap.Request) {
 			siSvc := service.GetICAPService(appCfg.RespScannerVendorShadow)
 			siSvc.SetHeader(req.Header)
 			shadowHTTPResp := utils.GetHTTPResponseCopy(req.Response)
-			go doShadowRESPMOD(siSvc, *req.Request, shadowHTTPResp)
+			go doShadowRESPMOD(siSvc, *req.Request, shadowHTTPResp, zlogger)
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
 
 		if vendor == utils.NoVendor && appCfg.RespScannerVendorShadow == utils.NoVendor { // if no scanner name provided, then bypass everything
-			debugLogger.LogToFile("No respmod scanner provided...bypassing everything")
+			elapsed = time.Since(zlogger.LogStartTime)
+			zLog.Debug().Dur("duration", elapsed).Str("value", "no respmod scanner provided...bypassing everything").Msgf("no_response_mode_scanner_provided")
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
@@ -313,33 +476,55 @@ func ToICAPEGServe(w icap.ResponseWriter, req *icap.Request) {
 		bypassExts := appCfg.BypassExtensions
 
 		if utils.InStringSlice(ct, bypassExts) { // if the extension is bypassable
-			debugLogger.LogToFile("Processing not required for file type-", ct)
-			debugLogger.LogToFile("Reason: Belongs bypassable extensions")
+			elapsed = time.Since(zlogger.LogStartTime)
+			zLog.Debug().Dur("duration", elapsed).Str("value", fmt.Sprintf("processing not required for file type- %s", ct)).Msgf("belongs_bypassable_extensions")
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
 		if utils.InStringSlice(utils.Any, bypassExts) && !utils.InStringSlice(ct, processExts) { // if extension does not belong to "All bypassable except the processable ones" group
-			debugLogger.LogToFile("Processing not required for file type-", ct)
-			debugLogger.LogToFile("Reason: Doesn't belong to processable extensions")
+			elapsed = time.Since(zlogger.LogStartTime)
+			zLog.Debug().Dur("duration", elapsed).Str("value", fmt.Sprintf("processing not required for file type- %s", ct)).Msgf("dont_belong_to_processable_extensions")
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
 
-		// copying the file to a buffer for scanner vendor processing as the file is allowed according the co figuration
+		// get an instance from the struct which fits with content-type in the request
+		reqContentType := ContentTypes.GetContentType(req.Request)
+		// getting the file from request and store it in buf as a type of bytes.Buffer
+		buf := reqContentType.GetFileFromRequest()
 
-		buf := &bytes.Buffer{}
-
-		if _, err := io.Copy(buf, req.Request.Body); err != nil {
-			errorLogger.LogToFile("Failed to copy the response body to buffer: ", err.Error())
-			w.WriteHeader(http.StatusNoContent, nil, false)
+		if serviceMAxFileSize != 0 && buf.Len() > serviceMAxFileSize {
+			elapsed = time.Since(zlogger.LogStartTime)
+			zLog.Debug().Dur("duration", elapsed).Str("value", fmt.Sprintf("file size exceeds max filesize limit %d", serviceMAxFileSize)).Msgf("large_file_size")
+			if readValues.ReadValuesBool(serviceName + ".return_original_if_max_file_size_exceeded") {
+				if Is204Allowed {
+					w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
+				} else {
+					req.Response.Body = io.NopCloser(buf)
+					w.WriteHeader(utils.OkStatusCodeStr, req.Request, true)
+					w.Write(buf.Bytes())
+				}
+			} else {
+				tmpl, _ := template.ParseFiles("service/glasswall/unprocessable-file.html")
+				htmlBuf := &bytes.Buffer{}
+				tmpl.Execute(htmlBuf, &errorPage{
+					Reason:       "The Max file size is exceeded",
+					RequestedURL: req.Request.RequestURI,
+				})
+				newResp := &http.Response{
+					StatusCode: http.StatusForbidden,
+					Status:     strconv.Itoa(http.StatusForbidden) + " " + http.StatusText(http.StatusForbidden),
+					Header: http.Header{
+						utils.ContentType:   []string{utils.HTMLContentType},
+						utils.ContentLength: []string{strconv.Itoa(htmlBuf.Len())},
+					},
+				}
+				w.WriteHeader(utils.OkStatusCodeStr, newResp, true)
+				w.Write(htmlBuf.Bytes())
+			}
 			return
 		}
-		if buf.Len() > appCfg.MaxFileSize {
-			debugLogger.LogToFile("File size too large")
-			w.WriteHeader(http.StatusNoContent, nil, false)
-			return
-		}
-		// preparing the file meta informations
+		// preparing the file meta information
 		filename := utils.GetFileName(req.Request)
 		fileExt := utils.GetFileExtension(req.Request)
 		fmi := dtos.FileMetaInfo{
@@ -349,18 +534,21 @@ func ToICAPEGServe(w icap.ResponseWriter, req *icap.Request) {
 		}
 		/* If the shadow virus scanner wants to run independently */
 		if vendor == utils.NoVendor && appCfg.RespScannerVendorShadow != utils.NoVendor {
-			go doShadowScan(vendor, serviceName, filename, fmi, buf, "")
+			go doShadowScan(vendor, serviceName, filename, fmi, buf, "", zlogger)
 			w.WriteHeader(http.StatusNoContent, nil, false)
 			return
 		}
-		//fmt.Println("I am here now")
 
 		// Gw rebuid servise req api , resp icap client
 		if vendor == "glasswall" {
-
+			if req.Request == nil {
+				req.Request = &http.Request{}
+			}
 			filename = "test"
-			resp, err := DoCDR(vendor, serviceName, buf, filename)
+			resp, _, _, x_adaption_id, err := DoCDR(vendor, serviceName, buf, filename, req.Request.RequestURI, zlogger)
 			if err != nil {
+				zLog.Error().Dur("duration", elapsed).Err(err).Str("value", "file wasn't processed").
+					Msgf("file_wasn't_processed")
 				fmt.Println(err)
 				newReq := &http.Request{}
 				w.WriteHeader(http.StatusForbidden, newReq, true)
@@ -370,17 +558,26 @@ func ToICAPEGServe(w icap.ResponseWriter, req *icap.Request) {
 				if err != nil {
 					fmt.Println(err)
 				}
-
-				newReq := req.Request
-				newReq.ContentLength = int64(len(string(bodyByte)))
-				newReq.Header.Set("Content-Length", strconv.Itoa(len(string(bodyByte))))
-				w.WriteHeader(http.StatusOK, newReq, true)
-				w.Write(bodyByte)
+				if isShadowServiceEnabled {
+					// add logs and reports here
+					return
+				} else {
+					newReq := req.Request
+					// adding the file after scanning in the request again
+					finalBody := reqContentType.BodyAfterScanning(bodyByte)
+					newReq.ContentLength = int64(len(finalBody))
+					newReq.Header.Set(utils.ContentLength, strconv.Itoa(len(finalBody)))
+					zLog.Info().Dur("duration", elapsed).Err(err).Str("value", "file was processed").
+						Msgf("file_processed_successfully")
+					w.Header().Set("x-adaptation-file-id", x_adaption_id)
+					w.WriteHeader(utils.OkStatusCodeStr, newReq, true)
+					w.Write([]byte(finalBody))
+				}
 			}
 			return
 
 		}
-		// echo servise
+		// echo service
 		if vendor == "echo" {
 			bodybyte, err := ioutil.ReadAll(buf)
 			if err != nil {
@@ -391,7 +588,7 @@ func ToICAPEGServe(w icap.ResponseWriter, req *icap.Request) {
 				StatusCode: http.StatusOK,
 				Status:     http.StatusText(http.StatusOK),
 				Header: http.Header{
-					"Content-Length": []string{strconv.Itoa(len(string(bodybyte)))},
+					utils.ContentLength: []string{strconv.Itoa(len(string(bodybyte)))},
 				},
 			}
 			w.WriteHeader(http.StatusOK, newResp, true)
@@ -400,10 +597,11 @@ func ToICAPEGServe(w icap.ResponseWriter, req *icap.Request) {
 			return
 
 		}
-		status, sampleInfo := doScan(vendor, serviceName, filename, fmi, buf, "") // scan the file for any anomalies
+		status, sampleInfo := doScan(vendor, serviceName, filename, fmi, buf, "", zlogger) // scan the file for any anomalies
 
 		if status == http.StatusOK && sampleInfo != nil {
-			infoLogger.LogfToFile("The file:%s is %s\n", filename, sampleInfo.SampleSeverity)
+			elapsed = time.Since(zlogger.LogStartTime)
+			zLog.Info().Dur("duration", elapsed).Str("value", fmt.Sprintf("The file:%s is %s", filename, sampleInfo.SampleSeverity)).Msgf("scanned_files_for_any_anomalies")
 			htmlBuf, newResp := utils.GetTemplateBufferAndResponse(utils.BadFileTemplate, &dtos.TemplateData{
 				FileName:     sampleInfo.FileName,
 				FileType:     sampleInfo.SampleType,
@@ -419,18 +617,18 @@ func ToICAPEGServe(w icap.ResponseWriter, req *icap.Request) {
 		}
 
 		if status == http.StatusNoContent {
-			infoLogger.LogfToFile("The file %s is good to go\n", filename)
+			elapsed = time.Since(zlogger.LogStartTime)
+			zLog.Info().Dur("duration", elapsed).Str("value", fmt.Sprintf("The file %s is good to go", filename)).Msgf("good_to_go")
 		}
 		w.WriteHeader(status, nil, false)
 
 	case "ERRECHO":
-		fmt.Println("ERRECHO")
 		w.WriteHeader(http.StatusBadRequest, nil, false)
-		debugLogger.LogToFile("Malformed request")
+		elapsed = time.Since(zlogger.LogStartTime)
+		zLog.Debug().Dur("duration", elapsed).Str("value", "Malformed request").Msgf("request_received_malformed")
 	default:
-		fmt.Println("default")
-
 		w.WriteHeader(http.StatusMethodNotAllowed, nil, false)
-		debugLogger.LogfToFile("Invalid request method %s- respmod\n", req.Method)
+		elapsed = time.Since(zlogger.LogStartTime)
+		zLog.Debug().Dur("duration", elapsed).Str("value", fmt.Sprintf("Invalid request method %s- respmod", req.Method)).Msgf("invalid_request_method")
 	}
 }
