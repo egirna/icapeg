@@ -358,7 +358,7 @@ func (g *Glasswall) SendFileApi(f *bytes.Buffer, filename string, reqURL string)
 				resp.Body = io.NopCloser(f)
 				return resp, utils.NoModificationStatusCodeStr, false, resp.Header.Get("x-adaptation-file-id"), err
 			}
-			resp.Body = io.NopCloser(getErrorPage("service/glasswall/unprocessable-file.html",
+			resp.Body = io.NopCloser(getErrorPage("service/unprocessable-file.html",
 				&errorPage{
 					XAdaptationFileId:         resp.Header.Get("x-adaptation-file-id"),
 					XSdkEngineVersion:         resp.Header.Get("x-sdk-engine-version"),
@@ -373,7 +373,7 @@ func (g *Glasswall) SendFileApi(f *bytes.Buffer, filename string, reqURL string)
 		resp.Body = io.NopCloser(f)
 		return resp, utils.NoModificationStatusCodeStr, false, resp.Header.Get("x-adaptation-file-id"), err
 	}
-	resp.Body = io.NopCloser(getErrorPage("service/glasswall/unprocessable-file.html",
+	resp.Body = io.NopCloser(getErrorPage("service/unprocessable-file.html",
 		&errorPage{
 			Reason:                    "File can't be processed",
 			XAdaptationFileId:         resp.Header.Get("x-adaptation-file-id"),
