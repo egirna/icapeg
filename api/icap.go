@@ -90,6 +90,58 @@ func getEnabledMethods(serviceName string) string {
 	return allMethods[0] + ", " + allMethods[1]
 }
 
+func shadowService(elapsed time.Duration, Is204Allowed bool, req *icap.Request,
+	w icap.ResponseWriter, zlogger *logger.ZLogger) {
+	zLog.Debug().Dur("duration", elapsed).Str("value", "processing not required for this request").
+		Msgf("shadow_service_is_enabled")
+	if Is204Allowed { // following RFC3507, if the request has Allow: 204 header, it is to be checked and if it doesn't exists, return the request as it is to the ICAP client, https://tools.ietf.org/html/rfc3507#section-4.6
+		elapsed = time.Since(zlogger.LogStartTime)
+		zLog.Debug().Dur("duration", elapsed).Str("value", "the file won't be modified").
+			Msgf("request_received_on_icap_with_header_204")
+		w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
+	} else {
+		if req.Method == "REQMOD" {
+			w.WriteHeader(utils.OkStatusCodeStr, req.Request, true)
+			tempBody, _ := ioutil.ReadAll(req.Request.Body)
+			w.Write(tempBody)
+			req.Request.Body = io.NopCloser(bytes.NewBuffer(tempBody))
+		} else if req.Method == "RESPMOD" {
+			w.WriteHeader(utils.OkStatusCodeStr, req.Response, true)
+			tempBody, _ := ioutil.ReadAll(req.Response.Body)
+			w.Write(tempBody)
+			req.Response.Body = io.NopCloser(bytes.NewBuffer(tempBody))
+		}
+	}
+}
+
+/* If any remote icap is enabled, the work flow is controlled by the remote icap */
+func optionsModeRemote(vendor string, req *icap.Request, w icap.ResponseWriter, appCfg *config.AppConfig, zlogger *logger.ZLogger) {
+	if strings.HasPrefix(vendor, utils.ICAPPrefix) {
+		doRemoteOPTIONS(req, w, vendor, appCfg.RespScannerVendorShadow, utils.ICAPModeResp, zlogger)
+		return
+	} else if strings.HasPrefix(appCfg.RespScannerVendorShadow, utils.ICAPPrefix) { // if the shadow wants to run independently
+		siSvc := service.GetICAPService(appCfg.RespScannerVendorShadow)
+		siSvc.SetHeader(req.Header)
+		updateEmptyOptionsEndpoint(siSvc, utils.ICAPModeResp)
+		go doShadowOPTIONS(siSvc, zlogger)
+	}
+}
+
+func optionsMode(headers http.Header, serviceName string, appCfg *config.AppConfig, vendor string, req *icap.Request,
+	w icap.ResponseWriter, zlogger *logger.ZLogger) {
+	optionsModeRemote(vendor, req, w, appCfg, zlogger)
+	headers.Set("Methods", getEnabledMethods(serviceName))
+	headers.Set("Allow", "204")
+	// Add preview if preview_enabled is true in config
+	if appCfg.PreviewEnabled == true {
+		if pb, _ := strconv.Atoi(appCfg.PreviewBytes); pb >= 0 {
+			headers.Set("Preview", appCfg.PreviewBytes)
+		}
+	}
+	headers.Set("Transfer-Preview", utils.Any)
+	w.WriteHeader(http.StatusOK, nil, false)
+}
+
 // ToICAPEGServe is the ICAP Request Handler for all modes and services:
 func ToICAPEGServe(w icap.ResponseWriter, req *icap.Request, zlogger *logger.ZLogger) {
 
@@ -135,61 +187,15 @@ func ToICAPEGServe(w icap.ResponseWriter, req *icap.Request, zlogger *logger.ZLo
 	isShadowServiceEnabled := readValues.ReadValuesBool(serviceName + ".shadow_service")
 
 	if isShadowServiceEnabled {
-		zLog.Debug().Dur("duration", elapsed).Str("value", "processing not required for this request").
-			Msgf("shadow_service_is_enabled")
-		if Is204Allowed { // following RFC3507, if the request has Allow: 204 header, it is to be checked and if it doesn't exists, return the request as it is to the ICAP client, https://tools.ietf.org/html/rfc3507#section-4.6
-			elapsed = time.Since(zlogger.LogStartTime)
-			zLog.Debug().Dur("duration", elapsed).Str("value", "the file won't be modified").
-				Msgf("request_received_on_icap_with_header_204")
-			w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
-		} else {
-			if req.Method == "REQMOD" {
-				w.WriteHeader(utils.OkStatusCodeStr, req.Request, true)
-				tempBody, _ := ioutil.ReadAll(req.Request.Body)
-				w.Write(tempBody)
-				req.Request.Body = io.NopCloser(bytes.NewBuffer(tempBody))
-			} else if req.Method == "RESPMOD" {
-				w.WriteHeader(utils.OkStatusCodeStr, req.Response, true)
-				tempBody, _ := ioutil.ReadAll(req.Response.Body)
-				w.Write(tempBody)
-				req.Response.Body = io.NopCloser(bytes.NewBuffer(tempBody))
-			}
-		}
+		shadowService(elapsed, Is204Allowed, req, w, zlogger)
 	}
 
 	switch req.Method {
 	case utils.ICAPModeOptions:
-
-		/* If any remote icap is enabled, the work flow is controlled by the remote icap */
-		if strings.HasPrefix(vendor, utils.ICAPPrefix) {
-			doRemoteOPTIONS(req, w, vendor, appCfg.RespScannerVendorShadow, utils.ICAPModeResp, zlogger)
-			return
-		} else if strings.HasPrefix(appCfg.RespScannerVendorShadow, utils.ICAPPrefix) { // if the shadow wants to run independently
-			siSvc := service.GetICAPService(appCfg.RespScannerVendorShadow)
-			siSvc.SetHeader(req.Header)
-			updateEmptyOptionsEndpoint(siSvc, utils.ICAPModeResp)
-			go doShadowOPTIONS(siSvc, zlogger)
-		}
-		// getting Methods which enabled in the service
-		h.Set("Methods", getEnabledMethods(serviceName))
-
-		h.Set("Allow", "204")
-		// Add preview if preview_enabled is true in config
-		if appCfg.PreviewEnabled == true {
-			if pb, _ := strconv.Atoi(appCfg.PreviewBytes); pb >= 0 {
-				h.Set("Preview", appCfg.PreviewBytes)
-			}
-		}
-
-		h.Set("Transfer-Preview", utils.Any)
-
-		w.WriteHeader(http.StatusOK, nil, false)
+		optionsMode(h, serviceName, appCfg, vendor, req, w, zlogger)
 
 	case utils.ICAPModeResp:
 		defer req.Response.Body.Close()
-		if req.Request == nil {
-			req.Request = &http.Request{}
-		}
 		// misunderstanding of RFC, to be fixed later
 		// if val, exist := req.Header["Allow"]; !exist || (len(val) > 0 && val[0] != utils.NoModificationStatusCodeStr) { // following RFC3507, if the request has Allow: 204 header, it is to be checked and if it doesn't exists, return the request as it is to the ICAP client, https://tools.ietf.org/html/rfc3507#section-4.6
 		//	debugLogger.LogToFile("Processing not required for this request")
