@@ -129,7 +129,7 @@ func optionsModeRemote(vendor string, req *icap.Request, w icap.ResponseWriter, 
 
 func optionsMode(headers http.Header, serviceName string, appCfg *config.AppConfig, vendor string, req *icap.Request,
 	w icap.ResponseWriter, zlogger *logger.ZLogger) {
-	optionsModeRemote(vendor, req, w, appCfg, zlogger)
+	//optionsModeRemote(vendor, req, w, appCfg, zlogger)
 	headers.Set("Methods", getEnabledMethods(serviceName))
 	headers.Set("Allow", "204")
 	// Add preview if preview_enabled is true in config
@@ -220,11 +220,11 @@ func ToICAPEGServe(w icap.ResponseWriter, req *icap.Request, zlogger *logger.ZLo
 			return
 		}*/
 
-		// if vendor == utils.NoVendor && appCfg.RespScannerVendorShadow == utils.NoVendor { // if no scanner name provided, then bypass everything
-		//	debugLogger.LogToFile("No respmod scanner provided...bypassing everything")
-		//	w.WriteHeader(http.StatusNoContent, nil, false)
-		//	return
-		// }
+		/*if vendor == utils.NoVendor && appCfg.RespScannerVendorShadow == utils.NoVendor {  // if no scanner name provided, then bypass everything
+			debugLogger.LogToFile("No respmod scanner provided...bypassing everything")
+			w.WriteHeader(http.StatusNoContent, nil, false)
+			return
+		 }*/
 
 		// getting the content type to determine if the response is for a file, and if so, if its allowed to be processed
 		// according to the configuration
@@ -235,7 +235,7 @@ func ToICAPEGServe(w icap.ResponseWriter, req *icap.Request, zlogger *logger.ZLo
 		processExts := appCfg.ProcessExtensions
 		bypassExts := appCfg.BypassExtensions
 
-		if utils.InStringSlice(ct, bypassExts) { // if the extension is bypassable
+		if utils.InStringSlice(ct, bypassExts) {
 			elapsed = time.Since(zlogger.LogStartTime)
 			zLog.Debug().Dur("duration", elapsed).Str("value", fmt.Sprintf("processing not required for file type- %s", ct)).Msgf("belongs_bypassable_extensions")
 			w.WriteHeader(http.StatusNoContent, nil, false)
