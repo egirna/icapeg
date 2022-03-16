@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"fmt"
 	zLog "github.com/rs/zerolog/log"
 	"icapeg/config"
 	"icapeg/icap"
@@ -83,11 +84,31 @@ func getEnabledMethods(serviceName string) string {
 	return allMethods[0] + ", " + allMethods[1]
 }
 
+func isMethodAllowed(serviceName, methodName string, elapsed time.Duration) bool {
+	if methodName != "OPTIONS" {
+		isMethodEnabled := readValues.ReadValuesBool(serviceName + "." + methodName)
+		if !isMethodEnabled {
+			zLog.Debug().Dur("duration", elapsed).Str("value", methodName+" is not enabled").
+				Msgf("this_method_is_not_enabled_in_GO_ICAP_configuration")
+			return false
+		}
+	}
+	return true
+}
+
+func addingISTAGServiceHeaders(h http.Header, serviceName, methodName, rawUrl string, elapsed time.Duration) {
+	h.Set("ISTag", readValues.ReadValuesString(serviceName+".service_tag"))
+	h.Set("Service", readValues.ReadValuesString(serviceName+".service_caption"))
+	zLog.Info().Dur("duration", elapsed).Str("value", fmt.Sprintf("with method:%s url:%s", methodName, rawUrl)).
+		Msgf("request_received_on_icap")
+}
+
 func shadowService(elapsed time.Duration, Is204Allowed bool, req *icap.Request,
 	w icap.ResponseWriter, zlogger *logger.ZLogger) {
 	zLog.Debug().Dur("duration", elapsed).Str("value", "processing not required for this request").
 		Msgf("shadow_service_is_enabled")
 	if Is204Allowed { // following RFC3507, if the request has Allow: 204 header, it is to be checked and if it doesn't exists, return the request as it is to the ICAP client, https://tools.ietf.org/html/rfc3507#section-4.6
+		fmt.Println(Is204Allowed)
 		elapsed = time.Since(zlogger.LogStartTime)
 		zLog.Debug().Dur("duration", elapsed).Str("value", "the file won't be modified").
 			Msgf("request_received_on_icap_with_header_204")

@@ -45,22 +45,16 @@ func ToICAPEGServe(w icap.ResponseWriter, req *icap.Request, zlogger *logger.ZLo
 
 	// checking if request method is allowed or not
 	methodName := getMethodName(req.Method)
-	if methodName != "OPTIONS" {
-		isMethodEnabled := readValues.ReadValuesBool(serviceName + "." + methodName)
-		if !isMethodEnabled {
-			zLog.Debug().Dur("duration", elapsed).Str("value", methodName+" is not enabled").
-				Msgf("this_method_is_not_enabled_in_GO_ICAP_configuration")
-			w.WriteHeader(http.StatusMethodNotAllowed, nil, false)
-			return
-		}
+	if !isMethodAllowed(serviceName, methodName, elapsed) {
+		w.WriteHeader(http.StatusMethodNotAllowed, nil, false)
+		return
 	}
+	methodName = req.Method
 
 	vendor := getVendorName(serviceName)
 
 	h := w.Header()
-	h.Set("ISTag", readValues.ReadValuesString(serviceName+".service_tag"))
-	h.Set("Service", readValues.ReadValuesString(serviceName+".service_caption"))
-	zLog.Info().Dur("duration", elapsed).Str("value", fmt.Sprintf("with method:%s url:%s", req.Method, req.RawURL)).Msgf("request_received_on_icap")
+	addingISTAGServiceHeaders(h, serviceName, methodName, req.RawURL, elapsed)
 
 	appCfg := config.App()
 
@@ -68,8 +62,9 @@ func ToICAPEGServe(w icap.ResponseWriter, req *icap.Request, zlogger *logger.ZLo
 
 	isShadowServiceEnabled := readValues.ReadValuesBool(serviceName + ".shadow_service")
 
-	if isShadowServiceEnabled {
+	if isShadowServiceEnabled && methodName != "OPTIONS" {
 		shadowService(elapsed, Is204Allowed, req, w, zlogger)
+		return
 	}
 
 	switch req.Method {
