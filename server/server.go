@@ -2,7 +2,6 @@ package server
 
 import (
 	"fmt"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -30,11 +29,9 @@ func StartServer() error {
 		return fmt.Errorf("could not start logger service %w", err)
 	}
 
-	withHTTPLogger := logger.LoggingHandlerHTTPFactory(zLogger)
 	withICAPLogger := logger.LoggingHandlerICAPFactory(zLogger)
 
 	icap.Handle("/", withICAPLogger(api.ToICAPEGServe))
-	http.Handle("/", withHTTPLogger(api.ErrorPageHandler))
 	zlog.Debug().Msg("starting the ICAP server")
 
 	stop := make(chan os.Signal, 1)

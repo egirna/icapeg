@@ -8,14 +8,12 @@ import (
 	"icapeg/icap"
 	"icapeg/logger"
 	"icapeg/readValues"
-	"icapeg/service"
 	"icapeg/utils"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/textproto"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -108,7 +106,6 @@ func shadowService(elapsed time.Duration, Is204Allowed bool, req *icap.Request,
 	zLog.Debug().Dur("duration", elapsed).Str("value", "processing not required for this request").
 		Msgf("shadow_service_is_enabled")
 	if Is204Allowed { // following RFC3507, if the request has Allow: 204 header, it is to be checked and if it doesn't exists, return the request as it is to the ICAP client, https://tools.ietf.org/html/rfc3507#section-4.6
-		fmt.Println(Is204Allowed)
 		elapsed = time.Since(zlogger.LogStartTime)
 		zLog.Debug().Dur("duration", elapsed).Str("value", "the file won't be modified").
 			Msgf("request_received_on_icap_with_header_204")
@@ -125,19 +122,6 @@ func shadowService(elapsed time.Duration, Is204Allowed bool, req *icap.Request,
 			w.Write(tempBody)
 			req.Response.Body = io.NopCloser(bytes.NewBuffer(tempBody))
 		}
-	}
-}
-
-/* If any remote icap is enabled, the work flow is controlled by the remote icap */
-func optionsModeRemote(vendor string, req *icap.Request, w icap.ResponseWriter, appCfg *config.AppConfig, zlogger *logger.ZLogger) {
-	if strings.HasPrefix(vendor, utils.ICAPPrefix) {
-		doRemoteOPTIONS(req, w, vendor, appCfg.RespScannerVendorShadow, utils.ICAPModeResp, zlogger)
-		return
-	} else if strings.HasPrefix(appCfg.RespScannerVendorShadow, utils.ICAPPrefix) { // if the shadow wants to run independently
-		siSvc := service.GetICAPService(appCfg.RespScannerVendorShadow)
-		siSvc.SetHeader(req.Header)
-		updateEmptyOptionsEndpoint(siSvc, utils.ICAPModeResp)
-		go doShadowOPTIONS(siSvc, zlogger)
 	}
 }
 

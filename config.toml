@@ -31,8 +31,6 @@ log_flush_duration = 2
 port = 1344
 resp_scanner_vendor_shadow = "none"
 req_scanner_vendor_shadow = "none"
-bypass_extensions = []
-process_extensions = ["*"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
 preview_bytes = "" #byte
 preview_enabled = false # options send preview header or not
 propagate_error = true

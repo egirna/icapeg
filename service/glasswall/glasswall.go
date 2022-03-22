@@ -5,16 +5,14 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
-	"errors"
-	"fmt"
-	"html/template"
+	"icapeg/icap"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"strconv"
 	"time"
 
-	"icapeg/dtos"
 	"icapeg/logger"
 	"icapeg/readValues"
 	"icapeg/utils"
@@ -36,6 +34,16 @@ type Tokens struct {
 
 // Glasswall represents the information regarding the Glasswall service
 type Glasswall struct {
+	w                                 icap.ResponseWriter
+	req                               *http.Request
+	resp                              *http.Response
+	elapsed                           time.Duration
+	zlogger                           *logger.ZLogger
+	serviceName                       string
+	maxFileSize                       int
+	is204Allowed                      bool
+	shadowService                     bool
+	methodName                        string
 	BaseURL                           string
 	Timeout                           time.Duration
 	APIKey                            string
@@ -50,6 +58,7 @@ type Glasswall struct {
 	respSupported                     bool
 	reqSupported                      bool
 	policy                            string
+	returnOrigIfMaxSizeExc            bool
 	returnOrigIfUnprocessableFileType bool
 	returnOrigIf400                   bool
 	authID                            string
@@ -57,8 +66,18 @@ type Glasswall struct {
 }
 
 // NewGlasswallService returns a new populated instance of the Glasswall service
-func NewGlasswallService(serviceName string, logger *logger.ZLogger) *Glasswall {
+func NewGlasswallService(w icap.ResponseWriter, req *http.Request, resp *http.Response, elapsed time.Duration, Is204Allowed bool,
+	serviceName string, methodName string, logger *logger.ZLogger) *Glasswall {
 	gw := &Glasswall{
+		w:                                 w,
+		req:                               req,
+		resp:                              resp,
+		elapsed:                           elapsed,
+		serviceName:                       serviceName,
+		maxFileSize:                       readValues.ReadValuesInt(serviceName + ".max_filesize"),
+		is204Allowed:                      Is204Allowed,
+		shadowService:                     readValues.ReadValuesBool(serviceName + ".shadow_service"),
+		methodName:                        methodName,
 		BaseURL:                           readValues.ReadValuesString(serviceName + ".base_url"),
 		Timeout:                           readValues.ReadValuesDuration(serviceName+".timeout") * time.Second,
 		APIKey:                            readValues.ReadValuesString(serviceName + ".api_key"),
@@ -69,6 +88,7 @@ func NewGlasswallService(serviceName string, logger *logger.ZLogger) *Glasswall 
 		respSupported:                     readValues.ReadValuesBool(serviceName + ".resp_mode"),
 		reqSupported:                      readValues.ReadValuesBool(serviceName + ".req_mode"),
 		policy:                            readValues.ReadValuesString(serviceName + ".policy"),
+		returnOrigIfMaxSizeExc:            readValues.ReadValuesBool(serviceName + ".return_original_if_max_file_size_exceeded"),
 		returnOrigIfUnprocessableFileType: readValues.ReadValuesBool(serviceName + ".return_original_if_unprocessable_file_type"),
 		returnOrigIf400:                   readValues.ReadValuesBool(serviceName + ".return_original_if_400_response"),
 		logger:                            logger,
@@ -87,301 +107,6 @@ func NewGlasswallService(serviceName string, logger *logger.ZLogger) *Glasswall 
 		}
 	}
 	return gw
-}
-
-func (g *Glasswall) SubmitFile(f *bytes.Buffer, filename string) (*dtos.SubmitResponse, error) {
-
-	urlStr := g.BaseURL + g.ScanEndpoint
-
-	bodyBuf := &bytes.Buffer{}
-
-	bodyWriter := multipart.NewWriter(bodyBuf)
-
-	part, err := bodyWriter.CreateFormFile("file", filename)
-
-	if err != nil {
-		return nil, err
-	}
-
-	io.Copy(part, bytes.NewReader(f.Bytes()))
-	if err = bodyWriter.Close(); err != nil {
-		elapsed := time.Since(g.logger.LogStartTime)
-		zLog.Error().Dur("duration", elapsed).Err(err).Str("value", "failed to close writer").Msgf("cant_close_writer_while_submitting_files_gw")
-		return nil, err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, urlStr, bodyBuf)
-	if err != nil {
-		return nil, err
-	}
-
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: utils.InitSecure()},
-	}
-	client := &http.Client{Transport: tr}
-	ctx, cancel := context.WithTimeout(context.Background(), g.Timeout)
-	defer cancel()
-	req = req.WithContext(ctx)
-
-	req.Header.Add("Content-Type", bodyWriter.FormDataContentType())
-	if g.authID != "" {
-		req.Header.Add("authorization", g.authID)
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		elapsed := time.Since(g.logger.LogStartTime)
-		zLog.Error().Dur("duration", elapsed).Err(err).Str("value", "service: Glasswall: failed to do request").Msgf("gw_service_fail_to_serve")
-		return nil, err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		fmt.Println("resp")
-
-		bdy, _ := ioutil.ReadAll(resp.Body)
-		bdyStr := ""
-		if string(bdy) == "" {
-			bdyStr = http.StatusText(resp.StatusCode)
-		} else {
-			bdyStr = string(bdy)
-
-		}
-		fmt.Println(bdyStr)
-
-		return nil, errors.New(bdyStr)
-	}
-
-	scanResp := dtos.GlasswallScanFileResponse{}
-	if err := json.NewDecoder(resp.Body).Decode(&scanResp); err != nil {
-		//	stop until know the returned response
-
-		// return nil, err
-	}
-	fmt.Println("5")
-	scanResp.DataID = "15"
-	return toSubmitResponse(&scanResp), nil
-}
-
-// GetSampleFileInfo returns the submitted sample file's info
-func (g *Glasswall) GetSampleFileInfo(sampleID string, filemetas ...dtos.FileMetaInfo) (*dtos.SampleInfo, error) {
-
-	urlStr := g.BaseURL + fmt.Sprintf(g.ReportEndpoint+"/"+sampleID)
-	// urlStr := v.BaseURL + fmt.Sprintf(viper.GetString("glasswall.report_endpoint"), viper.GetString("glasswall.api_key"), sampleID)
-
-	req, err := http.NewRequest(http.MethodGet, urlStr, nil)
-
-	if err != nil {
-		return nil, err
-	}
-	if g.authID != "" {
-		req.Header.Add("authorization", g.authID)
-	}
-
-	client := http.Client{}
-	ctx, cancel := context.WithTimeout(context.Background(), g.Timeout)
-	defer cancel()
-	req = req.WithContext(ctx)
-
-	resp, err := client.Do(req)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		bdy, _ := ioutil.ReadAll(resp.Body)
-		bdyStr := ""
-		if string(bdy) == "" {
-			bdyStr = fmt.Sprintf("Status code received:%d with no body", resp.StatusCode)
-		} else {
-			bdyStr = string(bdy)
-		}
-		return nil, errors.New(bdyStr)
-	}
-
-	sampleResp := dtos.GlasswallReportResponse{}
-
-	if err := json.NewDecoder(resp.Body).Decode(&sampleResp); err != nil {
-		return nil, err
-	}
-
-	fm := dtos.FileMetaInfo{}
-
-	if len(filemetas) > 0 {
-		fm = filemetas[0]
-	}
-
-	return toSampleInfo(&sampleResp, fm, g.FailThreshold), nil
-
-}
-
-// GetSubmissionStatus returns the submission status of a submitted sample
-func (g *Glasswall) GetSubmissionStatus(submissionID string) (*dtos.SubmissionStatusResponse, error) {
-
-	urlStr := g.BaseURL + fmt.Sprintf(g.ReportEndpoint+"/"+submissionID)
-
-	req, err := http.NewRequest(http.MethodGet, urlStr, nil)
-
-	if err != nil {
-		return nil, err
-	}
-	if g.authID != "" {
-		req.Header.Add("authorization", g.authID)
-	}
-	client := http.Client{}
-	ctx, cancel := context.WithTimeout(context.Background(), g.Timeout)
-	defer cancel()
-	req = req.WithContext(ctx)
-
-	resp, err := client.Do(req)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		if resp.StatusCode == http.StatusNoContent {
-			return nil, errors.New("No content receive from Glasswall on status check, maybe request quota expired")
-		}
-		bdy, _ := ioutil.ReadAll(resp.Body)
-		return nil, errors.New(string(bdy))
-	}
-
-	sampleResp := dtos.GlasswallReportResponse{}
-
-	if err := json.NewDecoder(resp.Body).Decode(&sampleResp); err != nil {
-		return nil, err
-	}
-
-	return toSubmissionStatusResponse(&sampleResp), nil
-}
-
-// SubmitURL calls the submission api for Glasswall
-func (g *Glasswall) SubmitURL(fileURL, filename string) (*dtos.SubmitResponse, error) {
-	return nil, nil
-}
-
-// GetSampleURLInfo returns the submitted sample url's info
-func (g *Glasswall) GetSampleURLInfo(sampleID string, filemetas ...dtos.FileMetaInfo) (*dtos.SampleInfo, error) {
-	return nil, nil
-}
-
-// GetStatusCheckInterval returns the status_check_interval duration of the service
-func (g *Glasswall) GetStatusCheckInterval() time.Duration {
-	return g.statusCheckInterval
-}
-
-// GetStatusCheckTimeout returns the status_check_timeout duraion of the service
-func (g *Glasswall) GetStatusCheckTimeout() time.Duration {
-	return g.statusCheckTimeout
-}
-
-// GetBadFileStatus returns the bad_file_status slice of the service
-func (g *Glasswall) GetBadFileStatus() []string {
-	return g.badFileStatus
-}
-
-// GetOkFileStatus returns the ok_file_status slice of the service
-func (g *Glasswall) GetOkFileStatus() []string {
-	return g.okFileStatus
-}
-
-// StatusEndpointExists returns the status_endpoint_exists boolean value of the service
-func (g *Glasswall) StatusEndpointExists() bool {
-	return g.statusEndPointExists
-}
-
-// RespSupported returns the respSupported field of the service
-func (g *Glasswall) RespSupported() bool {
-	return g.respSupported
-}
-
-// ReqSupported returns the reqSupported field of the service
-func (g *Glasswall) ReqSupported() bool {
-	return g.reqSupported
-}
-
-// SendFileApi sends file to api GW rebuild services
-func (g *Glasswall) SendFileApi(f *bytes.Buffer, filename string, reqURL string) (*http.Response, int, bool, string, error) {
-
-	urlStr := g.BaseURL + g.ScanEndpoint
-
-	bodyBuf := &bytes.Buffer{}
-
-	bodyWriter := multipart.NewWriter(bodyBuf)
-
-	// adding policy in the request
-	bodyWriter.WriteField("contentManagementFlagJson", g.policy)
-
-	part, err := bodyWriter.CreateFormFile("file", filename)
-
-	if err != nil {
-		return nil, utils.BadRequestStatusCodeStr, false, "", err
-	}
-
-	io.Copy(part, bytes.NewReader(f.Bytes()))
-	if err := bodyWriter.Close(); err != nil {
-		elapsed := time.Since(g.logger.LogStartTime)
-		zLog.Error().Dur("duration", elapsed).Err(err).Str("value", "failed to close writer").Msgf("cant_close_writer_while_sending_api_files_gw")
-		return nil, utils.BadRequestStatusCodeStr, false, "", err
-	}
-
-	req, err := http.NewRequest(http.MethodPost, urlStr, bodyBuf)
-	if err != nil {
-		return nil, utils.BadRequestStatusCodeStr, false, "", err
-	}
-
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: utils.InitSecure()},
-	}
-	client := &http.Client{Transport: tr}
-	ctx, _ := context.WithTimeout(context.Background(), g.Timeout)
-
-	// defer cancel() commit cancel must be on goroutine
-	req = req.WithContext(ctx)
-
-	req.Header.Add("Content-Type", bodyWriter.FormDataContentType())
-	if g.authID != "" {
-		req.Header.Add("authorization", g.authID)
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		elapsed := time.Since(g.logger.LogStartTime)
-		zLog.Error().Dur("duration", elapsed).Err(err).Str("value", "service: Glasswall: failed to do request").Msgf("gw_service_fail_to_serve")
-		return nil, utils.BadRequestStatusCodeStr, false, "", err
-	}
-	IsUnprocessableFileType := g.IsUnprocessableFileType(resp, f)
-	if !IsUnprocessableFileType {
-		if resp.StatusCode == http.StatusBadRequest {
-			if g.returnOrigIf400 {
-				resp.Body = io.NopCloser(f)
-				return resp, utils.NoModificationStatusCodeStr, false, resp.Header.Get("x-adaptation-file-id"), err
-			}
-			resp.Body = io.NopCloser(getErrorPage("service/unprocessable-file.html",
-				&errorPage{
-					XAdaptationFileId:         resp.Header.Get("x-adaptation-file-id"),
-					XSdkEngineVersion:         resp.Header.Get("x-sdk-engine-version"),
-					RequestedURL:              reqURL,
-					XGlasswallCloudApiVersion: resp.Header.Get("x-glasswall-cloud-api-version"),
-				}))
-			return resp, utils.OkStatusCodeStr, true, resp.Header.Get("x-adaptation-file-id"), err
-		}
-		return resp, utils.OkStatusCodeStr, false, resp.Header.Get("x-adaptation-file-id"), err
-	}
-	if g.returnOrigIfUnprocessableFileType {
-		resp.Body = io.NopCloser(f)
-		return resp, utils.NoModificationStatusCodeStr, false, resp.Header.Get("x-adaptation-file-id"), err
-	}
-	resp.Body = io.NopCloser(getErrorPage("service/unprocessable-file.html",
-		&errorPage{
-			Reason:                    "File can't be processed",
-			XAdaptationFileId:         resp.Header.Get("x-adaptation-file-id"),
-			XSdkEngineVersion:         resp.Header.Get("x-sdk-engine-version"),
-			RequestedURL:              reqURL,
-			XGlasswallCloudApiVersion: resp.Header.Get("x-glasswall-cloud-api-version"),
-		}))
-	return resp, utils.OkStatusCodeStr, true, resp.Header.Get("x-adaptation-file-id"), err
 }
 
 func (g *Glasswall) IsUnprocessableFileType(resp *http.Response, f *bytes.Buffer) bool {
@@ -406,19 +131,157 @@ func (g *Glasswall) IsUnprocessableFileType(resp *http.Response, f *bytes.Buffer
 	return false
 }
 
-type (
-	errorPage struct {
-		Reason                    string `json:"reason"`
-		XAdaptationFileId         string `json:"x-adaptation-file-id"`
-		XSdkEngineVersion         string `json:"x-sdk-engine-version"`
-		RequestedURL              string `json:"requested_url"`
-		XGlasswallCloudApiVersion string `json:"x-glasswall-cloud-api-version"`
-	}
-)
+func (g *Glasswall) SendReqToAPI(f *bytes.Buffer, filename string) *http.Response {
 
-func getErrorPage(templateName string, data *errorPage) *bytes.Buffer {
-	tmpl, _ := template.ParseFiles(templateName)
-	htmlBuf := &bytes.Buffer{}
-	tmpl.Execute(htmlBuf, data)
-	return htmlBuf
+	urlStr := g.BaseURL + g.ScanEndpoint
+
+	bodyBuf := &bytes.Buffer{}
+
+	bodyWriter := multipart.NewWriter(bodyBuf)
+
+	// adding policy in the request
+	bodyWriter.WriteField("contentManagementFlagJson", g.policy)
+
+	part, err := bodyWriter.CreateFormFile("file", filename)
+
+	if err != nil {
+		return nil
+	}
+
+	io.Copy(part, bytes.NewReader(f.Bytes()))
+	if err := bodyWriter.Close(); err != nil {
+		elapsed := time.Since(g.logger.LogStartTime)
+		zLog.Error().Dur("duration", elapsed).Err(err).Str("value", "failed to close writer").Msgf("cant_close_writer_while_sending_api_files_gw")
+		return nil
+	}
+
+	req, err := http.NewRequest(http.MethodPost, urlStr, bodyBuf)
+	if err != nil {
+		return nil
+	}
+
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: utils.InitSecure()},
+	}
+	client := &http.Client{Transport: tr}
+	ctx, _ := context.WithTimeout(context.Background(), g.Timeout)
+
+	// defer cancel() commit cancel must be on goroutine
+	req = req.WithContext(ctx)
+
+	req.Header.Add("Content-Type", bodyWriter.FormDataContentType())
+	if g.authID != "" {
+		req.Header.Add("authorization", g.authID)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		elapsed := time.Since(g.logger.LogStartTime)
+		zLog.Error().Dur("duration", elapsed).Err(err).Str("value", "service: Glasswall: failed to do request").Msgf("gw_service_fail_to_serve")
+		return nil
+	}
+	return resp
+}
+
+func (g *Glasswall) writingIcapResp(resp, serviceResp *http.Response, scannedFile []byte) {
+	newResp := resp
+	newResp.Header.Set(utils.ContentLength, strconv.Itoa(len(string(scannedFile))))
+	g.w.Header().Set("x-adaptation-file-id", serviceResp.Header.Get("x-adaptation-file-id"))
+	g.w.WriteHeader(utils.OkStatusCodeStr, newResp, true)
+	g.w.Write(scannedFile)
+}
+
+func (g *Glasswall) RespMode(req *http.Request, resp *http.Response) {
+	if req == nil {
+		req = &http.Request{}
+	}
+	if g.shadowService {
+		go g.utilRespMode(req, resp)
+		return
+	}
+	g.utilRespMode(req, resp)
+}
+
+func (g *Glasswall) resp400(serviceResp *http.Response, returnOrig bool, reason, requestedUrl string, file *bytes.Buffer) {
+	if returnOrig {
+		if g.is204Allowed {
+			g.w.Header().Set("x-adaptation-file-id", serviceResp.Header.Get("x-adaptation-file-id"))
+			g.w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
+		} else {
+			if g.methodName == "RESPMOD" {
+				g.resp.Body = io.NopCloser(file)
+				g.w.WriteHeader(utils.OkStatusCodeStr, g.resp, true)
+			} else {
+				g.req.Body = io.NopCloser(file)
+				g.w.WriteHeader(utils.OkStatusCodeStr, g.req, true)
+			}
+			g.w.Write(file.Bytes())
+		}
+	}
+	errPage := GenHtmlPage("service/unprocessable-file.html", reason, requestedUrl)
+	g.w.Header().Set("x-adaptation-file-id", serviceResp.Header.Get("x-adaptation-file-id"))
+	g.w.WriteHeader(utils.BadRequestStatusCodeStr, ErrPageResp(http.StatusBadRequest, errPage.Len()), true)
+	g.w.Write(errPage.Bytes())
+}
+
+func (g *Glasswall) utilRespMode(req *http.Request, resp *http.Response) {
+	// preparing the file meta information
+	filename := utils.GetFileName(req)
+	//fileExt := utils.GetFileExtension(req)
+	//fmi := dtos.FileMetaInfo{
+	//	FileName: filename,
+	//	FileType: fileExt,
+	//	FileSize: float64(file.Len()),
+	//}
+	/* If the shadow virus scanner wants to run independently */
+	//if vendor == utils.NoVendor && appCfg.RespScannerVendorShadow != utils.NoVendor {
+	//	go doShadowScan(vendor, serviceName, filename, fmi, buf, "", zlogger)
+	//	w.WriteHeader(http.StatusNoContent, nil, false)
+	//	return
+	//}
+
+	file, err := CopyingFileToTheBuffer(resp, g.w, g.elapsed, g.zlogger)
+	if err != nil {
+		return
+	}
+
+	isGzip := resp.Header.Get("Content-Encoding") == "gzip"
+	if isGzip {
+		if file, err = DecodeGzip(file, g.w, g.elapsed, g.zlogger); err != nil {
+			return
+		}
+	}
+
+	if g.maxFileSize != 0 && g.maxFileSize < file.Len() {
+		MaxFileSeizeExc(g.returnOrigIfMaxSizeExc, g.is204Allowed, g.w,
+			req, resp, file, g.maxFileSize, g.elapsed, g.zlogger)
+		return
+	}
+
+	serviceResp := g.SendReqToAPI(file, filename)
+	scannedFile, err := ApiRespAnalysis(serviceResp, g.w, isGzip, g.elapsed, g.zlogger)
+	if err != nil {
+		return
+	}
+	if serviceResp.StatusCode == 400 {
+		reason := "File can't be processed by Glasswall engine"
+		returnOrig := g.returnOrigIfUnprocessableFileType
+		if g.IsUnprocessableFileType(resp, file) {
+			reason = "The file type is unsupported by Glasswall engine"
+			returnOrig = g.returnOrigIf400
+		}
+		g.resp400(serviceResp, returnOrig, reason, req.RequestURI, file)
+		return
+	}
+
+	if isGzip {
+		scannedFile, err = compressGzip(scannedFile, g.w, g.elapsed, g.zlogger)
+		if err != nil {
+			return
+		}
+	}
+	if g.shadowService {
+		//add logs here
+	}
+	g.writingIcapResp(resp, serviceResp, scannedFile)
 }
