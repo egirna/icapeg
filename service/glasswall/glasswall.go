@@ -5,7 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
-	"icapeg/icap"
+	"icapeg/utils"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -13,11 +13,9 @@ import (
 	"strconv"
 	"time"
 
+	zLog "github.com/rs/zerolog/log"
 	"icapeg/logger"
 	"icapeg/readValues"
-	"icapeg/utils"
-
-	zLog "github.com/rs/zerolog/log"
 )
 
 type AuthTokens struct {
@@ -34,16 +32,12 @@ type Tokens struct {
 
 // Glasswall represents the information regarding the Glasswall service
 type Glasswall struct {
-	w                                 icap.ResponseWriter
 	req                               *http.Request
 	resp                              *http.Response
 	elapsed                           time.Duration
-	zlogger                           *logger.ZLogger
 	serviceName                       string
-	maxFileSize                       int
-	is204Allowed                      bool
-	shadowService                     bool
 	methodName                        string
+	maxFileSize                       int
 	BaseURL                           string
 	Timeout                           time.Duration
 	APIKey                            string
@@ -66,18 +60,14 @@ type Glasswall struct {
 }
 
 // NewGlasswallService returns a new populated instance of the Glasswall service
-func NewGlasswallService(w icap.ResponseWriter, req *http.Request, resp *http.Response, elapsed time.Duration, Is204Allowed bool,
-	serviceName string, methodName string, logger *logger.ZLogger) *Glasswall {
+func NewGlasswallService(serviceName, methodName string, req *http.Request, resp *http.Response, elapsed time.Duration, logger *logger.ZLogger) *Glasswall {
 	gw := &Glasswall{
-		w:                                 w,
 		req:                               req,
 		resp:                              resp,
 		elapsed:                           elapsed,
 		serviceName:                       serviceName,
-		maxFileSize:                       readValues.ReadValuesInt(serviceName + ".max_filesize"),
-		is204Allowed:                      Is204Allowed,
-		shadowService:                     readValues.ReadValuesBool(serviceName + ".shadow_service"),
 		methodName:                        methodName,
+		maxFileSize:                       readValues.ReadValuesInt(serviceName + ".max_filesize"),
 		BaseURL:                           readValues.ReadValuesString(serviceName + ".base_url"),
 		Timeout:                           readValues.ReadValuesDuration(serviceName+".timeout") * time.Second,
 		APIKey:                            readValues.ReadValuesString(serviceName + ".api_key"),
@@ -109,6 +99,67 @@ func NewGlasswallService(w icap.ResponseWriter, req *http.Request, resp *http.Re
 	return gw
 }
 
+func (g *Glasswall) Processing() (int, []byte, map[string]string) {
+
+	generalFunc := NewGeneralFunc(g.req, g.resp, g.elapsed, g.logger)
+
+	file, err := generalFunc.CopyingFileToTheBuffer(g.methodName)
+	if err != nil {
+		return utils.InternalServerErrStatusCodeStr, nil, nil
+	}
+
+	isGzip := generalFunc.IsBodyGzipCompressed(g.methodName)
+	if isGzip {
+		if file, err = generalFunc.DecompressGzipBody(file); err != nil {
+			return utils.InternalServerErrStatusCodeStr, nil, nil
+		}
+	}
+
+	if g.maxFileSize != 0 && g.maxFileSize < file.Len() {
+		status, file := generalFunc.IfMaxFileSeizeExc(g.returnOrigIfMaxSizeExc, file, g.maxFileSize)
+		return status, file.Bytes(), nil
+	}
+
+	filename := generalFunc.GetFileName()
+	serviceResp := g.SendFileToAPI(file, filename)
+	serviceHeaders := make(map[string]string)
+	serviceHeaders["X-Adaptation-File-Id"] = serviceResp.Header.Get("x-adaptation-file-id")
+
+	if serviceResp.StatusCode == 400 {
+		reason := "File can't be processed by Glasswall engine"
+		returnOrig := g.returnOrigIfUnprocessableFileType
+		if g.IsUnprocessableFileType(g.resp, file) {
+			reason = "The file type is unsupported by Glasswall engine"
+			returnOrig = g.returnOrigIf400
+		}
+		status, file := g.resp400(returnOrig, reason, file)
+		return status, file.Bytes(), serviceHeaders
+	}
+
+	scannedFile, err := generalFunc.ExtractFileFromServiceResp(serviceResp)
+	if err != nil {
+		return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
+	}
+
+	if isGzip {
+		scannedFile, err = generalFunc.CompressFileGzip(scannedFile)
+		if err != nil {
+			return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
+		}
+	}
+	g.resp.Header.Set(utils.ContentLength, strconv.Itoa(len(string(scannedFile))))
+	return utils.OkStatusCodeStr, scannedFile, serviceHeaders
+}
+
+func (g *Glasswall) resp400(returnOrig bool, reason string, file *bytes.Buffer) (int, *bytes.Buffer) {
+	if returnOrig {
+		return utils.NoModificationStatusCodeStr, file
+	}
+	errPage := GenHtmlPage("service/unprocessable-file.html", reason, g.req.RequestURI)
+	g.resp = ErrPageResp(http.StatusForbidden, errPage.Len())
+	return utils.OkStatusCodeStr, errPage
+}
+
 func (g *Glasswall) IsUnprocessableFileType(resp *http.Response, f *bytes.Buffer) bool {
 	bodyByte, _ := ioutil.ReadAll(resp.Body)
 	bodyStr := string(bodyByte)
@@ -131,7 +182,7 @@ func (g *Glasswall) IsUnprocessableFileType(resp *http.Response, f *bytes.Buffer
 	return false
 }
 
-func (g *Glasswall) SendReqToAPI(f *bytes.Buffer, filename string) *http.Response {
+func (g *Glasswall) SendFileToAPI(f *bytes.Buffer, filename string) *http.Response {
 
 	urlStr := g.BaseURL + g.ScanEndpoint
 
@@ -181,107 +232,4 @@ func (g *Glasswall) SendReqToAPI(f *bytes.Buffer, filename string) *http.Respons
 		return nil
 	}
 	return resp
-}
-
-func (g *Glasswall) writingIcapResp(resp, serviceResp *http.Response, scannedFile []byte) {
-	newResp := resp
-	newResp.Header.Set(utils.ContentLength, strconv.Itoa(len(string(scannedFile))))
-	g.w.Header().Set("x-adaptation-file-id", serviceResp.Header.Get("x-adaptation-file-id"))
-	g.w.WriteHeader(utils.OkStatusCodeStr, newResp, true)
-	g.w.Write(scannedFile)
-}
-
-func (g *Glasswall) RespMode(req *http.Request, resp *http.Response) {
-	if req == nil {
-		req = &http.Request{}
-	}
-	if g.shadowService {
-		go g.utilRespMode(req, resp)
-		return
-	}
-	g.utilRespMode(req, resp)
-}
-
-func (g *Glasswall) resp400(serviceResp *http.Response, returnOrig bool, reason, requestedUrl string, file *bytes.Buffer) {
-	if returnOrig {
-		if g.is204Allowed {
-			g.w.Header().Set("x-adaptation-file-id", serviceResp.Header.Get("x-adaptation-file-id"))
-			g.w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
-		} else {
-			if g.methodName == "RESPMOD" {
-				g.resp.Body = io.NopCloser(file)
-				g.w.WriteHeader(utils.OkStatusCodeStr, g.resp, true)
-			} else {
-				g.req.Body = io.NopCloser(file)
-				g.w.WriteHeader(utils.OkStatusCodeStr, g.req, true)
-			}
-			g.w.Write(file.Bytes())
-		}
-	}
-	errPage := GenHtmlPage("service/unprocessable-file.html", reason, requestedUrl)
-	g.w.Header().Set("x-adaptation-file-id", serviceResp.Header.Get("x-adaptation-file-id"))
-	g.w.WriteHeader(utils.BadRequestStatusCodeStr, ErrPageResp(http.StatusBadRequest, errPage.Len()), true)
-	g.w.Write(errPage.Bytes())
-}
-
-func (g *Glasswall) utilRespMode(req *http.Request, resp *http.Response) {
-	// preparing the file meta information
-	filename := utils.GetFileName(req)
-	//fileExt := utils.GetFileExtension(req)
-	//fmi := dtos.FileMetaInfo{
-	//	FileName: filename,
-	//	FileType: fileExt,
-	//	FileSize: float64(file.Len()),
-	//}
-	/* If the shadow virus scanner wants to run independently */
-	//if vendor == utils.NoVendor && appCfg.RespScannerVendorShadow != utils.NoVendor {
-	//	go doShadowScan(vendor, serviceName, filename, fmi, buf, "", zlogger)
-	//	w.WriteHeader(http.StatusNoContent, nil, false)
-	//	return
-	//}
-
-	file, err := CopyingFileToTheBuffer(resp, g.w, g.elapsed, g.zlogger)
-	if err != nil {
-		return
-	}
-
-	isGzip := resp.Header.Get("Content-Encoding") == "gzip"
-	if isGzip {
-		if file, err = DecodeGzip(file, g.w, g.elapsed, g.zlogger); err != nil {
-			return
-		}
-	}
-
-	if g.maxFileSize != 0 && g.maxFileSize < file.Len() {
-		MaxFileSeizeExc(g.returnOrigIfMaxSizeExc, g.is204Allowed, g.w,
-			req, resp, file, g.maxFileSize, g.elapsed, g.zlogger)
-		return
-	}
-
-	serviceResp := g.SendReqToAPI(file, filename)
-	scannedFile, err := ApiRespAnalysis(serviceResp, g.w, isGzip, g.elapsed, g.zlogger)
-	if err != nil {
-		return
-	}
-	if serviceResp.StatusCode == 400 {
-		reason := "File can't be processed by Glasswall engine"
-		returnOrig := g.returnOrigIfUnprocessableFileType
-		if g.IsUnprocessableFileType(resp, file) {
-			reason = "The file type is unsupported by Glasswall engine"
-			returnOrig = g.returnOrigIf400
-		}
-		g.resp400(serviceResp, returnOrig, reason, req.RequestURI, file)
-		return
-	}
-
-	if isGzip {
-		scannedFile, err = compressGzip(scannedFile, g.w, g.elapsed, g.zlogger)
-		if err != nil {
-			return
-		}
-	}
-	if g.shadowService {
-		//add logs here
-	}
-	g.writingIcapResp(resp, serviceResp, scannedFile)
 }
