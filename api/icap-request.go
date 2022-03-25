@@ -254,14 +254,14 @@ func (i *ICAPRequest) getEnabledMethods() string {
 
 func (i *ICAPRequest) optionsMode() {
 	//optionsModeRemote(vendor, req, w, appCfg, zlogger)
-	i.req.Header.Set("Methods", i.getEnabledMethods())
-	i.req.Header.Set("Allow", "204")
+	i.h.Set("Methods", i.getEnabledMethods())
+	i.h.Set("Allow", "204")
 	// Add preview if preview_enabled is true in config
 	if i.appCfg.PreviewEnabled == true {
 		if pb, _ := strconv.Atoi(i.appCfg.PreviewBytes); pb >= 0 {
-			i.req.Header.Set("Preview", i.appCfg.PreviewBytes)
+			i.h.Set("Preview", i.appCfg.PreviewBytes)
 		}
 	}
-	i.req.Header.Set("Transfer-Preview", utils.Any)
+	i.h.Set("Transfer-Preview", utils.Any)
 	i.w.WriteHeader(http.StatusOK, nil, false)
 }
