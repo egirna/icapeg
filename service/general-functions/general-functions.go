@@ -1,4 +1,4 @@
-package glasswall
+package general_functions
 
 import (
 	"bytes"
@@ -6,7 +6,6 @@ import (
 	"fmt"
 	zLog "github.com/rs/zerolog/log"
 	"html/template"
-	"icapeg/icap"
 	"icapeg/logger"
 	"icapeg/utils"
 	"io"
@@ -97,9 +96,9 @@ func (f *GeneralFunc) IfMaxFileSeizeExc(returnOrigIfMaxSizeExc bool, file *bytes
 	if returnOrigIfMaxSizeExc {
 		return utils.NoModificationStatusCodeStr, file, nil
 	} else {
-		htmlErrPage := GenHtmlPage("service/unprocessable-file.html",
+		htmlErrPage := f.GenHtmlPage("service/unprocessable-file.html",
 			"The Max file size is exceeded", f.req.RequestURI)
-		f.resp = ErrPageResp(http.StatusForbidden, htmlErrPage.Len())
+		f.resp = f.ErrPageResp(http.StatusForbidden, htmlErrPage.Len())
 		fmt.Println(f.resp.StatusCode)
 		return utils.OkStatusCodeStr, htmlErrPage, f.resp
 	}
@@ -155,44 +154,7 @@ func (f *GeneralFunc) CompressFileGzip(scannedFile []byte) ([]byte, error) {
 	return newBuf.Bytes(), nil
 }
 
-func DecodeGzip(buf *bytes.Buffer, w icap.ResponseWriter,
-	elapsed time.Duration, zlogger *logger.ZLogger) (*bytes.Buffer, error) {
-	reader, _ := gzip.NewReader(buf)
-	var result []byte
-	result, err := ioutil.ReadAll(reader)
-	if err != nil {
-		elapsed = time.Since(zlogger.LogStartTime)
-		zLog.Error().Dur("duration", elapsed).Err(err).Str("value", "failed to decompress input file").
-			Msgf("decompress_gz_file_failed")
-		w.WriteHeader(http.StatusBadRequest, nil, false)
-		return nil, err
-	}
-	return bytes.NewBuffer(result), nil
-}
-
-func MaxFileSeizeExc(returnOrigIfMaxSizeExc, is204Allowed bool, w icap.ResponseWriter, req *http.Request,
-	resp *http.Response, file *bytes.Buffer, maxFileSize int, elapsed time.Duration, zlogger *logger.ZLogger) {
-	zLog.Debug().Dur("duration", elapsed).Str("value",
-		fmt.Sprintf("file size exceeds max filesize limit %d", maxFileSize)).
-		Msgf("large_file_size")
-	if returnOrigIfMaxSizeExc {
-		if is204Allowed {
-			w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
-		} else {
-			resp.Body = io.NopCloser(file)
-			w.WriteHeader(utils.OkStatusCodeStr, resp, true)
-			w.Write(file.Bytes())
-		}
-	} else {
-		htmlErrPage := GenHtmlPage("service/unprocessable-file.html",
-			"The Max file size is exceeded", req.RequestURI)
-		newResp := ErrPageResp(http.StatusForbidden, htmlErrPage.Len())
-		w.WriteHeader(utils.OkStatusCodeStr, newResp, true)
-		w.Write(htmlErrPage.Bytes())
-	}
-}
-
-func ErrPageResp(status int, pageContentLength int) *http.Response {
+func (f *GeneralFunc) ErrPageResp(status int, pageContentLength int) *http.Response {
 	return &http.Response{
 		StatusCode: status,
 		Status:     strconv.Itoa(status) + " " + http.StatusText(status),
@@ -203,7 +165,7 @@ func ErrPageResp(status int, pageContentLength int) *http.Response {
 	}
 }
 
-func GenHtmlPage(path, reason, reqUrl string) *bytes.Buffer {
+func (f *GeneralFunc) GenHtmlPage(path, reason, reqUrl string) *bytes.Buffer {
 	htmlTmpl, _ := template.ParseFiles(path)
 	htmlErrPage := &bytes.Buffer{}
 	htmlTmpl.Execute(htmlErrPage, &errorPage{
@@ -211,34 +173,4 @@ func GenHtmlPage(path, reason, reqUrl string) *bytes.Buffer {
 		RequestedURL: reqUrl,
 	})
 	return htmlErrPage
-}
-
-func ApiRespAnalysis(serviceResp *http.Response, w icap.ResponseWriter, isGzip bool,
-	elapsed time.Duration, zlogger *logger.ZLogger) ([]byte, error) {
-	defer serviceResp.Body.Close()
-	bodyByte, err := ioutil.ReadAll(serviceResp.Body)
-	if err != nil {
-		elapsed = time.Since(zlogger.LogStartTime)
-		zLog.Error().Dur("duration", elapsed).Err(err).Str("value",
-			"failed to read the response body from API response").
-			Msgf("read_response_body_from_API_error")
-		w.WriteHeader(http.StatusInternalServerError, nil, false)
-		return nil, err
-	}
-	if isGzip {
-		var newBuf bytes.Buffer
-		gz := gzip.NewWriter(&newBuf)
-		if _, err := gz.Write(bodyByte); err != nil {
-			elapsed = time.Since(zlogger.LogStartTime)
-			zLog.Error().Dur("duration", elapsed).Err(err).
-				Str("value", "failed to decompress input file").Msgf("decompress_gz_file_failed")
-			w.WriteHeader(http.StatusInternalServerError, nil, false)
-			return nil, err
-		}
-		gz.Close()
-		bodyByte = newBuf.Bytes()
-	}
-	zLog.Info().Dur("duration", elapsed).Err(err).Str("value", "file was processed").
-		Msgf("file_processed_successfully")
-	return bodyByte, nil
 }

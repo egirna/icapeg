@@ -16,6 +16,7 @@ import (
 	zLog "github.com/rs/zerolog/log"
 	"icapeg/logger"
 	"icapeg/readValues"
+	"icapeg/service/general-functions"
 )
 
 type AuthTokens struct {
@@ -56,6 +57,7 @@ type Glasswall struct {
 	returnOrigIfUnprocessableFileType bool
 	returnOrigIf400                   bool
 	authID                            string
+	generalFunc                       *general_functions.GeneralFunc
 	logger                            *logger.ZLogger
 }
 
@@ -81,6 +83,7 @@ func NewGlasswallService(serviceName, methodName string, req *http.Request, resp
 		returnOrigIfMaxSizeExc:            readValues.ReadValuesBool(serviceName + ".return_original_if_max_file_size_exceeded"),
 		returnOrigIfUnprocessableFileType: readValues.ReadValuesBool(serviceName + ".return_original_if_unprocessable_file_type"),
 		returnOrigIf400:                   readValues.ReadValuesBool(serviceName + ".return_original_if_400_response"),
+		generalFunc:                       general_functions.NewGeneralFunc(req, resp, elapsed, logger),
 		logger:                            logger,
 	}
 	authTokens := new(AuthTokens)
@@ -101,26 +104,24 @@ func NewGlasswallService(serviceName, methodName string, req *http.Request, resp
 
 func (g *Glasswall) Processing() (int, []byte, *http.Response, map[string]string) {
 
-	generalFunc := NewGeneralFunc(g.req, g.resp, g.elapsed, g.logger)
-
-	file, err := generalFunc.CopyingFileToTheBuffer(g.methodName)
+	file, err := g.generalFunc.CopyingFileToTheBuffer(g.methodName)
 	if err != nil {
 		return utils.InternalServerErrStatusCodeStr, nil, nil, nil
 	}
 
-	isGzip := generalFunc.IsBodyGzipCompressed(g.methodName)
+	isGzip := g.generalFunc.IsBodyGzipCompressed(g.methodName)
 	if isGzip {
-		if file, err = generalFunc.DecompressGzipBody(file); err != nil {
+		if file, err = g.generalFunc.DecompressGzipBody(file); err != nil {
 			return utils.InternalServerErrStatusCodeStr, nil, nil, nil
 		}
 	}
 
 	if g.maxFileSize != 0 && g.maxFileSize < file.Len() {
-		status, file, httpResponse := generalFunc.IfMaxFileSeizeExc(g.returnOrigIfMaxSizeExc, file, g.maxFileSize)
+		status, file, httpResponse := g.generalFunc.IfMaxFileSeizeExc(g.returnOrigIfMaxSizeExc, file, g.maxFileSize)
 		return status, file.Bytes(), httpResponse, nil
 	}
 
-	filename := generalFunc.GetFileName()
+	filename := g.generalFunc.GetFileName()
 	serviceResp := g.SendFileToAPI(file, filename)
 	serviceHeaders := make(map[string]string)
 	serviceHeaders["X-Adaptation-File-Id"] = serviceResp.Header.Get("x-adaptation-file-id")
@@ -136,13 +137,13 @@ func (g *Glasswall) Processing() (int, []byte, *http.Response, map[string]string
 		return status, file.Bytes(), httpResponse, serviceHeaders
 	}
 
-	scannedFile, err := generalFunc.ExtractFileFromServiceResp(serviceResp)
+	scannedFile, err := g.generalFunc.ExtractFileFromServiceResp(serviceResp)
 	if err != nil {
 		return utils.InternalServerErrStatusCodeStr, nil, nil, serviceHeaders
 	}
 
 	if isGzip {
-		scannedFile, err = generalFunc.CompressFileGzip(scannedFile)
+		scannedFile, err = g.generalFunc.CompressFileGzip(scannedFile)
 		if err != nil {
 			return utils.InternalServerErrStatusCodeStr, nil, nil, serviceHeaders
 		}
@@ -155,8 +156,8 @@ func (g *Glasswall) resp400(returnOrig bool, reason string, file *bytes.Buffer) 
 	if returnOrig {
 		return utils.NoModificationStatusCodeStr, file, nil
 	}
-	errPage := GenHtmlPage("service/unprocessable-file.html", reason, g.req.RequestURI)
-	g.resp = ErrPageResp(http.StatusForbidden, errPage.Len())
+	errPage := g.generalFunc.GenHtmlPage("service/unprocessable-file.html", reason, g.req.RequestURI)
+	g.resp = g.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
 	return utils.OkStatusCodeStr, errPage, g.resp
 }
 
