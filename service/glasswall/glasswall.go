@@ -39,6 +39,8 @@ type Glasswall struct {
 	serviceName                       string
 	methodName                        string
 	maxFileSize                       int
+	bypassExts                        []string
+	processExts                       []string
 	BaseURL                           string
 	Timeout                           time.Duration
 	APIKey                            string
@@ -70,6 +72,8 @@ func NewGlasswallService(serviceName, methodName string, req *http.Request, resp
 		serviceName:                       serviceName,
 		methodName:                        methodName,
 		maxFileSize:                       readValues.ReadValuesInt(serviceName + ".max_filesize"),
+		bypassExts:                        readValues.ReadValuesSlice(serviceName + ".bypass_extensions"),
+		processExts:                       readValues.ReadValuesSlice(serviceName + ".process_extensions"),
 		BaseURL:                           readValues.ReadValuesString(serviceName + ".base_url"),
 		Timeout:                           readValues.ReadValuesDuration(serviceName+".timeout") * time.Second,
 		APIKey:                            readValues.ReadValuesString(serviceName + ".api_key"),

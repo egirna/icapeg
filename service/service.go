@@ -1,25 +1,21 @@
 package service
 
 import (
-	"net/http"
-	"time"
-
-	_ "icapeg/icap-client"
 	"icapeg/logger"
 	"icapeg/service/glasswall"
+	"net/http"
+	"time"
 )
 
-//Services names
+//Vendors names
 const (
-	SVCGlasswall = "glasswall"
+	VendorGlasswall = "glasswall"
 )
 
 type (
 	// Service holds the info to distinguish a service
 	Service interface {
 		Processing() (int, []byte, *http.Response, map[string]string)
-		//SendReqToAPI(f *bytes.Buffer, filename string) *http.Response
-		//RespMode(req *http.Request, resp *http.Response)
 	}
 )
 
@@ -27,7 +23,7 @@ type (
 // change name to vendor and add parameter service name
 func GetService(vendor, serviceName, methodName string, req *http.Request, resp *http.Response, elapsed time.Duration, logger *logger.ZLogger) Service {
 	switch vendor {
-	case SVCGlasswall:
+	case VendorGlasswall:
 		return glasswall.NewGlasswallService(serviceName, methodName, req, resp, elapsed, logger)
 	}
 	return nil
