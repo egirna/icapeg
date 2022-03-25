@@ -17,7 +17,7 @@ const (
 type (
 	// Service holds the info to distinguish a service
 	Service interface {
-		Processing() (int, []byte, map[string]string)
+		Processing() (int, []byte, *http.Response, map[string]string)
 		//SendReqToAPI(f *bytes.Buffer, filename string) *http.Response
 		//RespMode(req *http.Request, resp *http.Response)
 	}

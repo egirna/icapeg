@@ -90,18 +90,18 @@ func (f *GeneralFunc) DecompressGzipBody(file *bytes.Buffer) (*bytes.Buffer, err
 	return bytes.NewBuffer(result), nil
 }
 
-func (f *GeneralFunc) IfMaxFileSeizeExc(returnOrigIfMaxSizeExc bool, file *bytes.Buffer, maxFileSize int) (int, *bytes.Buffer) {
+func (f *GeneralFunc) IfMaxFileSeizeExc(returnOrigIfMaxSizeExc bool, file *bytes.Buffer, maxFileSize int) (int, *bytes.Buffer, *http.Response) {
 	zLog.Debug().Dur("duration", f.elapsed).Str("value",
 		fmt.Sprintf("file size exceeds max filesize limit %d", maxFileSize)).
 		Msgf("large_file_size")
 	if returnOrigIfMaxSizeExc {
-		return utils.NoModificationStatusCodeStr, file
+		return utils.NoModificationStatusCodeStr, file, nil
 	} else {
 		htmlErrPage := GenHtmlPage("service/unprocessable-file.html",
 			"The Max file size is exceeded", f.req.RequestURI)
 		f.resp = ErrPageResp(http.StatusForbidden, htmlErrPage.Len())
 		fmt.Println(f.resp.StatusCode)
-		return utils.OkStatusCodeStr, htmlErrPage
+		return utils.OkStatusCodeStr, htmlErrPage, f.resp
 	}
 }
 

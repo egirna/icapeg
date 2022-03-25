@@ -117,7 +117,7 @@ func (i *ICAPRequest) RequestProcessing() {
 			i.req.Request = &http.Request{}
 		}
 		gw := service.GetService(i.vendor, i.serviceName, i.methodName, i.req.Request, i.req.Response, i.elapsed, i.logger)
-		statusCode, file, serviceHeaders := gw.Processing()
+		IcapStatusCode, file, httpResponse, serviceHeaders := gw.Processing()
 		if serviceHeaders != nil {
 			for key, value := range serviceHeaders {
 				i.w.Header().Set(key, value)
@@ -127,9 +127,9 @@ func (i *ICAPRequest) RequestProcessing() {
 			//add logs here
 			return
 		}
-		switch statusCode {
+		switch IcapStatusCode {
 		case utils.InternalServerErrStatusCodeStr:
-			i.w.WriteHeader(statusCode, nil, false)
+			i.w.WriteHeader(IcapStatusCode, nil, false)
 			break
 		case utils.NoModificationStatusCodeStr:
 			if is204Allowed(textproto.MIMEHeader(i.h)) {
@@ -139,7 +139,7 @@ func (i *ICAPRequest) RequestProcessing() {
 				i.w.Write(file)
 			}
 		case utils.OkStatusCodeStr:
-			i.w.WriteHeader(utils.OkStatusCodeStr, i.req.Response, true)
+			i.w.WriteHeader(utils.OkStatusCodeStr, httpResponse, true)
 			i.w.Write(file)
 		}
 	case utils.ICAPModeReq:

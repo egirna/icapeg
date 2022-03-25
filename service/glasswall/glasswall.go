@@ -99,25 +99,25 @@ func NewGlasswallService(serviceName, methodName string, req *http.Request, resp
 	return gw
 }
 
-func (g *Glasswall) Processing() (int, []byte, map[string]string) {
+func (g *Glasswall) Processing() (int, []byte, *http.Response, map[string]string) {
 
 	generalFunc := NewGeneralFunc(g.req, g.resp, g.elapsed, g.logger)
 
 	file, err := generalFunc.CopyingFileToTheBuffer(g.methodName)
 	if err != nil {
-		return utils.InternalServerErrStatusCodeStr, nil, nil
+		return utils.InternalServerErrStatusCodeStr, nil, nil, nil
 	}
 
 	isGzip := generalFunc.IsBodyGzipCompressed(g.methodName)
 	if isGzip {
 		if file, err = generalFunc.DecompressGzipBody(file); err != nil {
-			return utils.InternalServerErrStatusCodeStr, nil, nil
+			return utils.InternalServerErrStatusCodeStr, nil, nil, nil
 		}
 	}
 
 	if g.maxFileSize != 0 && g.maxFileSize < file.Len() {
-		status, file := generalFunc.IfMaxFileSeizeExc(g.returnOrigIfMaxSizeExc, file, g.maxFileSize)
-		return status, file.Bytes(), nil
+		status, file, httpResponse := generalFunc.IfMaxFileSeizeExc(g.returnOrigIfMaxSizeExc, file, g.maxFileSize)
+		return status, file.Bytes(), httpResponse, nil
 	}
 
 	filename := generalFunc.GetFileName()
@@ -127,37 +127,37 @@ func (g *Glasswall) Processing() (int, []byte, map[string]string) {
 
 	if serviceResp.StatusCode == 400 {
 		reason := "File can't be processed by Glasswall engine"
-		returnOrig := g.returnOrigIfUnprocessableFileType
-		if g.IsUnprocessableFileType(g.resp, file) {
+		returnOrig := g.returnOrigIf400
+		if g.IsUnprocessableFileType(serviceResp, file) {
 			reason = "The file type is unsupported by Glasswall engine"
-			returnOrig = g.returnOrigIf400
+			returnOrig = g.returnOrigIfUnprocessableFileType
 		}
-		status, file := g.resp400(returnOrig, reason, file)
-		return status, file.Bytes(), serviceHeaders
+		status, file, httpResponse := g.resp400(returnOrig, reason, file)
+		return status, file.Bytes(), httpResponse, serviceHeaders
 	}
 
 	scannedFile, err := generalFunc.ExtractFileFromServiceResp(serviceResp)
 	if err != nil {
-		return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
+		return utils.InternalServerErrStatusCodeStr, nil, nil, serviceHeaders
 	}
 
 	if isGzip {
 		scannedFile, err = generalFunc.CompressFileGzip(scannedFile)
 		if err != nil {
-			return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
+			return utils.InternalServerErrStatusCodeStr, nil, nil, serviceHeaders
 		}
 	}
 	g.resp.Header.Set(utils.ContentLength, strconv.Itoa(len(string(scannedFile))))
-	return utils.OkStatusCodeStr, scannedFile, serviceHeaders
+	return utils.OkStatusCodeStr, scannedFile, g.resp, serviceHeaders
 }
 
-func (g *Glasswall) resp400(returnOrig bool, reason string, file *bytes.Buffer) (int, *bytes.Buffer) {
+func (g *Glasswall) resp400(returnOrig bool, reason string, file *bytes.Buffer) (int, *bytes.Buffer, *http.Response) {
 	if returnOrig {
-		return utils.NoModificationStatusCodeStr, file
+		return utils.NoModificationStatusCodeStr, file, nil
 	}
 	errPage := GenHtmlPage("service/unprocessable-file.html", reason, g.req.RequestURI)
 	g.resp = ErrPageResp(http.StatusForbidden, errPage.Len())
-	return utils.OkStatusCodeStr, errPage
+	return utils.OkStatusCodeStr, errPage, g.resp
 }
 
 func (g *Glasswall) IsUnprocessableFileType(resp *http.Response, f *bytes.Buffer) bool {
