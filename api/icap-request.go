@@ -14,7 +14,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/textproto"
 	"strconv"
 	"time"
 )
@@ -52,7 +51,7 @@ func (i *ICAPRequest) RequestInitialization() error {
 	// checking if the service doesn't exist in toml file
 	// if it does not exist, the response will be 404 ICAP Service Not Found
 	i.serviceName = i.req.URL.Path[1:len(i.req.URL.Path)]
-	if !isServiceExists(i.serviceName) {
+	if !i.isServiceExists() {
 		i.w.WriteHeader(http.StatusNotFound, nil, false)
 		err := errors.New("service doesn't exist")
 		return err
@@ -132,7 +131,7 @@ func (i *ICAPRequest) RequestProcessing() {
 			i.w.WriteHeader(IcapStatusCode, nil, false)
 			break
 		case utils.NoModificationStatusCodeStr:
-			if is204Allowed(textproto.MIMEHeader(i.h)) {
+			if i.Is204Allowed {
 				i.w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
 			} else {
 				i.w.WriteHeader(utils.OkStatusCodeStr, i.req.Response, true)
@@ -160,6 +159,17 @@ func (i *ICAPRequest) addHeadersToLogs() {
 		zLog.Debug().Dur("duration", i.elapsed).Str("value", "ICAP request header").
 			Msgf(res)
 	}
+}
+
+func (i *ICAPRequest) isServiceExists() bool {
+	services := readValues.ReadValuesSlice("app.services")
+	for r := 0; r < len(services); r++ {
+		if i.serviceName == services[r] {
+			return true
+		}
+	}
+	return false
+
 }
 
 func (i *ICAPRequest) getMethodName() string {
