@@ -116,7 +116,7 @@ func (i *ICAPRequest) RequestProcessing() {
 		if i.req.Request == nil {
 			i.req.Request = &http.Request{}
 		}
-		gw := service.GetService(i.vendor, i.serviceName, i.methodName, *i.req.Request, *i.req.Response, i.elapsed, i.logger)
+		gw := service.GetService(i.vendor, i.serviceName, i.methodName, i.req.Request, i.req.Response, i.elapsed, i.logger)
 		statusCode, file, serviceHeaders := gw.Processing()
 		if serviceHeaders != nil {
 			for key, value := range serviceHeaders {

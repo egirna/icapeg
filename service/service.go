@@ -25,10 +25,10 @@ type (
 
 // GetService returns a service based on the service name
 // change name to vendor and add parameter service name
-func GetService(vendor, serviceName, methodName string, req http.Request, resp http.Response, elapsed time.Duration, logger *logger.ZLogger) Service {
+func GetService(vendor, serviceName, methodName string, req *http.Request, resp *http.Response, elapsed time.Duration, logger *logger.ZLogger) Service {
 	switch vendor {
 	case SVCGlasswall:
-		return glasswall.NewGlasswallService(serviceName, methodName, &req, &resp, elapsed, logger)
+		return glasswall.NewGlasswallService(serviceName, methodName, req, resp, elapsed, logger)
 	}
 	return nil
 }
