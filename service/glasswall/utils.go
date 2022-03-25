@@ -100,6 +100,7 @@ func (f *GeneralFunc) IfMaxFileSeizeExc(returnOrigIfMaxSizeExc bool, file *bytes
 		htmlErrPage := GenHtmlPage("service/unprocessable-file.html",
 			"The Max file size is exceeded", f.req.RequestURI)
 		f.resp = ErrPageResp(http.StatusForbidden, htmlErrPage.Len())
+		fmt.Println(f.resp.StatusCode)
 		return utils.OkStatusCodeStr, htmlErrPage
 	}
 }

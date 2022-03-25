@@ -14,6 +14,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/textproto"
 	"strconv"
 	"time"
 )
@@ -58,6 +59,7 @@ func (i *ICAPRequest) RequestInitialization() error {
 	}
 
 	// checking if request method is allowed or not
+	i.methodName = i.req.Method
 	i.methodName = i.getMethodName()
 	if !i.isMethodAllowed() {
 		i.w.WriteHeader(http.StatusMethodNotAllowed, nil, false)
@@ -111,19 +113,34 @@ func (i *ICAPRequest) RequestProcessing() {
 
 	case utils.ICAPModeResp:
 		defer i.req.Response.Body.Close()
-		gw := service.GetService(i.vendor, i.serviceName, i.methodName, i.req.Request, i.req.Response, i.elapsed, i.logger)
+		if i.req.Request == nil {
+			i.req.Request = &http.Request{}
+		}
+		gw := service.GetService(i.vendor, i.serviceName, i.methodName, *i.req.Request, *i.req.Response, i.elapsed, i.logger)
 		statusCode, file, serviceHeaders := gw.Processing()
 		if serviceHeaders != nil {
 			for key, value := range serviceHeaders {
 				i.w.Header().Set(key, value)
 			}
 		}
+		if i.isShadowServiceEnabled {
+			//add logs here
+			return
+		}
 		switch statusCode {
 		case utils.InternalServerErrStatusCodeStr:
 			i.w.WriteHeader(statusCode, nil, false)
 			break
 		case utils.NoModificationStatusCodeStr:
-			fmt.Println(file)
+			if is204Allowed(textproto.MIMEHeader(i.h)) {
+				i.w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
+			} else {
+				i.w.WriteHeader(utils.OkStatusCodeStr, i.req.Response, true)
+				i.w.Write(file)
+			}
+		case utils.OkStatusCodeStr:
+			i.w.WriteHeader(utils.OkStatusCodeStr, i.req.Response, true)
+			i.w.Write(file)
 		}
 	case utils.ICAPModeReq:
 	}

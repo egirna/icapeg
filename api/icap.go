@@ -14,4 +14,5 @@ func ToICAPEGServe(w icap.ResponseWriter, req *icap.Request, zlogger *logger.ZLo
 	if err != nil {
 		return
 	}
+	ICAPRequest.RequestProcessing()
 }
