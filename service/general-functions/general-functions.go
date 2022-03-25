@@ -3,6 +3,7 @@ package general_functions
 import (
 	"bytes"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	zLog "github.com/rs/zerolog/log"
 	"html/template"
@@ -62,6 +63,34 @@ func (f *GeneralFunc) CopyingFileToTheBuffer(methodName string) (*bytes.Buffer, 
 		return nil, err
 	}
 	return buf, nil
+}
+
+func (f *GeneralFunc) inStringSlice(data string, ss []string) bool {
+	for _, s := range ss {
+		if data == s {
+			return true
+		}
+	}
+	return false
+}
+
+func (f *GeneralFunc) IfFileExtIsBypass(fileExtension string, bypassExts []string) error {
+	if utils.InStringSlice(fileExtension, bypassExts) {
+		f.elapsed = time.Since(f.logger.LogStartTime)
+		zLog.Debug().Dur("duration", f.elapsed).Str("value", fmt.Sprintf("processing not required for file type- %s", fileExtension)).Msgf("belongs_bypassable_extensions")
+		return errors.New("processing not required for file type")
+	}
+	return nil
+}
+
+func (f *GeneralFunc) IfFileExtIsBypassAndNotProcess(fileExtension string, bypassExts []string, processExts []string) error {
+	if utils.InStringSlice(utils.Any, bypassExts) && !utils.InStringSlice(fileExtension, processExts) {
+		// if extension does not belong to "All bypassable except the processable ones" group
+		f.elapsed = time.Since(f.logger.LogStartTime)
+		zLog.Debug().Dur("duration", f.elapsed).Str("value", fmt.Sprintf("processing not required for file type- %s", fileExtension)).Msgf("dont_belong_to_processable_extensions")
+		return errors.New("processing not required for file type")
+	}
+	return nil
 }
 
 func (f *GeneralFunc) IsBodyGzipCompressed(methodName string) bool {

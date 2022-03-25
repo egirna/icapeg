@@ -71,24 +71,6 @@ func (i *ICAPRequest) RequestInitialization() error {
 
 	i.addingISTAGServiceHeaders()
 
-	ct := utils.GetMimeExtension(i.req.Preview)
-
-	bypassExts := readValues.ReadValuesSlice(i.serviceName + ".bypass_extensions")
-	if utils.InStringSlice(ct, bypassExts) {
-		i.elapsed = time.Since(i.logger.LogStartTime)
-		zLog.Debug().Dur("duration", i.elapsed).Str("value", fmt.Sprintf("processing not required for file type- %s", ct)).Msgf("belongs_bypassable_extensions")
-		i.w.WriteHeader(http.StatusNoContent, nil, false)
-		return errors.New("processing not required for file type")
-	}
-	processExts := readValues.ReadValuesSlice(i.serviceName + ".process_extensions")
-	if utils.InStringSlice(utils.Any, bypassExts) && !utils.InStringSlice(ct, processExts) {
-		// if extension does not belong to "All bypassable except the processable ones" group
-		i.elapsed = time.Since(i.logger.LogStartTime)
-		zLog.Debug().Dur("duration", i.elapsed).Str("value", fmt.Sprintf("processing not required for file type- %s", ct)).Msgf("dont_belong_to_processable_extensions")
-		i.w.WriteHeader(http.StatusNoContent, nil, false)
-		return errors.New("processing not required for file type")
-	}
-
 	i.Is204Allowed = i.is204Allowed()
 
 	i.isShadowServiceEnabled = readValues.ReadValuesBool(i.serviceName + ".shadow_service")

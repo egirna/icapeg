@@ -112,6 +112,16 @@ func (g *Glasswall) Processing() (int, []byte, *http.Response, map[string]string
 	if err != nil {
 		return utils.InternalServerErrStatusCodeStr, nil, nil, nil
 	}
+	fileExtension := utils.GetMimeExtension(file.Bytes())
+
+	err = g.generalFunc.IfFileExtIsBypass(fileExtension, g.bypassExts)
+	if err != nil {
+		return utils.NoModificationStatusCodeStr, file.Bytes(), g.resp, nil
+	}
+	err = g.generalFunc.IfFileExtIsBypassAndNotProcess(fileExtension, g.bypassExts, g.processExts)
+	if err != nil {
+		return utils.NoModificationStatusCodeStr, file.Bytes(), g.resp, nil
+	}
 
 	isGzip := g.generalFunc.IsBodyGzipCompressed(g.methodName)
 	if isGzip {
