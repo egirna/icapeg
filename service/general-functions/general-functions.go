@@ -8,6 +8,7 @@ import (
 	zLog "github.com/rs/zerolog/log"
 	"html/template"
 	"icapeg/logger"
+	"icapeg/service/ContentTypes"
 	"icapeg/utils"
 	"io"
 	"io/ioutil"
@@ -29,40 +30,54 @@ type (
 )
 
 type GeneralFunc struct {
-	req     *http.Request
-	resp    *http.Response
+	httpMsg *utils.HttpMsg
 	elapsed time.Duration
 	logger  *logger.ZLogger
 }
 
-func NewGeneralFunc(req *http.Request, resp *http.Response, elapsed time.Duration, logger *logger.ZLogger) *GeneralFunc {
+func NewGeneralFunc(httpMsg *utils.HttpMsg, elapsed time.Duration, logger *logger.ZLogger) *GeneralFunc {
 	GeneralFunc := &GeneralFunc{
-		req:     req,
-		resp:    resp,
+		httpMsg: httpMsg,
 		logger:  logger,
 		elapsed: elapsed,
 	}
 	return GeneralFunc
 }
 
-func (f *GeneralFunc) CopyingFileToTheBuffer(methodName string) (*bytes.Buffer, error) {
-	buf := &bytes.Buffer{}
+func (f *GeneralFunc) CopyingFileToTheBuffer(methodName string) (*bytes.Buffer, ContentTypes.ContentType, error) {
+	file := &bytes.Buffer{}
 	var err error
+	var reqContentType ContentTypes.ContentType
+	reqContentType = nil
 	switch methodName {
 	case utils.ICAPModeReq:
-		_, err = io.Copy(buf, f.req.Body)
+		file, reqContentType, err = f.copyingFileToTheBufferReq()
 		break
 	case utils.ICAPModeResp:
-		_, err = io.Copy(buf, f.resp.Body)
+		file, err = f.copyingFileToTheBufferResp()
 		break
 	}
 	if err != nil {
 		f.elapsed = time.Since(f.logger.LogStartTime)
 		zLog.Error().Dur("duration", f.elapsed).Err(err).
-			Str("value", "Failed to copy the response body to buffer").Msgf("read_request_body_error")
-		return nil, err
+			Str("value", "Failed to copy the http message body to buffer").Msgf("read_request_body_error")
+		return nil, nil, err
 	}
-	return buf, nil
+	return file, reqContentType, nil
+}
+
+func (f *GeneralFunc) copyingFileToTheBufferResp() (*bytes.Buffer, error) {
+	file := &bytes.Buffer{}
+	_, err := io.Copy(file, f.httpMsg.Response.Body)
+	return file, err
+}
+
+func (f *GeneralFunc) copyingFileToTheBufferReq() (*bytes.Buffer, ContentTypes.ContentType, error) {
+	reqContentType := ContentTypes.GetContentType(f.httpMsg.Request)
+	// getting the file from request and store it in buf as a type of bytes.Buffer
+	file := reqContentType.GetFileFromRequest()
+	return file, reqContentType, nil
+
 }
 
 func (f *GeneralFunc) inStringSlice(data string, ss []string) bool {
@@ -96,10 +111,10 @@ func (f *GeneralFunc) IfFileExtIsBypassAndNotProcess(fileExtension string, bypas
 func (f *GeneralFunc) IsBodyGzipCompressed(methodName string) bool {
 	switch methodName {
 	case utils.ICAPModeReq:
-		return f.req.Header.Get("Content-Encoding") == "gzip"
+		return f.httpMsg.Request.Header.Get("Content-Encoding") == "gzip"
 		break
 	case utils.ICAPModeResp:
-		return f.resp.Header.Get("Content-Encoding") == "gzip"
+		return f.httpMsg.Response.Header.Get("Content-Encoding") == "gzip"
 		break
 	}
 	return false
@@ -118,7 +133,7 @@ func (f *GeneralFunc) DecompressGzipBody(file *bytes.Buffer) (*bytes.Buffer, err
 	return bytes.NewBuffer(result), nil
 }
 
-func (f *GeneralFunc) IfMaxFileSeizeExc(returnOrigIfMaxSizeExc bool, file *bytes.Buffer, maxFileSize int) (int, *bytes.Buffer, *http.Response) {
+func (f *GeneralFunc) IfMaxFileSeizeExc(returnOrigIfMaxSizeExc bool, file *bytes.Buffer, maxFileSize int) (int, *bytes.Buffer, interface{}) {
 	zLog.Debug().Dur("duration", f.elapsed).Str("value",
 		fmt.Sprintf("file size exceeds max filesize limit %d", maxFileSize)).
 		Msgf("large_file_size")
@@ -126,10 +141,9 @@ func (f *GeneralFunc) IfMaxFileSeizeExc(returnOrigIfMaxSizeExc bool, file *bytes
 		return utils.NoModificationStatusCodeStr, file, nil
 	} else {
 		htmlErrPage := f.GenHtmlPage("service/unprocessable-file.html",
-			"The Max file size is exceeded", f.req.RequestURI)
-		f.resp = f.ErrPageResp(http.StatusForbidden, htmlErrPage.Len())
-		fmt.Println(f.resp.StatusCode)
-		return utils.OkStatusCodeStr, htmlErrPage, f.resp
+			"The Max file size is exceeded", f.httpMsg.Request.RequestURI)
+		f.httpMsg.Response = f.ErrPageResp(http.StatusForbidden, htmlErrPage.Len())
+		return utils.OkStatusCodeStr, htmlErrPage, f.httpMsg.Response
 	}
 }
 
@@ -137,11 +151,11 @@ func (f *GeneralFunc) IfMaxFileSeizeExc(returnOrigIfMaxSizeExc bool, file *bytes
 func (f *GeneralFunc) GetFileName() string {
 	// req.RequestURI  inserting dummy response if the http request is nil
 	var Requrl string
-	if f.req == nil || f.req.RequestURI == "" {
+	if f.httpMsg.Request == nil || f.httpMsg.Request.RequestURI == "" {
 		Requrl = "http://www.example/images/unnamed_file"
 
 	} else {
-		Requrl = f.req.RequestURI
+		Requrl = f.httpMsg.Request.RequestURI
 		if Requrl[len(Requrl)-1] == '/' {
 			Requrl = Requrl[0 : len(Requrl)-1]
 		}
@@ -202,4 +216,12 @@ func (f *GeneralFunc) GenHtmlPage(path, reason, reqUrl string) *bytes.Buffer {
 		RequestedURL: reqUrl,
 	})
 	return htmlErrPage
+}
+
+func (f *GeneralFunc) PreparingFileAfterScanning(scannedFile []byte, reqContentType ContentTypes.ContentType, methodName string) []byte {
+	switch methodName {
+	case utils.ICAPModeReq:
+		return []byte(reqContentType.BodyAfterScanning(scannedFile))
+	}
+	return scannedFile
 }

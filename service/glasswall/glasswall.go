@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"icapeg/service/ContentTypes"
 	"icapeg/utils"
 	"io"
 	"io/ioutil"
@@ -33,8 +34,7 @@ type Tokens struct {
 
 // Glasswall represents the information regarding the Glasswall service
 type Glasswall struct {
-	req                               *http.Request
-	resp                              *http.Response
+	httpMsg                           *utils.HttpMsg
 	elapsed                           time.Duration
 	serviceName                       string
 	methodName                        string
@@ -64,10 +64,9 @@ type Glasswall struct {
 }
 
 // NewGlasswallService returns a new populated instance of the Glasswall service
-func NewGlasswallService(serviceName, methodName string, req *http.Request, resp *http.Response, elapsed time.Duration, logger *logger.ZLogger) *Glasswall {
+func NewGlasswallService(serviceName, methodName string, httpMsg *utils.HttpMsg, elapsed time.Duration, logger *logger.ZLogger) *Glasswall {
 	gw := &Glasswall{
-		req:                               req,
-		resp:                              resp,
+		httpMsg:                           httpMsg,
 		elapsed:                           elapsed,
 		serviceName:                       serviceName,
 		methodName:                        methodName,
@@ -87,7 +86,7 @@ func NewGlasswallService(serviceName, methodName string, req *http.Request, resp
 		returnOrigIfMaxSizeExc:            readValues.ReadValuesBool(serviceName + ".return_original_if_max_file_size_exceeded"),
 		returnOrigIfUnprocessableFileType: readValues.ReadValuesBool(serviceName + ".return_original_if_unprocessable_file_type"),
 		returnOrigIf400:                   readValues.ReadValuesBool(serviceName + ".return_original_if_400_response"),
-		generalFunc:                       general_functions.NewGeneralFunc(req, resp, elapsed, logger),
+		generalFunc:                       general_functions.NewGeneralFunc(httpMsg, elapsed, logger),
 		logger:                            logger,
 	}
 	authTokens := new(AuthTokens)
@@ -106,9 +105,9 @@ func NewGlasswallService(serviceName, methodName string, req *http.Request, resp
 	return gw
 }
 
-func (g *Glasswall) Processing() (int, []byte, *http.Response, map[string]string) {
+func (g *Glasswall) Processing() (int, []byte, interface{}, map[string]string) {
 
-	file, err := g.generalFunc.CopyingFileToTheBuffer(g.methodName)
+	file, reqContentType, err := g.generalFunc.CopyingFileToTheBuffer(g.methodName)
 	if err != nil {
 		return utils.InternalServerErrStatusCodeStr, nil, nil, nil
 	}
@@ -116,11 +115,13 @@ func (g *Glasswall) Processing() (int, []byte, *http.Response, map[string]string
 
 	err = g.generalFunc.IfFileExtIsBypass(fileExtension, g.bypassExts)
 	if err != nil {
-		return utils.NoModificationStatusCodeStr, file.Bytes(), g.resp, nil
+		return utils.NoModificationStatusCodeStr,
+			g.generalFunc.PreparingFileAfterScanning(file.Bytes(), reqContentType, g.methodName), g.returningHttpMessage(), nil
 	}
 	err = g.generalFunc.IfFileExtIsBypassAndNotProcess(fileExtension, g.bypassExts, g.processExts)
 	if err != nil {
-		return utils.NoModificationStatusCodeStr, file.Bytes(), g.resp, nil
+		return utils.NoModificationStatusCodeStr,
+			g.generalFunc.PreparingFileAfterScanning(file.Bytes(), reqContentType, g.methodName), g.returningHttpMessage(), nil
 	}
 
 	isGzip := g.generalFunc.IsBodyGzipCompressed(g.methodName)
@@ -131,8 +132,9 @@ func (g *Glasswall) Processing() (int, []byte, *http.Response, map[string]string
 	}
 
 	if g.maxFileSize != 0 && g.maxFileSize < file.Len() {
-		status, file, httpResponse := g.generalFunc.IfMaxFileSeizeExc(g.returnOrigIfMaxSizeExc, file, g.maxFileSize)
-		return status, file.Bytes(), httpResponse, nil
+		status, file, httpMsg := g.generalFunc.IfMaxFileSeizeExc(g.returnOrigIfMaxSizeExc, file, g.maxFileSize)
+		fileAfterPrep, httpMsg := g.ifICAPStatusIs204(status, file, reqContentType, httpMsg)
+		return status, fileAfterPrep, httpMsg, nil
 	}
 
 	filename := g.generalFunc.GetFileName()
@@ -147,8 +149,9 @@ func (g *Glasswall) Processing() (int, []byte, *http.Response, map[string]string
 			reason = "The file type is unsupported by Glasswall engine"
 			returnOrig = g.returnOrigIfUnprocessableFileType
 		}
-		status, file, httpResponse := g.resp400(returnOrig, reason, file)
-		return status, file.Bytes(), httpResponse, serviceHeaders
+		status, file, httpMsg := g.resp400(returnOrig, reason, file)
+		fileAfterPrep, httpMsg := g.ifICAPStatusIs204(status, file, reqContentType, httpMsg)
+		return status, fileAfterPrep, httpMsg, serviceHeaders
 	}
 
 	scannedFile, err := g.generalFunc.ExtractFileFromServiceResp(serviceResp)
@@ -162,17 +165,41 @@ func (g *Glasswall) Processing() (int, []byte, *http.Response, map[string]string
 			return utils.InternalServerErrStatusCodeStr, nil, nil, serviceHeaders
 		}
 	}
-	g.resp.Header.Set(utils.ContentLength, strconv.Itoa(len(string(scannedFile))))
-	return utils.OkStatusCodeStr, scannedFile, g.resp, serviceHeaders
+	scannedFile = g.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, g.methodName)
+	g.httpMsg.Response.Header.Set(utils.ContentLength, strconv.Itoa(len(string(scannedFile))))
+	return utils.OkStatusCodeStr, scannedFile, g.httpMsg.Response, serviceHeaders
 }
 
-func (g *Glasswall) resp400(returnOrig bool, reason string, file *bytes.Buffer) (int, *bytes.Buffer, *http.Response) {
+func (g *Glasswall) returningHttpMessage() interface{} {
+	switch g.methodName {
+	case utils.ICAPModeReq:
+		return g.httpMsg.Request
+	case utils.ICAPModeResp:
+		return g.httpMsg.Response
+	}
+	return nil
+}
+
+func (g *Glasswall) ifICAPStatusIs204(status int, file *bytes.Buffer, reqContentType ContentTypes.ContentType, httpMessage interface{}) ([]byte, interface{}) {
+	var fileAfterPrep []byte
+	if g.methodName == utils.ICAPModeReq {
+		fileAfterPrep = g.generalFunc.PreparingFileAfterScanning(file.Bytes(), reqContentType, g.methodName)
+	} else {
+		fileAfterPrep = file.Bytes()
+	}
+	if status == utils.NoModificationStatusCodeStr {
+		return fileAfterPrep, g.returningHttpMessage()
+	}
+	return fileAfterPrep, httpMessage
+}
+
+func (g *Glasswall) resp400(returnOrig bool, reason string, file *bytes.Buffer) (int, *bytes.Buffer, interface{}) {
 	if returnOrig {
 		return utils.NoModificationStatusCodeStr, file, nil
 	}
-	errPage := g.generalFunc.GenHtmlPage("service/unprocessable-file.html", reason, g.req.RequestURI)
-	g.resp = g.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
-	return utils.OkStatusCodeStr, errPage, g.resp
+	errPage := g.generalFunc.GenHtmlPage("service/unprocessable-file.html", reason, g.httpMsg.Request.RequestURI)
+	g.httpMsg.Response = g.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
+	return utils.OkStatusCodeStr, errPage, g.httpMsg.Response
 }
 
 func (g *Glasswall) IsUnprocessableFileType(resp *http.Response, f *bytes.Buffer) bool {
