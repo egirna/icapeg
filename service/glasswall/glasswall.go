@@ -107,6 +107,8 @@ func NewGlasswallService(serviceName, methodName string, httpMsg *utils.HttpMsg,
 
 func (g *Glasswall) Processing() (int, []byte, interface{}, map[string]string) {
 
+	isGzip := false
+
 	file, reqContentType, err := g.generalFunc.CopyingFileToTheBuffer(g.methodName)
 	if err != nil {
 		return utils.InternalServerErrStatusCodeStr, nil, nil, nil
@@ -124,17 +126,20 @@ func (g *Glasswall) Processing() (int, []byte, interface{}, map[string]string) {
 			g.generalFunc.PreparingFileAfterScanning(file.Bytes(), reqContentType, g.methodName), g.returningHttpMessage(), nil
 	}
 
-	isGzip := g.generalFunc.IsBodyGzipCompressed(g.methodName)
+	if g.maxFileSize != 0 && g.maxFileSize < file.Len() {
+		status, file, httpMsg := g.generalFunc.IfMaxFileSeizeExc(g.returnOrigIfMaxSizeExc, file, g.maxFileSize)
+		fileAfterPrep, httpMsg := g.ifICAPStatusIs204(status, file, isGzip, reqContentType, httpMsg)
+		if fileAfterPrep == nil && httpMsg == nil {
+			return utils.InternalServerErrStatusCodeStr, nil, nil, nil
+		}
+		return status, fileAfterPrep, httpMsg, nil
+	}
+
+	isGzip = g.generalFunc.IsBodyGzipCompressed(g.methodName)
 	if isGzip {
 		if file, err = g.generalFunc.DecompressGzipBody(file); err != nil {
 			return utils.InternalServerErrStatusCodeStr, nil, nil, nil
 		}
-	}
-
-	if g.maxFileSize != 0 && g.maxFileSize < file.Len() {
-		status, file, httpMsg := g.generalFunc.IfMaxFileSeizeExc(g.returnOrigIfMaxSizeExc, file, g.maxFileSize)
-		fileAfterPrep, httpMsg := g.ifICAPStatusIs204(status, file, reqContentType, httpMsg)
-		return status, fileAfterPrep, httpMsg, nil
 	}
 
 	filename := g.generalFunc.GetFileName()
@@ -150,7 +155,10 @@ func (g *Glasswall) Processing() (int, []byte, interface{}, map[string]string) {
 			returnOrig = g.returnOrigIfUnprocessableFileType
 		}
 		status, file, httpMsg := g.resp400(returnOrig, reason, file)
-		fileAfterPrep, httpMsg := g.ifICAPStatusIs204(status, file, reqContentType, httpMsg)
+		fileAfterPrep, httpMsg := g.ifICAPStatusIs204(status, file, isGzip, reqContentType, httpMsg)
+		if fileAfterPrep == nil && httpMsg == nil {
+			return utils.InternalServerErrStatusCodeStr, nil, nil, nil
+		}
 		return status, fileAfterPrep, httpMsg, serviceHeaders
 	}
 
@@ -180,8 +188,17 @@ func (g *Glasswall) returningHttpMessage() interface{} {
 	return nil
 }
 
-func (g *Glasswall) ifICAPStatusIs204(status int, file *bytes.Buffer, reqContentType ContentTypes.ContentType, httpMessage interface{}) ([]byte, interface{}) {
+func (g *Glasswall) ifICAPStatusIs204(status int, file *bytes.Buffer, isGzip bool, reqContentType ContentTypes.ContentType, httpMessage interface{}) ([]byte,
+	interface{}) {
 	var fileAfterPrep []byte
+	var err error
+	if isGzip {
+		fileAfterPrep, err = g.generalFunc.CompressFileGzip(file.Bytes())
+		if err != nil {
+			return nil, nil
+		}
+	}
+
 	if g.methodName == utils.ICAPModeReq {
 		fileAfterPrep = g.generalFunc.PreparingFileAfterScanning(file.Bytes(), reqContentType, g.methodName)
 	} else {
