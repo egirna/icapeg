@@ -103,7 +103,7 @@ func (i *ICAPRequest) RequestProcessing() {
 		}
 		gw := service.GetService(i.vendor, i.serviceName, i.methodName,
 			&utils.HttpMsg{Request: i.req.Request, Response: i.req.Response}, i.elapsed, i.logger)
-		IcapStatusCode, file, httpMsg, serviceHeaders := gw.Processing()
+		IcapStatusCode, httpMsg, serviceHeaders := gw.Processing()
 		if serviceHeaders != nil {
 			for key, value := range serviceHeaders {
 				i.w.Header().Set(key, value)
@@ -122,13 +122,37 @@ func (i *ICAPRequest) RequestProcessing() {
 				i.w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
 			} else {
 				i.w.WriteHeader(utils.OkStatusCodeStr, i.req.Response, true)
-				i.w.Write(file)
 			}
 		case utils.OkStatusCodeStr:
 			i.w.WriteHeader(utils.OkStatusCodeStr, httpMsg, true)
-			i.w.Write(file)
 		}
 	case utils.ICAPModeReq:
+		gw := service.GetService(i.vendor, i.serviceName, i.methodName,
+			&utils.HttpMsg{Request: i.req.Request, Response: i.req.Response}, i.elapsed, i.logger)
+		IcapStatusCode, httpMsg, serviceHeaders := gw.Processing()
+		if serviceHeaders != nil {
+			for key, value := range serviceHeaders {
+				i.w.Header().Set(key, value)
+			}
+		}
+		if i.isShadowServiceEnabled {
+			//add logs here
+			return
+		}
+		switch IcapStatusCode {
+		case utils.InternalServerErrStatusCodeStr:
+			i.w.WriteHeader(IcapStatusCode, nil, false)
+			break
+		case utils.NoModificationStatusCodeStr:
+			if i.Is204Allowed {
+				i.w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
+			} else {
+				i.w.WriteHeader(utils.OkStatusCodeStr, i.req.Response, true)
+			}
+		case utils.OkStatusCodeStr:
+			i.w.WriteHeader(utils.OkStatusCodeStr, httpMsg, true)
+		}
+
 	}
 
 }

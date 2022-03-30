@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -84,6 +85,8 @@ func (w *respWriter) WriteHeader(code int, httpMessage interface{}, hasBody bool
 
 	switch msg := httpMessage.(type) {
 	case *http.Request:
+		requestBody, _ := ioutil.ReadAll(msg.Body)
+		w.Write(requestBody)
 		header, err = httpRequestHeader(msg)
 		if err != nil {
 			break
@@ -142,6 +145,18 @@ func (w *respWriter) WriteHeader(code int, httpMessage interface{}, hasBody bool
 	if hasBody {
 		w.cw = httputil.NewChunkedWriter(w.conn.buf.Writer)
 	}
+	if hasBody {
+		switch msg := httpMessage.(type) {
+		case *http.Response:
+			requestBody, _ := ioutil.ReadAll(msg.Body)
+			w.Write(requestBody)
+		case *http.Request:
+			requestBody, _ := ioutil.ReadAll(msg.Body)
+			w.Write(requestBody)
+
+		}
+	}
+
 }
 
 func (w *respWriter) finishRequest() {
