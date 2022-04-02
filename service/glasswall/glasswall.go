@@ -131,7 +131,14 @@ func (g *Glasswall) Processing() (int, interface{}, map[string]string) {
 		if fileAfterPrep == nil && httpMsg == nil {
 			return utils.InternalServerErrStatusCodeStr, nil, nil
 		}
-		httpMsg = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
+		switch msg := httpMsg.(type) {
+		case *http.Request:
+			msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
+			return status, msg, nil
+		case *http.Response:
+			msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
+			return status, msg, nil
+		}
 		return status, nil, nil
 	}
 
@@ -158,7 +165,14 @@ func (g *Glasswall) Processing() (int, interface{}, map[string]string) {
 		if fileAfterPrep == nil && httpMsg == nil {
 			return utils.InternalServerErrStatusCodeStr, nil, nil
 		}
-		httpMsg = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
+		switch msg := httpMsg.(type) {
+		case *http.Request:
+			msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
+			return status, msg, serviceHeaders
+		case *http.Response:
+			msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
+			return status, msg, serviceHeaders
+		}
 		return status, nil, serviceHeaders
 	}
 

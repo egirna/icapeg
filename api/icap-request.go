@@ -121,7 +121,7 @@ func (i *ICAPRequest) RequestProcessing() {
 			if i.Is204Allowed {
 				i.w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
 			} else {
-				i.w.WriteHeader(utils.OkStatusCodeStr, i.req.Response, true)
+				i.w.WriteHeader(utils.OkStatusCodeStr, httpMsg, true)
 			}
 		case utils.OkStatusCodeStr:
 			i.w.WriteHeader(utils.OkStatusCodeStr, httpMsg, true)
@@ -149,7 +149,7 @@ func (i *ICAPRequest) RequestProcessing() {
 			if i.Is204Allowed {
 				i.w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
 			} else {
-				i.w.WriteHeader(utils.OkStatusCodeStr, i.req.Response, true)
+				i.w.WriteHeader(utils.OkStatusCodeStr, httpMsg, true)
 			}
 		case utils.OkStatusCodeStr:
 			i.w.WriteHeader(utils.OkStatusCodeStr, httpMsg, true)
