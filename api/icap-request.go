@@ -126,7 +126,9 @@ func (i *ICAPRequest) RequestProcessing() {
 		case utils.OkStatusCodeStr:
 			i.w.WriteHeader(utils.OkStatusCodeStr, httpMsg, true)
 		}
+
 	case utils.ICAPModeReq:
+		defer i.req.Request.Body.Close()
 		gw := service.GetService(i.vendor, i.serviceName, i.methodName,
 			&utils.HttpMsg{Request: i.req.Request, Response: i.req.Response}, i.elapsed, i.logger)
 		IcapStatusCode, httpMsg, serviceHeaders := gw.Processing()

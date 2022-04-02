@@ -85,8 +85,6 @@ func (w *respWriter) WriteHeader(code int, httpMessage interface{}, hasBody bool
 
 	switch msg := httpMessage.(type) {
 	case *http.Request:
-		requestBody, _ := ioutil.ReadAll(msg.Body)
-		w.Write(requestBody)
 		header, err = httpRequestHeader(msg)
 		if err != nil {
 			break

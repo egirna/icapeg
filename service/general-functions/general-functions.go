@@ -149,7 +149,7 @@ func (f *GeneralFunc) IfMaxFileSeizeExc(returnOrigIfMaxSizeExc bool, file *bytes
 
 // GetFileName returns the filename from the http request
 func (f *GeneralFunc) GetFileName() string {
-	// req.RequestURI  inserting dummy response if the http request is nil
+	//req.RequestURI  inserting dummy response if the http request is nil
 	var Requrl string
 	if f.httpMsg.Request == nil || f.httpMsg.Request.RequestURI == "" {
 		Requrl = "http://www.example/images/unnamed_file"
@@ -158,8 +158,9 @@ func (f *GeneralFunc) GetFileName() string {
 		Requrl = f.httpMsg.Request.RequestURI
 		if Requrl[len(Requrl)-1] == '/' {
 			Requrl = Requrl[0 : len(Requrl)-1]
+		} else {
+			Requrl = "http://www.example/images/unnamed_file"
 		}
-
 	}
 	u, _ := url.Parse(Requrl)
 
