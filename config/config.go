@@ -46,8 +46,6 @@ func Init() {
 		WriteLogsToConsole:      readValues.ReadValuesBool("app.write_logs_to_console"),
 		RespScannerVendorShadow: strings.ToLower(readValues.ReadValuesString("app.resp_scanner_vendor_shadow")),
 		ReqScannerVendorShadow:  strings.ToLower(readValues.ReadValuesString("app.req_scanner_vendor_shadow")),
-		BypassExtensions:        readValues.ReadValuesSlice("app.bypass_extensions"),
-		ProcessExtensions:       readValues.ReadValuesSlice("app.process_extensions"),
 		PreviewBytes:            readValues.ReadValuesString("app.preview_bytes"),
 		PreviewEnabled:          readValues.ReadValuesBool("app.preview_enabled"),
 		PropagateError:          readValues.ReadValuesBool("app.propagate_error"),
@@ -86,8 +84,6 @@ func InitTestConfig() {
 		//ReqScannerVendor:        strings.ToLower(readValues.ReadValuesString("app.req_scanner_vendor")),
 		RespScannerVendorShadow: strings.ToLower(readValues.ReadValuesString("app.resp_scanner_vendor_shadow")),
 		ReqScannerVendorShadow:  strings.ToLower(readValues.ReadValuesString("app.req_scanner_vendor_shadow")),
-		BypassExtensions:        readValues.ReadValuesSlice("app.bypass_extensions"),
-		ProcessExtensions:       readValues.ReadValuesSlice("app.process_extensions"),
 		PreviewBytes:            readValues.ReadValuesString("app.preview_bytes"),
 		PropagateError:          readValues.ReadValuesBool("app.propagate_error"),
 	}

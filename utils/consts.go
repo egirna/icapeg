@@ -15,16 +15,16 @@ const (
 
 // the common constants
 const (
-	ISTag                       = "\"ICAPEG\""
-	Unknown                     = "unknown"
-	Any                         = "*"
-	NoModificationStatusCodeStr = 204
-	BadRequestStatusCodeStr     = 400
-	OkStatusCodeStr             = 200
-	HeaderEncapsulated          = "Encapsulated"
-	ICAPPrefix                  = "icap_"
-	NoVendor                    = "none"
-	ContentLength               = "Content-Length"
-	ContentType                 = "Content-Type"
-	HTMLContentType             = "text/html"
+	Unknown                        = "unknown"
+	Any                            = "*"
+	NoModificationStatusCodeStr    = 204
+	BadRequestStatusCodeStr        = 400
+	OkStatusCodeStr                = 200
+	InternalServerErrStatusCodeStr = 500
+	HeaderEncapsulated             = "Encapsulated"
+	ICAPPrefix                     = "icap_"
+	NoVendor                       = "none"
+	ContentLength                  = "Content-Length"
+	ContentType                    = "Content-Type"
+	HTMLContentType                = "text/html"
 )

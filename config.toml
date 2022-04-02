@@ -31,22 +31,28 @@ log_flush_duration = 2
 port = 1344
 resp_scanner_vendor_shadow = "none"
 req_scanner_vendor_shadow = "none"
-bypass_extensions = []
-process_extensions = ["*"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
-preview_bytes = "" #byte
-preview_enabled = false # options send preview header or not
+preview_bytes = "1024" #byte
+preview_enabled = false# options send preview header or not
 propagate_error = true
 service_caption ="Go-ICAP server - glasswall Rebuild service"
 services= ["gw_rebuild" , "echo"]
 verify_server_cert=false
+#I worked on project using Golang which extracts uploaded files and before uploading and downloaded files
+# before downloading and send it to api to scan it before uploading/downloading it.
 
 [gw_rebuild]
 vendor = "glasswall"
 service_caption= "gw_rebuild"   #Service
 service_tag = "Glasswall ICAP"  #ISTAG
-shadow_service=false
 req_mode=true # enable support for ICAP request mode
 resp_mode=true # enable support for ICAP response mode
+shadow_service=false
+resp_scanner_vendor_shadow = "none"
+req_scanner_vendor_shadow = "none"
+bypass_extensions = []
+process_extensions = ["*"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
+preview_bytes = "" #byte
+preview_enabled = false # options send preview header or not
 base_url = "$_CLOUDAPI_URL" #
 scan_endpoint = "/api/rebuild/file"
 api_key = "$_AUTH_TOKENS"
