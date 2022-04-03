@@ -18,6 +18,7 @@ import (
 	"time"
 )
 
+// ICAPRequest struct is used to encapsulate important information of the ICAP request like method name, etc
 type ICAPRequest struct {
 	w                      icap.ResponseWriter
 	req                    *icap.Request
@@ -32,6 +33,7 @@ type ICAPRequest struct {
 	vendor                 string
 }
 
+//NewICAPRequest is a func to create a new instance from struct IcapRequest yo handle upcoming ICAP requests
 func NewICAPRequest(w icap.ResponseWriter, req *icap.Request, logger *logger.ZLogger) *ICAPRequest {
 	ICAPRequest := &ICAPRequest{
 		w:       w,
@@ -43,6 +45,8 @@ func NewICAPRequest(w icap.ResponseWriter, req *icap.Request, logger *logger.ZLo
 	return ICAPRequest
 }
 
+//RequestInitialization is a fun to retrieve the important information from the ICAP request
+//and initialize the ICAP response
 func (i *ICAPRequest) RequestInitialization() error {
 
 	//adding headers to the log
@@ -67,8 +71,10 @@ func (i *ICAPRequest) RequestInitialization() error {
 	}
 	i.methodName = i.req.Method
 
+	//getting vendor name which depends on the name of the service
 	i.vendor = i.getVendorName()
 
+	//adding important headers to options ICAP response
 	i.addingISTAGServiceHeaders()
 
 	i.Is204Allowed = i.is204Allowed()
@@ -77,6 +83,7 @@ func (i *ICAPRequest) RequestInitialization() error {
 
 	i.appCfg = config.App()
 
+	//checking if the shadow service is enabled or not to apply shadow service mode
 	if i.isShadowServiceEnabled && i.methodName != "OPTIONS" {
 		i.shadowService()
 		go i.RequestProcessing()
@@ -86,61 +93,54 @@ func (i *ICAPRequest) RequestInitialization() error {
 	return nil
 }
 
+//RequestProcessing is a func to process the ICAP request upon the service and method required
 func (i *ICAPRequest) RequestProcessing() {
+
+	// check the method name
 	switch i.methodName {
 	case utils.ICAPModeOptions:
 		i.optionsMode()
 		break
 
-	case utils.ICAPModeResp:
-		//buf := &bytes.Buffer{}
-		//io.Copy(buf, i.req.Response.Body)
-		//fmt.Println(buf)
-		//fmt.Println("------------------------------------------------------------------------------------------------------------")
-		defer i.req.Response.Body.Close()
+	//for reqmod and respmod
+	default:
+		if i.methodName == "REQMOD" {
+			defer i.req.Request.Body.Close()
+			if i.req.Request != nil {
+				if i.req.Request.Method == "CONNECT" {
+					i.w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
+					return
+				}
+			}
+		} else {
+			defer i.req.Response.Body.Close()
+		}
 		if i.req.Request == nil {
 			i.req.Request = &http.Request{}
 		}
-		gw := service.GetService(i.vendor, i.serviceName, i.methodName,
+		//initialize the service by creating instance from the required service
+		requiredService := service.GetService(i.vendor, i.serviceName, i.methodName,
 			&utils.HttpMsg{Request: i.req.Request, Response: i.req.Response}, i.elapsed, i.logger)
-		IcapStatusCode, httpMsg, serviceHeaders := gw.Processing()
+
+		//calling Processing func to process the http message which encapsulated inside the ICAP request
+		IcapStatusCode, httpMsg, serviceHeaders := requiredService.Processing()
+
+		// adding the headers which the service wants to add them in the ICAP response
 		if serviceHeaders != nil {
 			for key, value := range serviceHeaders {
 				i.w.Header().Set(key, value)
 			}
-		}
-		if i.isShadowServiceEnabled {
-			//add logs here
-			return
-		}
-		switch IcapStatusCode {
-		case utils.InternalServerErrStatusCodeStr:
-			i.w.WriteHeader(IcapStatusCode, nil, false)
-			break
-		case utils.NoModificationStatusCodeStr:
-			if i.Is204Allowed {
-				i.w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
-			} else {
-				i.w.WriteHeader(utils.OkStatusCodeStr, httpMsg, true)
-			}
-		case utils.OkStatusCodeStr:
-			i.w.WriteHeader(utils.OkStatusCodeStr, httpMsg, true)
 		}
 
-	case utils.ICAPModeReq:
-		defer i.req.Request.Body.Close()
-		gw := service.GetService(i.vendor, i.serviceName, i.methodName,
-			&utils.HttpMsg{Request: i.req.Request, Response: i.req.Response}, i.elapsed, i.logger)
-		IcapStatusCode, httpMsg, serviceHeaders := gw.Processing()
-		if serviceHeaders != nil {
-			for key, value := range serviceHeaders {
-				i.w.Header().Set(key, value)
-			}
-		}
+		//checking if shadw service mode is enabled to add logs instead of returning another
+		//ICAP response beside the one who was sebt to the client in line 88
 		if i.isShadowServiceEnabled {
 			//add logs here
 			return
 		}
+
+		//check the ICAP status code which returned from the service to decide
+		//how should be the ICAP response
 		switch IcapStatusCode {
 		case utils.InternalServerErrStatusCodeStr:
 			i.w.WriteHeader(IcapStatusCode, nil, false)
@@ -174,6 +174,8 @@ func (i *ICAPRequest) addHeadersToLogs() {
 	}
 }
 
+//isServiceExists is a func to make sure that service which required in ICAP
+//request is existing in the config file
 func (i *ICAPRequest) isServiceExists() bool {
 	services := readValues.ReadValuesSlice("app.services")
 	for r := 0; r < len(services); r++ {
@@ -185,6 +187,7 @@ func (i *ICAPRequest) isServiceExists() bool {
 
 }
 
+//getMethodName is a func to get the name of the method of the ICAP request
 func (i *ICAPRequest) getMethodName() string {
 	if i.methodName == "REQMOD" {
 		i.methodName = "req_mode"
@@ -194,6 +197,7 @@ func (i *ICAPRequest) getMethodName() string {
 	return i.methodName
 }
 
+//isMethodAllowed is a func to check if the method in the ICAP request is allowed in config file or not
 func (i *ICAPRequest) isMethodAllowed() bool {
 	if i.methodName != "OPTIONS" {
 		isMethodEnabled := readValues.ReadValuesBool(i.serviceName + "." + i.methodName)
@@ -206,12 +210,14 @@ func (i *ICAPRequest) isMethodAllowed() bool {
 	return true
 }
 
+//getVendorName is a func to get the vendor of the service which in the ICAP request
 func (i *ICAPRequest) getVendorName() string {
 	vendor := i.serviceName + ".vendor"
 	vendor = readValues.ReadValuesString(vendor)
 	return vendor
 }
 
+//addingISTAGServiceHeaders is a func to add the important header to ICAP response
 func (i *ICAPRequest) addingISTAGServiceHeaders() {
 	i.h.Set("ISTag", readValues.ReadValuesString(i.serviceName+".service_tag"))
 	i.h.Set("Service", readValues.ReadValuesString(i.serviceName+".service_caption"))
@@ -219,6 +225,7 @@ func (i *ICAPRequest) addingISTAGServiceHeaders() {
 		Msgf("request_received_on_icap")
 }
 
+//is204Allowed is a func to check if ICAP request has the header "204 : Allowed" or not
 func (i *ICAPRequest) is204Allowed() bool {
 	Is204Allowed := false
 	if _, exist := i.req.Header["Allow"]; exist &&
@@ -228,6 +235,7 @@ func (i *ICAPRequest) is204Allowed() bool {
 	return Is204Allowed
 }
 
+//shadowService is a func to apply the shadow service
 func (i *ICAPRequest) shadowService() {
 	zLog.Debug().Dur("duration", i.elapsed).Str("value", "processing not required for this request").
 		Msgf("shadow_service_is_enabled")
@@ -251,6 +259,7 @@ func (i *ICAPRequest) shadowService() {
 	}
 }
 
+//getEnabledMethods is a func get all enable method of a specific service
 func (i *ICAPRequest) getEnabledMethods() string {
 	var allMethods []string
 	if readValues.ReadValuesBool(i.serviceName + ".resp_mode") {
@@ -265,6 +274,7 @@ func (i *ICAPRequest) getEnabledMethods() string {
 	return allMethods[0] + ", " + allMethods[1]
 }
 
+//optionsMode is a func to return an ICAP response in OPTIONS mode
 func (i *ICAPRequest) optionsMode() {
 	//optionsModeRemote(vendor, req, w, appCfg, zlogger)
 	i.h.Set("Methods", i.getEnabledMethods())
