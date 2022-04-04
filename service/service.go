@@ -2,6 +2,7 @@ package service
 
 import (
 	"icapeg/logger"
+	"icapeg/service/echo"
 	"icapeg/service/glasswall"
 	"icapeg/utils"
 	"time"
@@ -10,6 +11,7 @@ import (
 //Vendors names
 const (
 	VendorGlasswall = "glasswall"
+	VendorEcho      = "echo"
 )
 
 type (
@@ -25,6 +27,8 @@ func GetService(vendor, serviceName, methodName string, httpMsg *utils.HttpMsg, 
 	switch vendor {
 	case VendorGlasswall:
 		return glasswall.NewGlasswallService(serviceName, methodName, httpMsg, elapsed, logger)
+	case VendorEcho:
+		return echo.NewEchoService(serviceName, methodName, httpMsg, elapsed, logger)
 	}
 	return nil
 }
