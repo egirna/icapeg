@@ -40,7 +40,7 @@ verify_server_cert=false
 #I worked on project using Golang which extracts uploaded files and before uploading and downloaded files
 # before downloading and send it to api to scan it before uploading/downloading it.
 
-[gw_rebuild]
+[glasswall]
 vendor = "glasswall"
 service_caption= "gw_rebuild"   #Service
 service_tag = "Glasswall ICAP"  #ISTAG
