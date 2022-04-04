@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"icapeg/logger"
 	"icapeg/readValues"
-	"icapeg/service/general-functions"
+	"icapeg/service/services-utilities/general-functions"
 	"icapeg/utils"
 	"io"
 	"net/http"

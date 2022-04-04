@@ -5,7 +5,8 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
-	"icapeg/service/ContentTypes"
+	"icapeg/service/services-utilities/ContentTypes"
+	"icapeg/service/services-utilities/general-functions"
 	"icapeg/utils"
 	"io"
 	"io/ioutil"
@@ -17,7 +18,6 @@ import (
 	zLog "github.com/rs/zerolog/log"
 	"icapeg/logger"
 	"icapeg/readValues"
-	"icapeg/service/general-functions"
 )
 
 type AuthTokens struct {

@@ -2,8 +2,8 @@ package service
 
 import (
 	"icapeg/logger"
-	"icapeg/service/echo"
-	"icapeg/service/glasswall"
+	"icapeg/service/services/echo"
+	"icapeg/service/services/glasswall"
 	"icapeg/utils"
 	"time"
 )

@@ -8,7 +8,7 @@ import (
 	zLog "github.com/rs/zerolog/log"
 	"html/template"
 	"icapeg/logger"
-	"icapeg/service/ContentTypes"
+	"icapeg/service/services-utilities/ContentTypes"
 	"icapeg/utils"
 	"io"
 	"io/ioutil"
