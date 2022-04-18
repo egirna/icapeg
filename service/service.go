@@ -2,6 +2,7 @@ package service
 
 import (
 	"icapeg/logger"
+	"icapeg/service/services/clamav"
 	"icapeg/service/services/echo"
 	"icapeg/service/services/glasswall"
 	"icapeg/utils"
@@ -12,6 +13,7 @@ import (
 const (
 	VendorGlasswall = "glasswall"
 	VendorEcho      = "echo"
+	VendorClamav    = "clamav"
 )
 
 type (
@@ -29,6 +31,9 @@ func GetService(vendor, serviceName, methodName string, httpMsg *utils.HttpMsg, 
 		return glasswall.NewGlasswallService(serviceName, methodName, httpMsg, elapsed, logger)
 	case VendorEcho:
 		return echo.NewEchoService(serviceName, methodName, httpMsg, elapsed, logger)
+	case VendorClamav:
+		return clamav.NewClamavService(serviceName, methodName, httpMsg, elapsed, logger)
+
 	}
 	return nil
 }
