@@ -4,7 +4,7 @@ Assume that the name of the vendor is **abc** and the name of the service **xyz*
 
 - ### **Config.toml**
 
-  You should add a section with the name of the service in [**config.toml**](./config.toml).
+  You should add asection with the name of the service in [**config.toml**](./config.toml).
 
   You should add the required variables of the service.
 
@@ -45,6 +45,7 @@ Assume that the name of the vendor is **abc** and the name of the service **xyz*
     	ScanEndpoint                      string
     	ReportEndpoint                    string
     	FailThreshold                     int
+        generalFunc                       *general_functions.GeneralFunc //this not neccessary, you just can use it to make use of its function
     	logger                            *logger.ZLogger
     }
     ```
@@ -74,7 +75,17 @@ Assume that the name of the vendor is **abc** and the name of the service **xyz*
     }
     ```
 
-  - Add function **Processing** to **abc** struct to implement ****
+  - Add function **Processing** to **abc** struct to implement the interface
+
+    ```go
+    //Processing is a func used for to processing the http message
+    func (g *Glasswall) Processing() (int, interface{}, map[string]string) {
+    	// implementation
+    }
+    
+    ```
+
+    
 
 - ### **service.go**
 
@@ -88,4 +99,18 @@ Assume that the name of the vendor is **abc** and the name of the service **xyz*
     )
     ```
 
-  - You should add a case in switch case by the new vendor
+  - You should add a case in the switch case in GetService function by the new vendor
+  
+    ```go
+    func GetService(vendor, serviceName, methodName string, httpMsg *utils.HttpMsg, elapsed time.Duration, logger *logger.ZLogger) Service {
+    	switch vendor {
+    	case VendorGlasswall:
+    		return glasswall.NewGlasswallService(serviceName, methodName, httpMsg, elapsed, logger)
+    	case VendorABC:
+    		return echo.NewABCService(serviceName, methodName, httpMsg, elapsed, logger)
+    	}
+    	return nil
+    }
+    ```
+
+Now you can run the application and try it with you service.
