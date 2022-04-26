@@ -8,7 +8,7 @@ import (
 	zLog "github.com/rs/zerolog/log"
 	"html/template"
 	"icapeg/logger"
-	"icapeg/service/ContentTypes"
+	"icapeg/service/services-utilities/ContentTypes"
 	"icapeg/utils"
 	"io"
 	"io/ioutil"
@@ -252,4 +252,42 @@ func (f *GeneralFunc) PreparingFileAfterScanning(scannedFile []byte, reqContentT
 		return []byte(reqContentType.BodyAfterScanning(scannedFile))
 	}
 	return scannedFile
+}
+
+// IfStatusIs204WithFile handling the HTTP message if the status should be 204 no modifications
+func (f *GeneralFunc) IfStatusIs204WithFile(methodName string, status int, file *bytes.Buffer, isGzip bool, reqContentType ContentTypes.ContentType, httpMessage interface{}) ([]byte,
+	interface{}) {
+	var fileAfterPrep []byte
+	var err error
+	if isGzip {
+		fileAfterPrep, err = f.CompressFileGzip(file.Bytes())
+		if err != nil {
+			return nil, nil
+		}
+	}
+
+	if methodName == utils.ICAPModeReq {
+		fileAfterPrep = f.PreparingFileAfterScanning(file.Bytes(), reqContentType, methodName)
+	} else {
+		fileAfterPrep = file.Bytes()
+	}
+	if status == utils.NoModificationStatusCodeStr {
+		return fileAfterPrep, f.ReturningHttpMessageWithFile(methodName, fileAfterPrep)
+	}
+	return fileAfterPrep, httpMessage
+}
+
+// ReturningHttpMessageWithFile function to return the suitable http message (http request, http response)
+func (f *GeneralFunc) ReturningHttpMessageWithFile(methodName string, file []byte) interface{} {
+	switch methodName {
+	case utils.ICAPModeReq:
+		f.httpMsg.Request.Header.Set(utils.ContentLength, strconv.Itoa(len(string(file))))
+		f.httpMsg.Request.Body = io.NopCloser(bytes.NewBuffer(file))
+		return f.httpMsg.Request
+	case utils.ICAPModeResp:
+		f.httpMsg.Response.Header.Set(utils.ContentLength, strconv.Itoa(len(string(file))))
+		f.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(file))
+		return f.httpMsg.Response
+	}
+	return nil
 }

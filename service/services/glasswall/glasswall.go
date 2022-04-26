@@ -5,7 +5,8 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
-	"icapeg/service/ContentTypes"
+	"icapeg/service/services-utilities/ContentTypes"
+	"icapeg/service/services-utilities/general-functions"
 	"icapeg/utils"
 	"io"
 	"io/ioutil"
@@ -17,7 +18,6 @@ import (
 	zLog "github.com/rs/zerolog/log"
 	"icapeg/logger"
 	"icapeg/readValues"
-	"icapeg/service/general-functions"
 )
 
 type AuthTokens struct {
@@ -139,7 +139,7 @@ func (g *Glasswall) Processing() (int, interface{}, map[string]string) {
 	//if yes we will return 200 ok or 204 no modification, it depends on the configuration of the service
 	if g.maxFileSize != 0 && g.maxFileSize < file.Len() {
 		status, file, httpMsg := g.generalFunc.IfMaxFileSeizeExc(g.returnOrigIfMaxSizeExc, file, g.maxFileSize)
-		fileAfterPrep, httpMsg := g.ifICAPStatusIs204(status, file, isGzip, reqContentType, httpMsg)
+		fileAfterPrep, httpMsg := g.generalFunc.IfStatusIs204WithFile(g.methodName, status, file, isGzip, reqContentType, httpMsg)
 		if fileAfterPrep == nil && httpMsg == nil {
 			return utils.InternalServerErrStatusCodeStr, nil, nil
 		}
