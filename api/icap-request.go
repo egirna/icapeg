@@ -99,7 +99,7 @@ func (i *ICAPRequest) RequestProcessing() {
 	// check the method name
 	switch i.methodName {
 	case utils.ICAPModeOptions:
-		i.optionsMode()
+		i.optionsMode(i.serviceName)
 		break
 
 	//for reqmod and respmod
@@ -274,15 +274,21 @@ func (i *ICAPRequest) getEnabledMethods() string {
 	return allMethods[0] + ", " + allMethods[1]
 }
 
+func (i *ICAPRequest) servicePreview(serviceName string) (bool, string) {
+	return readValues.ReadValuesBool(serviceName + ".preview_enabled"), readValues.ReadValuesString(serviceName + ".preview_bytes")
+}
+
 //optionsMode is a func to return an ICAP response in OPTIONS mode
-func (i *ICAPRequest) optionsMode() {
+func (i *ICAPRequest) optionsMode(serviceName string) {
 	//optionsModeRemote(vendor, req, w, appCfg, zlogger)
 	i.h.Set("Methods", i.getEnabledMethods())
 	i.h.Set("Allow", "204")
 	// Add preview if preview_enabled is true in config
-	if i.appCfg.PreviewEnabled == true {
-		if pb, _ := strconv.Atoi(i.appCfg.PreviewBytes); pb >= 0 {
-			i.h.Set("Preview", i.appCfg.PreviewBytes)
+	previewEnabled, previewBytes := i.servicePreview(serviceName)
+	fmt.Println(previewBytes)
+	if previewEnabled == true {
+		if pb, _ := strconv.Atoi(previewBytes); pb >= 0 {
+			i.h.Set("Preview", previewBytes)
 		}
 	}
 	i.h.Set("Transfer-Preview", utils.Any)

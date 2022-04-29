@@ -47,6 +47,8 @@ service_tag = "Glasswall ICAP"  #ISTAG
 req_mode=true # enable support for ICAP request mode
 resp_mode=true # enable support for ICAP response mode
 shadow_service=false
+preview_bytes = "1024" #byte
+preview_enabled = true# options send preview header or not
 bypass_extensions = []
 process_extensions = ["*"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
 base_url = "$_CLOUDAPI_URL" #
@@ -69,6 +71,8 @@ service_tag = "ECHO ICAP"  #ISTAG
 req_mode=true
 resp_mode=true
 shadow_service=false
+preview_bytes = "1024" #byte
+preview_enabled = true# options send preview header or not
 bypass_extensions = []
 process_extensions = ["*"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
 base_url = "echo" #

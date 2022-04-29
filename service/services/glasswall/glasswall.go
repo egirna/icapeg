@@ -38,6 +38,8 @@ type Glasswall struct {
 	elapsed                           time.Duration
 	serviceName                       string
 	methodName                        string
+	previewEnabled                    bool
+	previewBytes                      string
 	maxFileSize                       int
 	bypassExts                        []string
 	processExts                       []string
@@ -70,6 +72,8 @@ func NewGlasswallService(serviceName, methodName string, httpMsg *utils.HttpMsg,
 		elapsed:                           elapsed,
 		serviceName:                       serviceName,
 		methodName:                        methodName,
+		previewEnabled:                    readValues.ReadValuesBool(serviceName + ".preview_enabled"),
+		previewBytes:                      readValues.ReadValuesString(serviceName + ".preview_bytes"),
 		maxFileSize:                       readValues.ReadValuesInt(serviceName + ".max_filesize"),
 		bypassExts:                        readValues.ReadValuesSlice(serviceName + ".bypass_extensions"),
 		processExts:                       readValues.ReadValuesSlice(serviceName + ".process_extensions"),
@@ -114,6 +118,12 @@ func (g *Glasswall) Processing() (int, interface{}, map[string]string) {
 	file, reqContentType, err := g.generalFunc.CopyingFileToTheBuffer(g.methodName)
 	if err != nil {
 		return utils.InternalServerErrStatusCodeStr, nil, nil
+	}
+
+	//getting the rest of the HTTP msg body in case of the preview is enabled,
+	//and it's okay to get the rest of the HTTP msg
+	if g.previewEnabled {
+		file = g.generalFunc.Preview()
 	}
 
 	//getting the extension of the file

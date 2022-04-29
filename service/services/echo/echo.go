@@ -18,6 +18,8 @@ type Echo struct {
 	serviceName            string
 	methodName             string
 	maxFileSize            int
+	previewEnabled         bool
+	previewBytes           string
 	bypassExts             []string
 	processExts            []string
 	BaseURL                string
@@ -38,6 +40,8 @@ func NewEchoService(serviceName, methodName string, httpMsg *utils.HttpMsg, elap
 		elapsed:                elapsed,
 		serviceName:            serviceName,
 		methodName:             methodName,
+		previewEnabled:         readValues.ReadValuesBool(serviceName + ".preview_enabled"),
+		previewBytes:           readValues.ReadValuesString(serviceName + ".preview_bytes"),
 		maxFileSize:            readValues.ReadValuesInt(serviceName + ".max_filesize"),
 		bypassExts:             readValues.ReadValuesSlice(serviceName + ".bypass_extensions"),
 		processExts:            readValues.ReadValuesSlice(serviceName + ".process_extensions"),
@@ -61,6 +65,12 @@ func (e *Echo) Processing() (int, interface{}, map[string]string) {
 		return utils.InternalServerErrStatusCodeStr, nil, nil
 	}
 
+	//getting the rest of the HTTP msg body in case of the preview is enabled,
+	//and it's okay to get the rest of the HTTP msg
+
+	if e.previewEnabled {
+		file = e.generalFunc.Preview()
+	}
 	//getting the extension of the file
 	fileExtension := utils.GetMimeExtension(file.Bytes())
 
