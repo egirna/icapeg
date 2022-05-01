@@ -110,7 +110,12 @@ func NewGlasswallService(serviceName, methodName string, httpMsg *utils.HttpMsg,
 }
 
 //Processing is a func used for to processing the http message
-func (g *Glasswall) Processing() (int, interface{}, map[string]string) {
+func (g *Glasswall) Processing(partial bool) (int, interface{}, map[string]string) {
+
+	// no need to scan part of the file, this service needs all the file at ine time
+	if partial {
+		return utils.Continue, nil, nil
+	}
 
 	isGzip := false
 
@@ -118,12 +123,6 @@ func (g *Glasswall) Processing() (int, interface{}, map[string]string) {
 	file, reqContentType, err := g.generalFunc.CopyingFileToTheBuffer(g.methodName)
 	if err != nil {
 		return utils.InternalServerErrStatusCodeStr, nil, nil
-	}
-
-	//getting the rest of the HTTP msg body in case of the preview is enabled,
-	//and it's okay to get the rest of the HTTP msg
-	if g.previewEnabled {
-		file = g.generalFunc.Preview()
 	}
 
 	//getting the extension of the file

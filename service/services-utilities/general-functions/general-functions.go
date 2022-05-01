@@ -7,7 +7,6 @@ import (
 	"fmt"
 	zLog "github.com/rs/zerolog/log"
 	"html/template"
-	"icapeg/icap"
 	"icapeg/logger"
 	"icapeg/service/services-utilities/ContentTypes"
 	"icapeg/utils"
@@ -291,14 +290,4 @@ func (f *GeneralFunc) ReturningHttpMessageWithFile(methodName string, file []byt
 		return f.httpMsg.Response
 	}
 	return nil
-}
-
-// Preview getting the rest of the HTTP msg body in case of the preview is enabled,
-//and it's okay to get the rest of the HTTP msg
-func (f *GeneralFunc) Preview() *bytes.Buffer {
-	r := icap.GetTheRest()
-	c := io.NopCloser(r)
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(c)
-	return buf
 }

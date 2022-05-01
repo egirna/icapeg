@@ -57,19 +57,16 @@ func NewEchoService(serviceName, methodName string, httpMsg *utils.HttpMsg, elap
 }
 
 //Processing is a func used for to processing the http message
-func (e *Echo) Processing() (int, interface{}, map[string]string) {
+func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
+	// no need to scan part of the file, this service needs all the file at ine time
+	if partial {
+		return utils.Continue, nil, nil
+	}
 
 	//extracting the file from http message
 	file, reqContentType, err := e.generalFunc.CopyingFileToTheBuffer(e.methodName)
 	if err != nil {
 		return utils.InternalServerErrStatusCodeStr, nil, nil
-	}
-
-	//getting the rest of the HTTP msg body in case of the preview is enabled,
-	//and it's okay to get the rest of the HTTP msg
-
-	if e.previewEnabled {
-		file = e.generalFunc.Preview()
 	}
 	//getting the extension of the file
 	fileExtension := utils.GetMimeExtension(file.Bytes())
