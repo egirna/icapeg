@@ -110,7 +110,7 @@ func NewClamavService(serviceName, methodName string, httpMsg *utils.HttpMsg, el
 //	return si, nil
 //}
 
-func (c *Clamav) Processing() (int, interface{}, map[string]string) {
+func (c *Clamav) Processing(partial bool) (int, interface{}, map[string]string) {
 	isGzip := false
 
 	//extracting the file from http message

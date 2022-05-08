@@ -19,7 +19,7 @@ const (
 type (
 	// Service holds the info to distinguish a service
 	Service interface {
-		Processing() (int, interface{}, map[string]string)
+		Processing(bool) (int, interface{}, map[string]string)
 	}
 )
 

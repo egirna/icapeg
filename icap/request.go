@@ -43,6 +43,9 @@ type Request struct {
 	Response *http.Response
 }
 
+var origBuf *bufio.ReadWriter
+var origReader io.Reader
+
 // ReadRequest reads and parses a request from b.
 func ReadRequest(b *bufio.ReadWriter) (req *Request, err error) {
 	tp := textproto.NewReader(b.Reader)
@@ -144,24 +147,21 @@ func ReadRequest(b *bufio.ReadWriter) (req *Request, err error) {
 
 	var bodyReader io.ReadCloser = emptyReader(0)
 	if hasBody {
-		moreBody := false
 		if p := req.Header.Get("Preview"); p != "" {
-			moreBody = true
 
 			req.Preview, err = ioutil.ReadAll(newChunkedReader(b))
+			origBuf = b
+			origReader = bytes.NewBuffer(req.Preview)
+
 			if err != nil {
 				if strings.Contains(err.Error(), "ieof") {
 					// The data ended with "0; ieof", which the HTTP chunked reader doesn't understand.
-					moreBody = false
 					err = nil
 				} else {
 					return nil, err
 				}
 			}
 			var r io.Reader = bytes.NewBuffer(req.Preview)
-			if moreBody {
-				r = io.MultiReader(r, &continueReader{buf: b})
-			}
 			bodyReader = ioutil.NopCloser(r)
 		} else {
 			bodyReader = ioutil.NopCloser(newChunkedReader(b))
@@ -253,4 +253,8 @@ func (c *continueReader) Read(p []byte) (n int, err error) {
 	}
 
 	return c.cr.Read(p)
+}
+
+func GetTheRest() io.Reader {
+	return io.MultiReader(origReader, &continueReader{buf: origBuf})
 }

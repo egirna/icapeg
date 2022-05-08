@@ -21,6 +21,7 @@ const (
 	BadRequestStatusCodeStr        = 400
 	OkStatusCodeStr                = 200
 	InternalServerErrStatusCodeStr = 500
+	Continue                       = 100
 	HeaderEncapsulated             = "Encapsulated"
 	ICAPPrefix                     = "icap_"
 	NoVendor                       = "none"
