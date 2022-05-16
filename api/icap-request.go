@@ -95,68 +95,87 @@ func (i *ICAPRequest) RequestInitialization() error {
 
 //RequestProcessing is a func to process the ICAP request upon the service and method required
 func (i *ICAPRequest) RequestProcessing() {
+	partial := false
+
+	//check if there is a preview header in the ICAP request or not
+	if i.req.Header.Get("Preview") != "" {
+		partial = true
+	}
 
 	// check the method name
 	switch i.methodName {
 	case utils.ICAPModeOptions:
-		i.optionsMode()
+		i.optionsMode(i.serviceName)
 		break
 
 	//for reqmod and respmod
 	default:
-		if i.methodName == "REQMOD" {
-			defer i.req.Request.Body.Close()
-			if i.req.Request != nil {
-				if i.req.Request.Method == "CONNECT" {
-					i.w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
-					return
-				}
-			}
-		} else {
-			defer i.req.Response.Body.Close()
-		}
-		if i.req.Request == nil {
-			i.req.Request = &http.Request{}
-		}
-		//initialize the service by creating instance from the required service
-		requiredService := service.GetService(i.vendor, i.serviceName, i.methodName,
-			&utils.HttpMsg{Request: i.req.Request, Response: i.req.Response}, i.elapsed, i.logger)
-
-		//calling Processing func to process the http message which encapsulated inside the ICAP request
-		IcapStatusCode, httpMsg, serviceHeaders := requiredService.Processing()
-
-		// adding the headers which the service wants to add them in the ICAP response
-		if serviceHeaders != nil {
-			for key, value := range serviceHeaders {
-				i.w.Header().Set(key, value)
-			}
-		}
-
-		//checking if shadw service mode is enabled to add logs instead of returning another
-		//ICAP response beside the one who was sebt to the client in line 88
-		if i.isShadowServiceEnabled {
-			//add logs here
-			return
-		}
-
-		//check the ICAP status code which returned from the service to decide
-		//how should be the ICAP response
-		switch IcapStatusCode {
-		case utils.InternalServerErrStatusCodeStr:
-			i.w.WriteHeader(IcapStatusCode, nil, false)
-			break
-		case utils.NoModificationStatusCodeStr:
-			if i.Is204Allowed {
-				i.w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
-			} else {
-				i.w.WriteHeader(utils.OkStatusCodeStr, httpMsg, true)
-			}
-		case utils.OkStatusCodeStr:
-			i.w.WriteHeader(utils.OkStatusCodeStr, httpMsg, true)
-		}
-
+		i.RespAndReqMods(partial)
 	}
 
+}
+
+func (i *ICAPRequest) RespAndReqMods(partial bool) {
+	if i.methodName == utils.ICAPModeReq {
+		defer i.req.Request.Body.Close()
+		if i.req.Request != nil {
+			if i.req.Request.Method == "CONNECT" {
+				i.w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
+				return
+			}
+		}
+	} else {
+		defer i.req.Response.Body.Close()
+	}
+	if i.req.Request == nil {
+		i.req.Request = &http.Request{}
+	}
+	//initialize the service by creating instance from the required service
+	requiredService := service.GetService(i.vendor, i.serviceName, i.methodName,
+		&utils.HttpMsg{Request: i.req.Request, Response: i.req.Response}, i.elapsed, i.logger)
+
+	//calling Processing func to process the http message which encapsulated inside the ICAP request
+	IcapStatusCode, httpMsg, serviceHeaders := requiredService.Processing(partial)
+
+	// adding the headers which the service wants to add them in the ICAP response
+	if serviceHeaders != nil {
+		for key, value := range serviceHeaders {
+			i.w.Header().Set(key, value)
+		}
+	}
+
+	//checking if shadw service mode is enabled to add logs instead of returning another
+	//ICAP response beside the one who was sent to the client in line 88
+	if i.isShadowServiceEnabled {
+		//add logs here
+		return
+	}
+
+	//check the ICAP status code which returned from the service to decide
+	//how should be the ICAP response
+	switch IcapStatusCode {
+	case utils.InternalServerErrStatusCodeStr:
+		i.w.WriteHeader(IcapStatusCode, nil, false)
+		break
+	case utils.Continue:
+		httpMsgBody := i.preview()
+		i.methodName = i.req.Method
+		if i.req.Method == utils.ICAPModeReq {
+			i.req.Request.Body = io.NopCloser(bytes.NewBuffer(httpMsgBody.Bytes()))
+		} else {
+			i.req.Response.Body = io.NopCloser(bytes.NewBuffer(httpMsgBody.Bytes()))
+		}
+		i.RespAndReqMods(false)
+		break
+	case utils.NoModificationStatusCodeStr:
+		if i.Is204Allowed {
+			i.w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
+		} else {
+			i.w.WriteHeader(utils.OkStatusCodeStr, httpMsg, true)
+		}
+	case utils.OkStatusCodeStr:
+		i.w.WriteHeader(utils.OkStatusCodeStr, httpMsg, true)
+	}
 }
 
 //adding headers to the log
@@ -274,17 +293,30 @@ func (i *ICAPRequest) getEnabledMethods() string {
 	return allMethods[0] + ", " + allMethods[1]
 }
 
+func (i *ICAPRequest) servicePreview(serviceName string) (bool, string) {
+	return readValues.ReadValuesBool(serviceName + ".preview_enabled"), readValues.ReadValuesString(serviceName + ".preview_bytes")
+}
+
 //optionsMode is a func to return an ICAP response in OPTIONS mode
-func (i *ICAPRequest) optionsMode() {
+func (i *ICAPRequest) optionsMode(serviceName string) {
 	//optionsModeRemote(vendor, req, w, appCfg, zlogger)
 	i.h.Set("Methods", i.getEnabledMethods())
 	i.h.Set("Allow", "204")
 	// Add preview if preview_enabled is true in config
-	if i.appCfg.PreviewEnabled == true {
-		if pb, _ := strconv.Atoi(i.appCfg.PreviewBytes); pb >= 0 {
-			i.h.Set("Preview", i.appCfg.PreviewBytes)
+	previewEnabled, previewBytes := i.servicePreview(serviceName)
+	if previewEnabled == true {
+		if pb, _ := strconv.Atoi(previewBytes); pb >= 0 {
+			i.h.Set("Preview", previewBytes)
 		}
 	}
 	i.h.Set("Transfer-Preview", utils.Any)
 	i.w.WriteHeader(http.StatusOK, nil, false)
+}
+
+func (i *ICAPRequest) preview() *bytes.Buffer {
+	r := icap.GetTheRest()
+	c := io.NopCloser(r)
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(c)
+	return buf
 }

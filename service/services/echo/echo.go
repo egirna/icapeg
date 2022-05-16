@@ -18,6 +18,8 @@ type Echo struct {
 	serviceName            string
 	methodName             string
 	maxFileSize            int
+	previewEnabled         bool
+	previewBytes           string
 	bypassExts             []string
 	processExts            []string
 	BaseURL                string
@@ -38,6 +40,8 @@ func NewEchoService(serviceName, methodName string, httpMsg *utils.HttpMsg, elap
 		elapsed:                elapsed,
 		serviceName:            serviceName,
 		methodName:             methodName,
+		previewEnabled:         readValues.ReadValuesBool(serviceName + ".preview_enabled"),
+		previewBytes:           readValues.ReadValuesString(serviceName + ".preview_bytes"),
 		maxFileSize:            readValues.ReadValuesInt(serviceName + ".max_filesize"),
 		bypassExts:             readValues.ReadValuesSlice(serviceName + ".bypass_extensions"),
 		processExts:            readValues.ReadValuesSlice(serviceName + ".process_extensions"),
@@ -53,14 +57,17 @@ func NewEchoService(serviceName, methodName string, httpMsg *utils.HttpMsg, elap
 }
 
 //Processing is a func used for to processing the http message
-func (e *Echo) Processing() (int, interface{}, map[string]string) {
+func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
+	// no need to scan part of the file, this service needs all the file at ine time
+	if partial {
+		return utils.Continue, nil, nil
+	}
 
 	//extracting the file from http message
 	file, reqContentType, err := e.generalFunc.CopyingFileToTheBuffer(e.methodName)
 	if err != nil {
 		return utils.InternalServerErrStatusCodeStr, nil, nil
 	}
-
 	//getting the extension of the file
 	fileExtension := utils.GetMimeExtension(file.Bytes())
 

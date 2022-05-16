@@ -38,6 +38,8 @@ type Glasswall struct {
 	elapsed                           time.Duration
 	serviceName                       string
 	methodName                        string
+	previewEnabled                    bool
+	previewBytes                      string
 	maxFileSize                       int
 	bypassExts                        []string
 	processExts                       []string
@@ -70,6 +72,8 @@ func NewGlasswallService(serviceName, methodName string, httpMsg *utils.HttpMsg,
 		elapsed:                           elapsed,
 		serviceName:                       serviceName,
 		methodName:                        methodName,
+		previewEnabled:                    readValues.ReadValuesBool(serviceName + ".preview_enabled"),
+		previewBytes:                      readValues.ReadValuesString(serviceName + ".preview_bytes"),
 		maxFileSize:                       readValues.ReadValuesInt(serviceName + ".max_filesize"),
 		bypassExts:                        readValues.ReadValuesSlice(serviceName + ".bypass_extensions"),
 		processExts:                       readValues.ReadValuesSlice(serviceName + ".process_extensions"),
@@ -106,7 +110,12 @@ func NewGlasswallService(serviceName, methodName string, httpMsg *utils.HttpMsg,
 }
 
 //Processing is a func used for to processing the http message
-func (g *Glasswall) Processing() (int, interface{}, map[string]string) {
+func (g *Glasswall) Processing(partial bool) (int, interface{}, map[string]string) {
+
+	// no need to scan part of the file, this service needs all the file at ine time
+	if partial {
+		return utils.Continue, nil, nil
+	}
 
 	isGzip := false
 
