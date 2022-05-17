@@ -2,7 +2,6 @@ package echo
 
 import (
 	"bytes"
-	"icapeg/logger"
 	"icapeg/readValues"
 	"icapeg/service/services-utilities/general-functions"
 	"icapeg/utils"
@@ -30,14 +29,12 @@ type Echo struct {
 	returnOrigIfMaxSizeExc bool
 	returnOrigIf400        bool
 	generalFunc            *general_functions.GeneralFunc
-	logger                 *logger.ZLogger
 }
 
 // NewEchoService returns a new populated instance of the Echo service
-func NewEchoService(serviceName, methodName string, httpMsg *utils.HttpMsg, elapsed time.Duration, logger *logger.ZLogger) *Echo {
+func NewEchoService(serviceName, methodName string, httpMsg *utils.HttpMsg) *Echo {
 	return &Echo{
 		httpMsg:                httpMsg,
-		elapsed:                elapsed,
 		serviceName:            serviceName,
 		methodName:             methodName,
 		previewEnabled:         readValues.ReadValuesBool(serviceName + ".preview_enabled"),
@@ -51,8 +48,7 @@ func NewEchoService(serviceName, methodName string, httpMsg *utils.HttpMsg, elap
 		ScanEndpoint:           readValues.ReadValuesString(serviceName + ".scan_endpoint"),
 		FailThreshold:          readValues.ReadValuesInt(serviceName + ".fail_threshold"),
 		returnOrigIfMaxSizeExc: readValues.ReadValuesBool(serviceName + ".return_original_if_max_file_size_exceeded"),
-		generalFunc:            general_functions.NewGeneralFunc(httpMsg, elapsed, logger),
-		logger:                 logger,
+		generalFunc:            general_functions.NewGeneralFunc(httpMsg),
 	}
 }
 

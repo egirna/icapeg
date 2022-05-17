@@ -15,8 +15,6 @@ import (
 	"strconv"
 	"time"
 
-	zLog "github.com/rs/zerolog/log"
-	"icapeg/logger"
 	"icapeg/readValues"
 )
 
@@ -62,14 +60,12 @@ type Glasswall struct {
 	returnOrigIf400                   bool
 	authID                            string
 	generalFunc                       *general_functions.GeneralFunc
-	logger                            *logger.ZLogger
 }
 
 // NewGlasswallService returns a new populated instance of the Glasswall service
-func NewGlasswallService(serviceName, methodName string, httpMsg *utils.HttpMsg, elapsed time.Duration, logger *logger.ZLogger) *Glasswall {
+func NewGlasswallService(serviceName, methodName string, httpMsg *utils.HttpMsg) *Glasswall {
 	gw := &Glasswall{
 		httpMsg:                           httpMsg,
-		elapsed:                           elapsed,
 		serviceName:                       serviceName,
 		methodName:                        methodName,
 		previewEnabled:                    readValues.ReadValuesBool(serviceName + ".preview_enabled"),
@@ -90,14 +86,11 @@ func NewGlasswallService(serviceName, methodName string, httpMsg *utils.HttpMsg,
 		returnOrigIfMaxSizeExc:            readValues.ReadValuesBool(serviceName + ".return_original_if_max_file_size_exceeded"),
 		returnOrigIfUnprocessableFileType: readValues.ReadValuesBool(serviceName + ".return_original_if_unprocessable_file_type"),
 		returnOrigIf400:                   readValues.ReadValuesBool(serviceName + ".return_original_if_400_response"),
-		generalFunc:                       general_functions.NewGeneralFunc(httpMsg, elapsed, logger),
-		logger:                            logger,
+		generalFunc:                       general_functions.NewGeneralFunc(httpMsg),
 	}
 	authTokens := new(AuthTokens)
 	err := json.Unmarshal([]byte(gw.APIKey), authTokens)
 	if err != nil {
-		elapsed := time.Since(logger.LogStartTime)
-		zLog.Error().Dur("duration", elapsed).Err(err).Str("value", "unable to parse auth token").Msgf("auth_token_read_error")
 		gw.authID = ""
 		return gw
 	}
@@ -332,8 +325,6 @@ func (g *Glasswall) SendFileToAPI(f *bytes.Buffer, filename string) *http.Respon
 
 	io.Copy(part, bytes.NewReader(f.Bytes()))
 	if err := bodyWriter.Close(); err != nil {
-		elapsed := time.Since(g.logger.LogStartTime)
-		zLog.Error().Dur("duration", elapsed).Err(err).Str("value", "failed to close writer").Msgf("cant_close_writer_while_sending_api_files_gw")
 		return nil
 	}
 
@@ -358,8 +349,6 @@ func (g *Glasswall) SendFileToAPI(f *bytes.Buffer, filename string) *http.Respon
 
 	resp, err := client.Do(req)
 	if err != nil {
-		elapsed := time.Since(g.logger.LogStartTime)
-		zLog.Error().Dur("duration", elapsed).Err(err).Str("value", "service: Glasswall: failed to do request").Msgf("gw_service_fail_to_serve")
 		return nil
 	}
 	return resp

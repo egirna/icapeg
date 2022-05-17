@@ -4,10 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"errors"
-	"fmt"
-	zLog "github.com/rs/zerolog/log"
 	"html/template"
-	"icapeg/logger"
 	"icapeg/service/services-utilities/ContentTypes"
 	"icapeg/utils"
 	"io"
@@ -16,7 +13,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // error page struct
@@ -33,16 +29,12 @@ type (
 // GeneralFunc is a struct used for applying general functionalities that any service can apply
 type GeneralFunc struct {
 	httpMsg *utils.HttpMsg
-	elapsed time.Duration
-	logger  *logger.ZLogger
 }
 
 //NewGeneralFunc is used to create a new instance from the struct
-func NewGeneralFunc(httpMsg *utils.HttpMsg, elapsed time.Duration, logger *logger.ZLogger) *GeneralFunc {
+func NewGeneralFunc(httpMsg *utils.HttpMsg) *GeneralFunc {
 	GeneralFunc := &GeneralFunc{
 		httpMsg: httpMsg,
-		logger:  logger,
-		elapsed: elapsed,
 	}
 	return GeneralFunc
 }
@@ -62,9 +54,6 @@ func (f *GeneralFunc) CopyingFileToTheBuffer(methodName string) (*bytes.Buffer, 
 		break
 	}
 	if err != nil {
-		f.elapsed = time.Since(f.logger.LogStartTime)
-		zLog.Error().Dur("duration", f.elapsed).Err(err).
-			Str("value", "Failed to copy the http message body to buffer").Msgf("read_request_body_error")
 		return nil, nil, err
 	}
 	return file, reqContentType, nil
@@ -101,8 +90,6 @@ func (f *GeneralFunc) inStringSlice(data string, ss []string) bool {
 //IfFileExtIsBypass is a func to check if a file extension is bypass extension or not
 func (f *GeneralFunc) IfFileExtIsBypass(fileExtension string, bypassExts []string) error {
 	if utils.InStringSlice(fileExtension, bypassExts) {
-		f.elapsed = time.Since(f.logger.LogStartTime)
-		zLog.Debug().Dur("duration", f.elapsed).Str("value", fmt.Sprintf("processing not required for file type- %s", fileExtension)).Msgf("belongs_bypassable_extensions")
 		return errors.New("processing not required for file type")
 	}
 	return nil
@@ -112,8 +99,6 @@ func (f *GeneralFunc) IfFileExtIsBypass(fileExtension string, bypassExts []strin
 func (f *GeneralFunc) IfFileExtIsBypassAndNotProcess(fileExtension string, bypassExts []string, processExts []string) error {
 	if utils.InStringSlice(utils.Any, bypassExts) && !utils.InStringSlice(fileExtension, processExts) {
 		// if extension does not belong to "All bypassable except the processable ones" group
-		f.elapsed = time.Since(f.logger.LogStartTime)
-		zLog.Debug().Dur("duration", f.elapsed).Str("value", fmt.Sprintf("processing not required for file type- %s", fileExtension)).Msgf("dont_belong_to_processable_extensions")
 		return errors.New("processing not required for file type")
 	}
 	return nil
@@ -139,9 +124,6 @@ func (f *GeneralFunc) DecompressGzipBody(file *bytes.Buffer) (*bytes.Buffer, err
 	var result []byte
 	result, err := ioutil.ReadAll(reader)
 	if err != nil {
-		f.elapsed = time.Since(f.logger.LogStartTime)
-		zLog.Error().Dur("duration", f.elapsed).Err(err).Str("value", "failed to decompress input file").
-			Msgf("decompress_gz_file_failed")
 		return nil, err
 	}
 	return bytes.NewBuffer(result), nil
@@ -150,10 +132,6 @@ func (f *GeneralFunc) DecompressGzipBody(file *bytes.Buffer) (*bytes.Buffer, err
 //IfMaxFileSeizeExc is a functions which used for deciding the right http message should be returned
 //if the file size is greater than the max file size of the service
 func (f *GeneralFunc) IfMaxFileSeizeExc(returnOrigIfMaxSizeExc bool, file *bytes.Buffer, maxFileSize int) (int, *bytes.Buffer, interface{}) {
-	zLog.Debug().Dur("duration", f.elapsed).Str("value",
-		fmt.Sprintf("file size exceeds max filesize limit %d", maxFileSize)).
-		Msgf("large_file_size")
-
 	//check if returning the original file option is enabled in this case or not
 	//if yes, return no modification status code
 	//if not, return an error page
@@ -198,10 +176,6 @@ func (f *GeneralFunc) ExtractFileFromServiceResp(serviceResp *http.Response) ([]
 	defer serviceResp.Body.Close()
 	bodyByte, err := ioutil.ReadAll(serviceResp.Body)
 	if err != nil {
-		f.elapsed = time.Since(f.logger.LogStartTime)
-		zLog.Error().Dur("duration", f.elapsed).Err(err).Str("value",
-			"failed to read the response body from API response").
-			Msgf("read_response_body_from_API_error")
 		return nil, err
 	}
 	return bodyByte, nil
@@ -212,9 +186,6 @@ func (f *GeneralFunc) CompressFileGzip(scannedFile []byte) ([]byte, error) {
 	var newBuf bytes.Buffer
 	gz := gzip.NewWriter(&newBuf)
 	if _, err := gz.Write(scannedFile); err != nil {
-		f.elapsed = time.Since(f.logger.LogStartTime)
-		zLog.Error().Dur("duration", f.elapsed).Err(err).
-			Str("value", "failed to decompress input file").Msgf("decompress_gz_file_failed")
 		return nil, err
 	}
 	gz.Close()
