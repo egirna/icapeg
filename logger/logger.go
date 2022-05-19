@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 	"time"
 
@@ -44,41 +43,6 @@ func (z *ZLogger) ExceedLogSize() bool {
 	return len(z.LogContent.Bytes()) > minLogLengthToFlush
 }
 
-// FlushLogs : flushes logs to logging server
-func (z *ZLogger) FlushLogs() {
-	zlog.Debug().Msgf("flushing logs")
-	toFlush := false
-	if z.ExceedLoggingTime() {
-		toFlush = true
-		elapsed := time.Since(z.LogStartTime)
-		zlog.Debug().Dur("duration", elapsed).Str("value", "flushing as its logging flush time exceeds").
-			Msg("send_logs_to_logging_server")
-	}
-	if z.ExceedLogSize() {
-		toFlush = true
-		elapsed := time.Since(z.LogStartTime)
-		zlog.Debug().Dur("duration", elapsed).Str("value", "flushing as its logging file size content length exceeds").
-			Msg("send_logs_to_logging_server")
-	}
-
-	if toFlush {
-		tLog, err := z.readLogFiles()
-		if err != nil {
-			elapsed := time.Since(z.LogStartTime)
-			zlog.Error().Dur("duration", elapsed).Err(err).Str("value", "could not read log lines").Msgf("read_logs_failed")
-			return
-		}
-		_, err = z.sendLogs(tLog)
-		if err != nil {
-			elapsed := time.Since(z.LogStartTime)
-			zlog.Error().Dur("duration", elapsed).Err(err).Str("value", "error flushing logs to logging server").Msgf("flush_logs_failed")
-			return
-		}
-		z.LogContent.Reset()
-		z.LogStartTime = time.Now()
-	}
-}
-
 // readLogFiles : read the content of the log file and create a glasswall log format
 func (z *ZLogger) readLogFiles() (tLog TransactionalLog, err error) {
 	tLog.Events.Logs = map[string]TransactionalLogEvent{}
@@ -103,25 +67,6 @@ func (z *ZLogger) readLogFiles() (tLog TransactionalLog, err error) {
 		tLog.Events.Duration += c.Duration
 	}
 	return
-}
-
-// SendLogs : sends glasswall formatted logs to logging service
-func (z *ZLogger) sendLogs(tLog TransactionalLog) ([]byte, error) {
-	body, err := json.Marshal(tLog)
-	if err != nil {
-		return nil, fmt.Errorf("could not marshal transactional logs %v", err)
-	}
-	postRequest, err := http.NewRequest(http.MethodPost, z.LoggingServerURL, bytes.NewReader(body))
-	if err != nil {
-		return nil, fmt.Errorf("could not create post request %v", err)
-	}
-	postRequest.Header.Set("Content-Type", "text/plain")
-	response, err := z.LoggingServer.client.Do(postRequest)
-	if err != nil {
-		return nil, fmt.Errorf("could not send logs to the server: %v", err)
-	}
-	defer response.Body.Close()
-	return body, nil
 }
 
 // NewZLogger : create new zero logger object

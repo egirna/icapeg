@@ -3,11 +3,8 @@ package api
 import (
 	"bytes"
 	"errors"
-	"fmt"
-	zLog "github.com/rs/zerolog/log"
 	"icapeg/config"
 	"icapeg/icap"
-	"icapeg/logger"
 	"icapeg/readValues"
 	"icapeg/service"
 	"icapeg/utils"
@@ -15,7 +12,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
-	"time"
 )
 
 // ICAPRequest struct is used to encapsulate important information of the ICAP request like method name, etc
@@ -26,21 +22,17 @@ type ICAPRequest struct {
 	Is204Allowed           bool
 	isShadowServiceEnabled bool
 	appCfg                 *config.AppConfig
-	logger                 *logger.ZLogger
-	elapsed                time.Duration
 	serviceName            string
 	methodName             string
 	vendor                 string
 }
 
 //NewICAPRequest is a func to create a new instance from struct IcapRequest yo handle upcoming ICAP requests
-func NewICAPRequest(w icap.ResponseWriter, req *icap.Request, logger *logger.ZLogger) *ICAPRequest {
+func NewICAPRequest(w icap.ResponseWriter, req *icap.Request) *ICAPRequest {
 	ICAPRequest := &ICAPRequest{
-		w:       w,
-		req:     req,
-		h:       w.Header(),
-		logger:  logger,
-		elapsed: time.Since(logger.LogStartTime),
+		w:   w,
+		req: req,
+		h:   w.Header(),
 	}
 	return ICAPRequest
 }
@@ -132,7 +124,7 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 	}
 	//initialize the service by creating instance from the required service
 	requiredService := service.GetService(i.vendor, i.serviceName, i.methodName,
-		&utils.HttpMsg{Request: i.req.Request, Response: i.req.Response}, i.elapsed, i.logger)
+		&utils.HttpMsg{Request: i.req.Request, Response: i.req.Response})
 
 	//calling Processing func to process the http message which encapsulated inside the ICAP request
 	IcapStatusCode, httpMsg, serviceHeaders := requiredService.Processing(partial)
@@ -188,8 +180,6 @@ func (i *ICAPRequest) addHeadersToLogs() {
 				res += ", "
 			}
 		}
-		zLog.Debug().Dur("duration", i.elapsed).Str("value", "ICAP request header").
-			Msgf(res)
 	}
 }
 
@@ -221,8 +211,6 @@ func (i *ICAPRequest) isMethodAllowed() bool {
 	if i.methodName != "OPTIONS" {
 		isMethodEnabled := readValues.ReadValuesBool(i.serviceName + "." + i.methodName)
 		if !isMethodEnabled {
-			zLog.Debug().Dur("duration", i.elapsed).Str("value", i.methodName+" is not enabled").
-				Msgf("this_method_is_not_enabled_in_GO_ICAP_configuration")
 			return false
 		}
 	}
@@ -240,8 +228,6 @@ func (i *ICAPRequest) getVendorName() string {
 func (i *ICAPRequest) addingISTAGServiceHeaders() {
 	i.h.Set("ISTag", readValues.ReadValuesString(i.serviceName+".service_tag"))
 	i.h.Set("Service", readValues.ReadValuesString(i.serviceName+".service_caption"))
-	zLog.Info().Dur("duration", i.elapsed).Str("value", fmt.Sprintf("with method:%s url:%s", i.methodName, i.req.RawURL)).
-		Msgf("request_received_on_icap")
 }
 
 //is204Allowed is a func to check if ICAP request has the header "204 : Allowed" or not
@@ -256,12 +242,7 @@ func (i *ICAPRequest) is204Allowed() bool {
 
 //shadowService is a func to apply the shadow service
 func (i *ICAPRequest) shadowService() {
-	zLog.Debug().Dur("duration", i.elapsed).Str("value", "processing not required for this request").
-		Msgf("shadow_service_is_enabled")
 	if i.Is204Allowed { // following RFC3507, if the request has Allow: 204 header, it is to be checked and if it doesn't exists, return the request as it is to the ICAP client, https://tools.ietf.org/html/rfc3507#section-4.6
-		i.elapsed = time.Since(i.logger.LogStartTime)
-		zLog.Debug().Dur("duration", i.elapsed).Str("value", "the file won't be modified").
-			Msgf("request_received_on_icap_with_header_204")
 		i.w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
 	} else {
 		if i.req.Method == "REQMOD" {

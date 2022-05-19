@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/dutchcoders/go-clamd"
 	"github.com/spf13/viper"
-	"icapeg/logger"
 	"icapeg/readValues"
 	general_functions "icapeg/service/services-utilities/general-functions"
 	"net/http"
@@ -36,16 +35,13 @@ type Clamav struct {
 	respSupported          bool
 	reqSupported           bool
 	returnOrigIfMaxSizeExc bool
-
-	generalFunc *general_functions.GeneralFunc
-	logger      *logger.ZLogger
+	generalFunc            *general_functions.GeneralFunc
 }
 
 // NewClamavService returns a new populated instance of the clamav service
-func NewClamavService(serviceName, methodName string, httpMsg *utils.HttpMsg, elapsed time.Duration, logger *logger.ZLogger) *Clamav {
+func NewClamavService(serviceName, methodName string, httpMsg *utils.HttpMsg) *Clamav {
 	return &Clamav{
 		httpMsg:                httpMsg,
-		elapsed:                elapsed,
 		serviceName:            serviceName,
 		methodName:             methodName,
 		maxFileSize:            readValues.ReadValuesInt(serviceName + ".max_filesize"),
@@ -58,8 +54,7 @@ func NewClamavService(serviceName, methodName string, httpMsg *utils.HttpMsg, el
 		respSupported:          true,
 		reqSupported:           false,
 		returnOrigIfMaxSizeExc: readValues.ReadValuesBool(serviceName + ".return_original_if_max_file_size_exceeded"),
-		generalFunc:            general_functions.NewGeneralFunc(httpMsg, elapsed, logger),
-		logger:                 logger,
+		generalFunc:            general_functions.NewGeneralFunc(httpMsg),
 	}
 }
 

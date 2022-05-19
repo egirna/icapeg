@@ -50,7 +50,6 @@ func StartServer() error {
 		for {
 			select {
 			case _ = <-ticker.C:
-				zLogger.FlushLogs()
 			}
 		}
 	}()

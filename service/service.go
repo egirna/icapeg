@@ -1,12 +1,10 @@
 package service
 
 import (
-	"icapeg/logger"
 	"icapeg/service/services/clamav"
 	"icapeg/service/services/echo"
 	"icapeg/service/services/glasswall"
 	"icapeg/utils"
-	"time"
 )
 
 //Vendors names
@@ -25,14 +23,14 @@ type (
 
 // GetService returns a service based on the service name
 // change name to vendor and add parameter service name
-func GetService(vendor, serviceName, methodName string, httpMsg *utils.HttpMsg, elapsed time.Duration, logger *logger.ZLogger) Service {
+func GetService(vendor, serviceName, methodName string, httpMsg *utils.HttpMsg) Service {
 	switch vendor {
 	case VendorGlasswall:
-		return glasswall.NewGlasswallService(serviceName, methodName, httpMsg, elapsed, logger)
+		return glasswall.NewGlasswallService(serviceName, methodName, httpMsg)
 	case VendorEcho:
-		return echo.NewEchoService(serviceName, methodName, httpMsg, elapsed, logger)
+		return echo.NewEchoService(serviceName, methodName, httpMsg)
 	case VendorClamav:
-		return clamav.NewClamavService(serviceName, methodName, httpMsg, elapsed, logger)
+		return clamav.NewClamavService(serviceName, methodName, httpMsg)
 
 	}
 	return nil
