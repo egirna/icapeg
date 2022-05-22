@@ -62,10 +62,16 @@ Before starting to play with ICAPeg, make sure you have the following things in 
 $ cd ~/ICAPeg
 ```
 
-  2. Run the following command to start **ICAPeg**
+6. Build **ICAPeg** binary
 
 ```bash
-$ go run main.go
+$ go build .
+```
+
+6. Finally execute the file like you would for any other executable according to your OS, for Unix-based users though
+
+```bash
+$ ./icapeg
 ```
 
 You should see something like, ```ICAP server is running on localhost:1344 ...```. This tells you the ICAP server is up and running.
