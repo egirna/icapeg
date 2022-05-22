@@ -270,7 +270,7 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
 
 ## Adding a new service ot ICAPeg
 
-- [How to add a new service for a new vendor](How to add a new service for a new vendor.md)
+- [How to add a new service for a new vendor](How%20to%20add%20a%20new%20service%20for%20a%20new%20vendor.md)
 
 ## Things to keep in mind
 
