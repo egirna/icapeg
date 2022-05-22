@@ -68,9 +68,19 @@ $ cd ~/ICAPeg
 $ go run main.go
 ```
 
+You should see something like, ```ICAP server is running on localhost:1344 ...```. This tells you the ICAP server is up and running.
+
 ## Configuration
 
 ​	You can change the default configuration file whatever you want to customize the application.
+
+- ### Mapping a variable of config.toml file with an environment variable
+
+  This feeature is supported for **strings, int, bool, time.duration and string slices** only **(every type used in this project)**.
+
+  Let's have an example to explain how to map, assume that there is an env variable called LOG_LEVEL and you want to assign LOG_LEVEL value to app.log_level. You should change the value of (log_level= "debug") to (log_level= "$_LOG_LEVEL").
+
+  > **Note**: before you use this feature please make sure that the env variable that you want to use is globally in your machine and not just exported in a local session.
 
   - ### Config.toml file sections
 
@@ -257,210 +267,10 @@ $ go run main.go
         
             The key of the external **API** that service sends the files through a request to it.
         
-        
 
-### Insert `Glasswall` as your scanner vendor in the config.toml file
+## Adding a new service ot ICAPeg
 
-  ```code
-    resp_scanner_vendor = "glasswall"
-  ```
-
-  Or,
-
-  ```code
-    req_scanner_vendor = "glasswall"
-  ```
-
-Setup **VirusTotal:**
-
-Insert `VirusTotal` as your scanner vendor in the config.toml file
-
-  ```code
-    resp_scanner_vendor = "virustotal"
-  ```
-
-  Or,
-
-  ```code
-    req_scanner_vendor = "virustotal"
-  ```
-
-In that same file, add a **VirusTotal API key** in the `api_key` field of the `[virustotal]` section. [Here is how you can get it](VIRUSTOTALAPI.md).
-
-Setup **MetaDefender:**
-
-Insert `MetaDefender` as your scanner vendor in the config.toml file
-
-  ```code
-    resp_scanner_vendor = "metadefender"
-  ```
-
-  Or,
-
-  ```code
-    req_scanner_vendor = "metadefender"
-  ```
-
-In that same file, add a **MetaDefender API key** in the `api_key` field of the `[metadefender]` section. [Here is how you can get it](METADEFENDER.md).
-
-Setup **VMRay:**
-
-Insert `vmray` as your scanner vendor in the config.toml file
-
-  ```code
-    resp_scanner_vendor = "vmray"
-  ```
-
-  Or,
-
-  ```code
-    req_scanner_vendor = "vmray"
-  ```
-
-In that same file, add a **VMRay API key** in the `api_key` field of the `[vmray]` section. [Get your api key by requesting a free trial](https://www.vmray.com/analyzer-malware-sandbox-free-trial/).
-
-Setup **Clamav:**
-
-Insert `clamav` as your scanner vendor in the config.toml file
-
-  ```code
-    resp_scanner_vendor = "clamav"
-  ```
-
-Next, provide the **clamd socket file path**(getting back to this in a bit) in the config.toml file inside the clamav section
-
-  ```code
-    socket_path = "<path to clamd socket file>"
-  ```
-
-[Here is how you setup clamav and generate the socket file](CLAMAVSETUP.md)
-
-
-**NOTE**: All the settings of ICAPeg is present in the **config.toml** file in the repo. Also before selecting your vendors as the scanners, keep in mind to check whether that certain vendor supports the modification mode or not. For example, when adding ``virustotal``  as the ``resp_scanner_vendor``, check under the configuration of ``virustotal`` if the ``resp_supported`` flag is true or not. Likewise for ``req_scanner_vendor`` and for any other vendors. Also you can provide `none` in the ``resp/req_scanner_vendor/vendor_shadow`` fields to indicate no vendor is provided & ICAPeg is just gonna avoid processing the requests.
-
-## How do I turn this thing on!!
-
-To turn on the ICAPeg server, proceed with the following steps (assuming you have golang installed in you system):
-
-1. Clone the ICAPeg repository
-
-  ```bash
-    git clone https://github.com/egirna/icapeg.git
-
-  ```
-
-
-2. Enable `go mod`
-
-  ```bash
-    export GO114MODULE=on
-
-  ```
->    In case not using go version 1.14, you could discover your version
-
-  ```bash
-    go version
-
-  ```
-
->           You should use the corresponding export command
-
->           1.14 ===> export GO114MODULE=on
-
->           1.13 ===> export GO113MODULE=on
-
->           etc.
-
-3.  Change the directory to the repository
-
-  ```bash
-    cd icapeg/
-  ```
-
-4. Add the dependencies in the vendor file
-
-  ```bash
-    go mod vendor
-  ```
-
-5. Build the ICAPeg binary by
-
-  ```bash
-    go build .
-  ```
-
-6. Finally execute the file like you would for any other executable according to your OS, for Unix-based users though
-
-  ```bash
-    ./icapeg
-  ```
-
-   You should see something like, ```ICAP server is running on localhost:1344 ...```. This tells you the ICAP server is up and running
-OR, you can do none of the above and simply execute the **run.sh** shell file provided, by
-
-  ```bash
-   ./run.sh
-  ```
-That should do the trick.
-
-2. Now that the server is up and running, the next thing to do is setup a proxy server which can send the request body to the ICAPeg server for adaptation. [Squid](http://www.squid-cache.org/) looks like just the thing for the job, go to the site provided and set it up like you want.
-After setting up your proxy server for example squid, change its configuration file:
-
-Open squid.conf file
-
-  ```bash
-    sudo nano /etc/squid/squid.conf
-  ```
-Add the following lines at the bottom of your ACLs configurations
-
-  ```configuration
-    icap_enable on
-    icap_service service_resp respmod_precache icap://127.0.0.1:1344/respmod
-    adaptation_access service_resp allow all
-  ```
-
-Add the following line at the end of the file
-
-  ```configuration
-    cache deny all
-  ```
-
-A sample conf file for squid exists in the repository in a file
-   [squid.conf](https://github.com/mkaram007/icapeg/blob/fa4ce337b27a2583c93c5dc81d8c7310fdc38e3a/squid.conf)
-
-
-Save and close the file
-  Press CTRL + x, then press Y, then Enter
-
-Restart squid:
-
-  ```bash
-    systemctl restart squid
-  ```
-
-## REQMOD
-
-**Go-ICAP-server** in **REQMOD** supports different values of **Content-Type** HTTP header:
-
-- First value which represents a regular file sent in body like and in this case the Content-Type value maybe **application/pdf**, **text/plain** .. etc. In this type the body of the **HTTP** request which is included inside the **ICAP** request contains the file which wanted to be scanned only, **[Filebin](https://filebin.net/)** is one of the websites which use this types of **Content-Type**s in uploading files.
-
-  ![](./img/Filebin%20contentType.png)
-
-  ![](./img/Filebin%20requestBody.png)
-
-- In the second type the **Content-Type** value is **multipart/form-data**, In this type the HTTP request body contains multiple parts of fields and the files, **[File.io](https://www.file.io/)** is one of the websites which use **multipart/form-data** in uploading files.
-
-  ![](./img/fileio%20contentType.png)
-
-  This screenshot shows different parts in the HTTP request body and the boundary -----------------------------2145730498846892413066303047 differentiates between all parts.
-
-  ![](./img/fileio%20requsetBody.png)
-
-- In the third type the **Content-Type** value is **application/json**, In this type the HTTP request body contains the file which wanted to be scanned encoded in base64 or a normal JSON file. **[Glasswall solutions](https://www.glasswallsolutions.com/test-drive/)** is one of the websites which encodes the file in Base64 and put it in the HTTp request body as a JSON file.
-
-  ![](./img/gw%20contentType.png)
-
-  ![](./img/gw%20requestBody.png)
+- [How to add a new service for a new vendor](How to add a new service for a new vendor.md)
 
 ## Things to keep in mind
 
