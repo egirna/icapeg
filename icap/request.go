@@ -32,11 +32,12 @@ type Request struct {
 	Method string // REQMOD, RESPMOD, OPTIONS, etc.
 	RawURL string // The URL given in the request.
 	//Service    string               // The Service given in the request.
-	URL        *url.URL             // Parsed URL.
-	Proto      string               // The protocol version.
-	Header     textproto.MIMEHeader // The ICAP header
-	RemoteAddr string               // the address of the computer sending the request
-	Preview    []byte               // the body data for an ICAP preview
+	URL          *url.URL             // Parsed URL.
+	Proto        string               // The protocol version.
+	Header       textproto.MIMEHeader // The ICAP header
+	RemoteAddr   string               // the address of the computer sending the request
+	Preview      []byte               // the body data for an ICAP preview
+	EndIndicator string
 
 	// The HTTP messages.
 	Request  *http.Request
@@ -152,10 +153,11 @@ func ReadRequest(b *bufio.ReadWriter) (req *Request, err error) {
 			req.Preview, err = ioutil.ReadAll(newChunkedReader(b))
 			origBuf = b
 			origReader = bytes.NewBuffer(req.Preview)
-
+			req.EndIndicator = "0"
 			if err != nil {
 				if strings.Contains(err.Error(), "ieof") {
 					// The data ended with "0; ieof", which the HTTP chunked reader doesn't understand.
+					req.EndIndicator = "0; ieof"
 					err = nil
 				} else {
 					return nil, err
