@@ -90,7 +90,7 @@ func (i *ICAPRequest) RequestProcessing() {
 	partial := false
 
 	//check if there is a preview header in the ICAP request or not
-	if i.req.Header.Get("Preview") != "" {
+	if i.req.Header.Get("Preview") != "" && i.req.EndIndicator != "0; ieof" {
 		partial = true
 	}
 
