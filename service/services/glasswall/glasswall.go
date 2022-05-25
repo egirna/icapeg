@@ -6,101 +6,13 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"icapeg/service/services-utilities/ContentTypes"
-	"icapeg/service/services-utilities/general-functions"
 	"icapeg/utils"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"strconv"
-	"time"
-
-	"icapeg/readValues"
 )
-
-type AuthTokens struct {
-	Tokens []Tokens `json:"gw-auth-tokens"`
-}
-
-type Tokens struct {
-	Id           string `json:"id"`
-	Role         string `json:"role"`
-	Enabled      bool   `json:"enabled"`
-	CreationDate int64  `json:"creation_date"`
-	ExpiryDate   int64  `json:"expiry_date"`
-}
-
-// Glasswall represents the information regarding the Glasswall service
-type Glasswall struct {
-	httpMsg                           *utils.HttpMsg
-	elapsed                           time.Duration
-	serviceName                       string
-	methodName                        string
-	previewEnabled                    bool
-	previewBytes                      string
-	maxFileSize                       int
-	bypassExts                        []string
-	processExts                       []string
-	BaseURL                           string
-	Timeout                           time.Duration
-	APIKey                            string
-	ScanEndpoint                      string
-	ReportEndpoint                    string
-	FailThreshold                     int
-	statusCheckInterval               time.Duration
-	statusCheckTimeout                time.Duration
-	badFileStatus                     []string
-	okFileStatus                      []string
-	statusEndPointExists              bool
-	respSupported                     bool
-	reqSupported                      bool
-	policy                            string
-	returnOrigIfMaxSizeExc            bool
-	returnOrigIfUnprocessableFileType bool
-	returnOrigIf400                   bool
-	authID                            string
-	generalFunc                       *general_functions.GeneralFunc
-}
-
-// NewGlasswallService returns a new populated instance of the Glasswall service
-func NewGlasswallService(serviceName, methodName string, httpMsg *utils.HttpMsg) *Glasswall {
-	gw := &Glasswall{
-		httpMsg:                           httpMsg,
-		serviceName:                       serviceName,
-		methodName:                        methodName,
-		previewEnabled:                    readValues.ReadValuesBool(serviceName + ".preview_enabled"),
-		previewBytes:                      readValues.ReadValuesString(serviceName + ".preview_bytes"),
-		maxFileSize:                       readValues.ReadValuesInt(serviceName + ".max_filesize"),
-		bypassExts:                        readValues.ReadValuesSlice(serviceName + ".bypass_extensions"),
-		processExts:                       readValues.ReadValuesSlice(serviceName + ".process_extensions"),
-		BaseURL:                           readValues.ReadValuesString(serviceName + ".base_url"),
-		Timeout:                           readValues.ReadValuesDuration(serviceName+".timeout") * time.Second,
-		APIKey:                            readValues.ReadValuesString(serviceName + ".api_key"),
-		ScanEndpoint:                      readValues.ReadValuesString(serviceName + ".scan_endpoint"),
-		ReportEndpoint:                    "/",
-		FailThreshold:                     readValues.ReadValuesInt(serviceName + ".fail_threshold"),
-		statusCheckInterval:               2 * time.Second,
-		respSupported:                     readValues.ReadValuesBool(serviceName + ".resp_mode"),
-		reqSupported:                      readValues.ReadValuesBool(serviceName + ".req_mode"),
-		policy:                            readValues.ReadValuesString(serviceName + ".policy"),
-		returnOrigIfMaxSizeExc:            readValues.ReadValuesBool(serviceName + ".return_original_if_max_file_size_exceeded"),
-		returnOrigIfUnprocessableFileType: readValues.ReadValuesBool(serviceName + ".return_original_if_unprocessable_file_type"),
-		returnOrigIf400:                   readValues.ReadValuesBool(serviceName + ".return_original_if_400_response"),
-		generalFunc:                       general_functions.NewGeneralFunc(httpMsg),
-	}
-	authTokens := new(AuthTokens)
-	err := json.Unmarshal([]byte(gw.APIKey), authTokens)
-	if err != nil {
-		gw.authID = ""
-		return gw
-	}
-	for _, token := range authTokens.Tokens {
-		if token.Role == "file_operations" {
-			gw.authID = token.Id
-		}
-	}
-	return gw
-}
 
 //Processing is a func used for to processing the http message
 func (g *Glasswall) Processing(partial bool) (int, interface{}, map[string]string) {

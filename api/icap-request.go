@@ -184,7 +184,7 @@ func (i *ICAPRequest) addHeadersToLogs() {
 }
 
 //isServiceExists is a func to make sure that service which required in ICAP
-//request is existing in the config file
+//request is existing in the config.go file
 func (i *ICAPRequest) isServiceExists() bool {
 	services := readValues.ReadValuesSlice("app.services")
 	for r := 0; r < len(services); r++ {
@@ -206,7 +206,7 @@ func (i *ICAPRequest) getMethodName() string {
 	return i.methodName
 }
 
-//isMethodAllowed is a func to check if the method in the ICAP request is allowed in config file or not
+//isMethodAllowed is a func to check if the method in the ICAP request is allowed in config.go file or not
 func (i *ICAPRequest) isMethodAllowed() bool {
 	if i.methodName != "OPTIONS" {
 		isMethodEnabled := readValues.ReadValuesBool(i.serviceName + "." + i.methodName)
@@ -283,7 +283,7 @@ func (i *ICAPRequest) optionsMode(serviceName string) {
 	//optionsModeRemote(vendor, req, w, appCfg, zlogger)
 	i.h.Set("Methods", i.getEnabledMethods())
 	i.h.Set("Allow", "204")
-	// Add preview if preview_enabled is true in config
+	// Add preview if preview_enabled is true in config.go
 	previewEnabled, previewBytes := i.servicePreview(serviceName)
 	if previewEnabled == true {
 		if pb, _ := strconv.Atoi(previewBytes); pb >= 0 {
