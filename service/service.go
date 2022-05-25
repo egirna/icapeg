@@ -35,3 +35,12 @@ func GetService(vendor, serviceName, methodName string, httpMsg *utils.HttpMsg) 
 	}
 	return nil
 }
+
+func InitServiceConfig(vendor, serviceName string) {
+	switch vendor {
+	case VendorGlasswall:
+		glasswall.InitGlasswallConfig(serviceName)
+	case VendorEcho:
+		echo.InitEchoConfig(serviceName)
+	}
+}

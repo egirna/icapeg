@@ -13,18 +13,11 @@ var echoConfig *Echo
 
 // Echo represents the information regarding the Echo service
 type Echo struct {
-	serviceCaption         string
-	serviceTag             string
-	reqMode                bool
-	respMode               bool
-	shadowService          bool
 	httpMsg                *utils.HttpMsg
 	elapsed                time.Duration
 	serviceName            string
 	methodName             string
 	maxFileSize            int
-	previewEnabled         bool
-	previewBytes           string
 	bypassExts             []string
 	processExts            []string
 	BaseURL                string
@@ -37,16 +30,9 @@ type Echo struct {
 	generalFunc            *general_functions.GeneralFunc
 }
 
-func initEchoConfig(serviceName string) {
+func InitEchoConfig(serviceName string) {
 	doOnce.Do(func() {
 		echoConfig = &Echo{
-			serviceCaption:         readValues.ReadValuesString(serviceName + ".service_caption"),
-			serviceTag:             readValues.ReadValuesString(serviceName + ".service_tag"),
-			reqMode:                readValues.ReadValuesBool(serviceName + ".req_mode"),
-			respMode:               readValues.ReadValuesBool(serviceName + ".resp_mode"),
-			shadowService:          readValues.ReadValuesBool(serviceName + ".shadow_service"),
-			previewEnabled:         readValues.ReadValuesBool(serviceName + ".preview_enabled"),
-			previewBytes:           readValues.ReadValuesString(serviceName + ".preview_bytes"),
 			maxFileSize:            readValues.ReadValuesInt(serviceName + ".max_filesize"),
 			bypassExts:             readValues.ReadValuesSlice(serviceName + ".bypass_extensions"),
 			processExts:            readValues.ReadValuesSlice(serviceName + ".process_extensions"),
@@ -58,19 +44,15 @@ func initEchoConfig(serviceName string) {
 			returnOrigIfMaxSizeExc: readValues.ReadValuesBool(serviceName + ".return_original_if_max_file_size_exceeded"),
 		}
 	})
-
 }
 
 // NewEchoService returns a new populated instance of the Echo service
 func NewEchoService(serviceName, methodName string, httpMsg *utils.HttpMsg) *Echo {
-	initEchoConfig(serviceName)
 	return &Echo{
 		httpMsg:                httpMsg,
 		serviceName:            serviceName,
 		methodName:             methodName,
 		generalFunc:            general_functions.NewGeneralFunc(httpMsg),
-		previewEnabled:         echoConfig.previewEnabled,
-		previewBytes:           echoConfig.previewBytes,
 		maxFileSize:            echoConfig.maxFileSize,
 		bypassExts:             echoConfig.bypassExts,
 		processExts:            echoConfig.processExts,

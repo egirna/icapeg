@@ -35,7 +35,7 @@ preview_bytes = "1024" #byte
 preview_enabled = true# options send preview header or not
 propagate_error = true
 service_caption ="Go-ICAP server - glasswall Rebuild service"
-services= ["glasswall" , "echo", "clamav"]
+services= ["glasswall" , "echo"]
 verify_server_cert=false
 #I worked on project using Golang which extracts uploaded files and before uploading and downloaded files
 # before downloading and send it to api to scan it before uploading/downloading it.

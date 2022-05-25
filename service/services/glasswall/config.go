@@ -26,17 +26,10 @@ type Tokens struct {
 
 // Glasswall represents the information regarding the Glasswall service
 type Glasswall struct {
-	serviceCaption                    string
-	serviceTag                        string
-	reqMode                           bool
-	respMode                          bool
-	shadowService                     bool
 	httpMsg                           *utils.HttpMsg
 	elapsed                           time.Duration
 	serviceName                       string
 	methodName                        string
-	previewEnabled                    bool
-	previewBytes                      string
 	maxFileSize                       int
 	bypassExts                        []string
 	processExts                       []string
@@ -51,8 +44,6 @@ type Glasswall struct {
 	badFileStatus                     []string
 	okFileStatus                      []string
 	statusEndPointExists              bool
-	respSupported                     bool
-	reqSupported                      bool
 	policy                            string
 	returnOrigIfMaxSizeExc            bool
 	returnOrigIfUnprocessableFileType bool
@@ -61,11 +52,9 @@ type Glasswall struct {
 	generalFunc                       *general_functions.GeneralFunc
 }
 
-func initGlasswallConfig(serviceName string) {
+func InitGlasswallConfig(serviceName string) {
 	doOnce.Do(func() {
 		glasswallConfig = &Glasswall{
-			previewEnabled:                    readValues.ReadValuesBool(serviceName + ".preview_enabled"),
-			previewBytes:                      readValues.ReadValuesString(serviceName + ".preview_bytes"),
 			maxFileSize:                       readValues.ReadValuesInt(serviceName + ".max_filesize"),
 			bypassExts:                        readValues.ReadValuesSlice(serviceName + ".bypass_extensions"),
 			processExts:                       readValues.ReadValuesSlice(serviceName + ".process_extensions"),
@@ -74,15 +63,12 @@ func initGlasswallConfig(serviceName string) {
 			APIKey:                            readValues.ReadValuesString(serviceName + ".api_key"),
 			ScanEndpoint:                      readValues.ReadValuesString(serviceName + ".scan_endpoint"),
 			FailThreshold:                     readValues.ReadValuesInt(serviceName + ".fail_threshold"),
-			respSupported:                     readValues.ReadValuesBool(serviceName + ".resp_mode"),
-			reqSupported:                      readValues.ReadValuesBool(serviceName + ".req_mode"),
 			policy:                            readValues.ReadValuesString(serviceName + ".policy"),
 			returnOrigIfMaxSizeExc:            readValues.ReadValuesBool(serviceName + ".return_original_if_max_file_size_exceeded"),
 			returnOrigIfUnprocessableFileType: readValues.ReadValuesBool(serviceName + ".return_original_if_unprocessable_file_type"),
 			returnOrigIf400:                   readValues.ReadValuesBool(serviceName + ".return_original_if_400_response"),
 		}
 	})
-
 }
 
 // NewGlasswallService returns a new populated instance of the Glasswall service
@@ -91,8 +77,6 @@ func NewGlasswallService(serviceName, methodName string, httpMsg *utils.HttpMsg)
 		httpMsg:                           httpMsg,
 		serviceName:                       serviceName,
 		methodName:                        methodName,
-		previewEnabled:                    glasswallConfig.previewEnabled,
-		previewBytes:                      glasswallConfig.previewBytes,
 		maxFileSize:                       glasswallConfig.maxFileSize,
 		bypassExts:                        glasswallConfig.bypassExts,
 		processExts:                       glasswallConfig.processExts,
@@ -103,8 +87,6 @@ func NewGlasswallService(serviceName, methodName string, httpMsg *utils.HttpMsg)
 		ReportEndpoint:                    "/",
 		FailThreshold:                     glasswallConfig.FailThreshold,
 		statusCheckInterval:               2 * time.Second,
-		respSupported:                     glasswallConfig.respSupported,
-		reqSupported:                      glasswallConfig.reqSupported,
 		policy:                            glasswallConfig.policy,
 		returnOrigIfMaxSizeExc:            glasswallConfig.returnOrigIfMaxSizeExc,
 		returnOrigIfUnprocessableFileType: glasswallConfig.returnOrigIfUnprocessableFileType,
