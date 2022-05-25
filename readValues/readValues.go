@@ -24,7 +24,7 @@ func ReadValuesInt(varName string) int {
 		result = ReadIntFromEnv(tempName[2:len(tempName)])
 	} else {
 		if !viper.IsSet(varName) {
-			fmt.Println(varName + " doesn't exist in config file")
+			fmt.Println(varName + " doesn't exist in config.go file")
 			os.Exit(1)
 		}
 		result = viper.GetInt(varName)
@@ -46,7 +46,7 @@ func ReadValuesString(varName string) string {
 		result = ReadStringFromEnv(tempName[2:len(tempName)])
 	} else {
 		if !viper.IsSet(varName) {
-			fmt.Println(varName + " doesn't exist in config file")
+			fmt.Println(varName + " doesn't exist in config.go file")
 			os.Exit(1)
 		}
 		result = viper.GetString(varName)
@@ -68,7 +68,7 @@ func ReadValuesBool(varName string) bool {
 		result = ReadBoolFromEnv(tempName[2:len(tempName)])
 	} else {
 		if !viper.IsSet(varName) {
-			fmt.Println(varName + " doesn't exist in config file")
+			fmt.Println(varName + " doesn't exist in config.go file")
 			os.Exit(1)
 		}
 		result = viper.GetBool(varName)
@@ -90,7 +90,7 @@ func ReadValuesDuration(varName string) time.Duration {
 		result = ReadDurationFromEnv(tempName[2:len(tempName)])
 	} else {
 		if !viper.IsSet(varName) {
-			fmt.Println(varName + " doesn't exist in config file")
+			fmt.Println(varName + " doesn't exist in config.go file")
 			os.Exit(1)
 		}
 		result = viper.GetDuration(varName)
@@ -112,7 +112,7 @@ func ReadValuesSlice(varName string) []string {
 		result = ReadSliceFromEnv(tempName[2:len(tempName)])
 	} else {
 		if !viper.IsSet(varName) {
-			fmt.Println(varName + " doesn't exist in config file")
+			fmt.Println(varName + " doesn't exist in config.go file")
 			os.Exit(1)
 		}
 		result = viper.GetStringSlice(varName)
@@ -120,7 +120,7 @@ func ReadValuesSlice(varName string) []string {
 	return result
 }
 
-// IsSecExists is used to check if a section exists in config file or not
+// IsSecExists is used to check if a section exists in config.go file or not
 func IsSecExists(varName string) bool {
 	return viper.IsSet(varName)
 }

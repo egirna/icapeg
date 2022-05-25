@@ -5,7 +5,6 @@ import (
 	"errors"
 	"icapeg/config"
 	"icapeg/icap"
-	"icapeg/readValues"
 	"icapeg/service"
 	"icapeg/utils"
 	"io"
@@ -30,9 +29,13 @@ type ICAPRequest struct {
 //NewICAPRequest is a func to create a new instance from struct IcapRequest yo handle upcoming ICAP requests
 func NewICAPRequest(w icap.ResponseWriter, req *icap.Request) *ICAPRequest {
 	ICAPRequest := &ICAPRequest{
-		w:   w,
-		req: req,
-		h:   w.Header(),
+		w:      w,
+		req:    req,
+		h:      w.Header(),
+		appCfg: config.App(),
+	}
+	for serviceName, serviceInstance := range ICAPRequest.appCfg.ServicesInstances {
+		service.InitServiceConfig(serviceInstance.Vendor, serviceName)
 	}
 	return ICAPRequest
 }
@@ -40,6 +43,7 @@ func NewICAPRequest(w icap.ResponseWriter, req *icap.Request) *ICAPRequest {
 //RequestInitialization is a fun to retrieve the important information from the ICAP request
 //and initialize the ICAP response
 func (i *ICAPRequest) RequestInitialization() error {
+	i.appCfg = config.App()
 
 	//adding headers to the log
 	i.addHeadersToLogs()
@@ -55,7 +59,6 @@ func (i *ICAPRequest) RequestInitialization() error {
 
 	// checking if request method is allowed or not
 	i.methodName = i.req.Method
-	i.methodName = i.getMethodName()
 	if !i.isMethodAllowed() {
 		i.w.WriteHeader(http.StatusMethodNotAllowed, nil, false)
 		err := errors.New("method is not allowed")
@@ -71,9 +74,7 @@ func (i *ICAPRequest) RequestInitialization() error {
 
 	i.Is204Allowed = i.is204Allowed()
 
-	i.isShadowServiceEnabled = readValues.ReadValuesBool(i.serviceName + ".shadow_service")
-
-	i.appCfg = config.App()
+	i.isShadowServiceEnabled = config.AppCfg.ServicesInstances[i.serviceName].ShadowService
 
 	//checking if the shadow service is enabled or not to apply shadow service mode
 	if i.isShadowServiceEnabled && i.methodName != "OPTIONS" {
@@ -184,9 +185,9 @@ func (i *ICAPRequest) addHeadersToLogs() {
 }
 
 //isServiceExists is a func to make sure that service which required in ICAP
-//request is existing in the config file
+//request is existing in the config.go file
 func (i *ICAPRequest) isServiceExists() bool {
-	services := readValues.ReadValuesSlice("app.services")
+	services := i.appCfg.Services
 	for r := 0; r < len(services); r++ {
 		if i.serviceName == services[r] {
 			return true
@@ -206,28 +207,30 @@ func (i *ICAPRequest) getMethodName() string {
 	return i.methodName
 }
 
-//isMethodAllowed is a func to check if the method in the ICAP request is allowed in config file or not
+//isMethodAllowed is a func to check if the method in the ICAP request is allowed in config.go file or not
 func (i *ICAPRequest) isMethodAllowed() bool {
-	if i.methodName != "OPTIONS" {
-		isMethodEnabled := readValues.ReadValuesBool(i.serviceName + "." + i.methodName)
-		if !isMethodEnabled {
-			return false
-		}
+	isMethodEnabled := false
+	if i.methodName == "RESPMOD" {
+		isMethodEnabled = i.appCfg.ServicesInstances[i.serviceName].RespMode
+	} else if i.methodName == "REQMOD" {
+		isMethodEnabled = i.appCfg.ServicesInstances[i.serviceName].ReqMode
+
 	}
-	return true
+	if isMethodEnabled {
+		return true
+	}
+	return false
 }
 
 //getVendorName is a func to get the vendor of the service which in the ICAP request
 func (i *ICAPRequest) getVendorName() string {
-	vendor := i.serviceName + ".vendor"
-	vendor = readValues.ReadValuesString(vendor)
-	return vendor
+	return i.appCfg.ServicesInstances[i.serviceName].Vendor
 }
 
 //addingISTAGServiceHeaders is a func to add the important header to ICAP response
 func (i *ICAPRequest) addingISTAGServiceHeaders() {
-	i.h.Set("ISTag", readValues.ReadValuesString(i.serviceName+".service_tag"))
-	i.h.Set("Service", readValues.ReadValuesString(i.serviceName+".service_caption"))
+	i.h.Set("ISTag", i.appCfg.ServicesInstances[i.serviceName].ServiceTag)
+	i.h.Set("Service", i.appCfg.ServicesInstances[i.serviceName].ServiceCaption)
 }
 
 //is204Allowed is a func to check if ICAP request has the header "204 : Allowed" or not
@@ -262,10 +265,10 @@ func (i *ICAPRequest) shadowService() {
 //getEnabledMethods is a func get all enable method of a specific service
 func (i *ICAPRequest) getEnabledMethods() string {
 	var allMethods []string
-	if readValues.ReadValuesBool(i.serviceName + ".resp_mode") {
+	if i.appCfg.ServicesInstances[i.serviceName].RespMode {
 		allMethods = append(allMethods, "RESPMOD")
 	}
-	if readValues.ReadValuesBool(i.serviceName + ".req_mode") {
+	if i.appCfg.ServicesInstances[i.serviceName].ReqMode {
 		allMethods = append(allMethods, "REQMOD")
 	}
 	if len(allMethods) == 1 {
@@ -274,8 +277,9 @@ func (i *ICAPRequest) getEnabledMethods() string {
 	return allMethods[0] + ", " + allMethods[1]
 }
 
-func (i *ICAPRequest) servicePreview(serviceName string) (bool, string) {
-	return readValues.ReadValuesBool(serviceName + ".preview_enabled"), readValues.ReadValuesString(serviceName + ".preview_bytes")
+func (i *ICAPRequest) servicePreview() (bool, string) {
+	return i.appCfg.ServicesInstances[i.serviceName].PreviewEnabled,
+		i.appCfg.ServicesInstances[i.serviceName].PreviewBytes
 }
 
 //optionsMode is a func to return an ICAP response in OPTIONS mode
@@ -283,8 +287,8 @@ func (i *ICAPRequest) optionsMode(serviceName string) {
 	//optionsModeRemote(vendor, req, w, appCfg, zlogger)
 	i.h.Set("Methods", i.getEnabledMethods())
 	i.h.Set("Allow", "204")
-	// Add preview if preview_enabled is true in config
-	previewEnabled, previewBytes := i.servicePreview(serviceName)
+	// Add preview if preview_enabled is true in config.go
+	previewEnabled, previewBytes := i.servicePreview()
 	if previewEnabled == true {
 		if pb, _ := strconv.Atoi(previewBytes); pb >= 0 {
 			i.h.Set("Preview", previewBytes)

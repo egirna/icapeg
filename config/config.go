@@ -9,6 +9,17 @@ import (
 	"github.com/spf13/viper"
 )
 
+type serviceIcapInfo struct {
+	Vendor         string
+	ServiceCaption string
+	ServiceTag     string
+	ReqMode        bool
+	RespMode       bool
+	ShadowService  bool
+	PreviewEnabled bool
+	PreviewBytes   string
+}
+
 // AppConfig represents the app configuration
 type AppConfig struct {
 	Port                 int
@@ -26,10 +37,11 @@ type AppConfig struct {
 	PreviewEnabled          bool
 	PropagateError          bool
 	VerifyServerCert        bool
-	services                []string
+	Services                []string
+	ServicesInstances       map[string]*serviceIcapInfo
 }
 
-var appCfg AppConfig
+var AppCfg AppConfig
 
 // Init initializes the configuration
 func Init() {
@@ -39,7 +51,7 @@ func Init() {
 	if readValues.IsSecExists("app") {
 		fmt.Println("app section doesn't exist in config file")
 	}
-	appCfg = AppConfig{
+	AppCfg = AppConfig{
 		Port:                    readValues.ReadValuesInt("app.port"),
 		LogLevel:                readValues.ReadValuesString("app.log_level"),
 		LoggingServerURL:        readValues.ReadValuesString("app.log_service_url"),
@@ -50,32 +62,42 @@ func Init() {
 		PreviewEnabled:          readValues.ReadValuesBool("app.preview_enabled"),
 		PropagateError:          readValues.ReadValuesBool("app.propagate_error"),
 		VerifyServerCert:        readValues.ReadValuesBool("app.verify_server_cert"),
-		services:                readValues.ReadValuesSlice("app.services"),
+		Services:                readValues.ReadValuesSlice("app.services"),
 	}
-	for i := 0; i < len(appCfg.services); i++ {
-		if readValues.ReadValuesInt(appCfg.services[i]+".max_filesize") < 0 {
+
+	//this loop to make sure that all services in the array of services has sections in the config file and from request mode and response mode
+	//there is one at least from them are enabled in every service
+	for i := 0; i < len(AppCfg.Services); i++ {
+		serviceName := AppCfg.Services[i]
+		if !readValues.IsSecExists(serviceName) {
+			fmt.Println(serviceName + " section doesn't exist")
+			os.Exit(1)
+		}
+		if !readValues.ReadValuesBool(serviceName+".req_mode") && !readValues.ReadValuesBool(serviceName+".resp_mode") {
+			fmt.Println("Request mode and response mode are disabled together in " + serviceName + " service")
+			os.Exit(1)
+		}
+		if readValues.ReadValuesInt(serviceName+".max_filesize") < 0 {
 			fmt.Println("max_filesize value in config.toml file is not valid")
 			os.Exit(1)
 		}
-	}
-	//this loop to make sure that all services in the array of services has sections in the config file and from request mode and response mode
-	//there is one at least from them are enabled in every service
-	for i := 0; i < len(appCfg.services); i++ {
-		if !readValues.IsSecExists(appCfg.services[i]) {
-			fmt.Println(appCfg.services[i] + " section doesn't exist")
-			os.Exit(1)
+		AppCfg.ServicesInstances = make(map[string]*serviceIcapInfo)
+		AppCfg.ServicesInstances[serviceName] = &serviceIcapInfo{
+			Vendor:         readValues.ReadValuesString(serviceName + ".vendor"),
+			ServiceTag:     readValues.ReadValuesString(serviceName + ".service_tag"),
+			ServiceCaption: readValues.ReadValuesString(serviceName + ".service_caption"),
+			ReqMode:        readValues.ReadValuesBool(serviceName + ".req_mode"),
+			RespMode:       readValues.ReadValuesBool(serviceName + ".resp_mode"),
+			ShadowService:  readValues.ReadValuesBool(serviceName + ".shadow_service"),
+			PreviewBytes:   readValues.ReadValuesString(serviceName + ".preview_bytes"),
+			PreviewEnabled: readValues.ReadValuesBool(serviceName + ".preview_enabled"),
 		}
-		if !readValues.ReadValuesBool(appCfg.services[i]+".req_mode") && !readValues.ReadValuesBool(appCfg.services[i]+".resp_mode") {
-			fmt.Println("Request mode and response mode are disabled together in " + appCfg.services[i] + " service")
-			os.Exit(1)
-		}
 	}
-
 }
 
 // InitTestConfig initializes the app with the test config file (for integration test)
 func InitTestConfig() {
-	appCfg = AppConfig{
+	AppCfg = AppConfig{
 		Port:                 readValues.ReadValuesInt("app.port"),
 		LogLevel:             readValues.ReadValuesString("app.log_level"),
 		LoggingServerURL:     readValues.ReadValuesString("app.log_service_url"),
@@ -91,5 +113,5 @@ func InitTestConfig() {
 
 // App returns the the app configuration instance
 func App() *AppConfig {
-	return &appCfg
+	return &AppCfg
 }
