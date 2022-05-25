@@ -63,7 +63,7 @@ Assume that the name of the vendor is **abc** and the name of the service **xyz*
         - **serviceName**: It's service name value.
         - **methodName**: It's method name value.
       - **Optional fields**:
-        - **generalFunc**: It's an instance from [**HttpMsg**](service/services-utilities/general-functions.go) struct which has a lot of function that may help the developer in processing **HTTP messages**.
+        - **generalFunc**: It's an instance from [**GeneralFunc**](service/services-utilities/general-functions/general-functions.go) struct which has a lot of function that may help the developer in processing **HTTP messages**.
 
       ```go
       type Abc struct {
@@ -106,11 +106,11 @@ Assume that the name of the vendor is **abc** and the name of the service **xyz*
       ```go
       func NewAbcService(serviceName, methodName string, httpMsg *utils.HttpMsg) *abc {
       	return &Abc{
-              //mandatory
+              	//mandatory
       		httpMsg:                httpMsg,
       		serviceName:            serviceName,
       		methodName:             methodName,
-              //optional
+              	//optional
       		generalFunc:            general_functions.NewGeneralFunc(httpMsg),  //optional helper 
       		maxFileSize:            abcConfig.maxFileSize,
       		bypassExts:             abcConfig.bypassExts,
@@ -138,7 +138,7 @@ Assume that the name of the vendor is **abc** and the name of the service **xyz*
 
 - ### [**service.go**](service/service.go)
 
-  - Add a name of the new vendor as a constant variable in [service.go](https://github.com/MarwanGalal746/icapeg/blob/restructuring/service/servoce.go) at the start of the file in the constants section.
+  - Add a name of the new vendor as a constant variable in [service.go](service/servoce.go) at the start of the file in the constants section.
 
 ```go
 //Vendors names
@@ -175,6 +175,6 @@ const (
   }
   ```
 
-Please, check [**echo vendor**](service/echo/) to relate to above explanation.
+Please, check [**echo vendor**](service/services/echo/) to relate to above explanation.
 
 Now you can run **ICAPeg** and try it with **your service**.
