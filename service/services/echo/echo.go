@@ -2,55 +2,10 @@ package echo
 
 import (
 	"bytes"
-	"icapeg/readValues"
-	"icapeg/service/services-utilities/general-functions"
 	"icapeg/utils"
 	"io"
 	"net/http"
-	"time"
 )
-
-// Echo represents the information regarding the Echo service
-type Echo struct {
-	httpMsg                *utils.HttpMsg
-	elapsed                time.Duration
-	serviceName            string
-	methodName             string
-	maxFileSize            int
-	previewEnabled         bool
-	previewBytes           string
-	bypassExts             []string
-	processExts            []string
-	BaseURL                string
-	Timeout                time.Duration
-	APIKey                 string
-	ScanEndpoint           string
-	FailThreshold          int
-	returnOrigIfMaxSizeExc bool
-	returnOrigIf400        bool
-	generalFunc            *general_functions.GeneralFunc
-}
-
-// NewEchoService returns a new populated instance of the Echo service
-func NewEchoService(serviceName, methodName string, httpMsg *utils.HttpMsg) *Echo {
-	return &Echo{
-		httpMsg:                httpMsg,
-		serviceName:            serviceName,
-		methodName:             methodName,
-		previewEnabled:         readValues.ReadValuesBool(serviceName + ".preview_enabled"),
-		previewBytes:           readValues.ReadValuesString(serviceName + ".preview_bytes"),
-		maxFileSize:            readValues.ReadValuesInt(serviceName + ".max_filesize"),
-		bypassExts:             readValues.ReadValuesSlice(serviceName + ".bypass_extensions"),
-		processExts:            readValues.ReadValuesSlice(serviceName + ".process_extensions"),
-		BaseURL:                readValues.ReadValuesString(serviceName + ".base_url"),
-		Timeout:                readValues.ReadValuesDuration(serviceName+".timeout") * time.Second,
-		APIKey:                 readValues.ReadValuesString(serviceName + ".api_key"),
-		ScanEndpoint:           readValues.ReadValuesString(serviceName + ".scan_endpoint"),
-		FailThreshold:          readValues.ReadValuesInt(serviceName + ".fail_threshold"),
-		returnOrigIfMaxSizeExc: readValues.ReadValuesBool(serviceName + ".return_original_if_max_file_size_exceeded"),
-		generalFunc:            general_functions.NewGeneralFunc(httpMsg),
-	}
-}
 
 //Processing is a func used for to processing the http message
 func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
