@@ -79,7 +79,7 @@ func respmodHandler(w icap.ResponseWriter, req *icap.Request) {
 			return
 		}
 
-		// log.Println("The preview data: ", string(req.Preview))
+		// logging.Println("The preview data: ", string(req.Preview))
 
 		buf := &bytes.Buffer{}
 
@@ -124,7 +124,7 @@ func reqmodHandler(w icap.ResponseWriter, req *icap.Request) {
 			return
 		}
 
-		// log.Println("The preview data: ", string(req.Preview))
+		// logging.Println("The preview data: ", string(req.Preview))
 
 		fileURL := req.Request.RequestURI
 

@@ -171,7 +171,7 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 	}
 }
 
-//adding headers to the log
+//adding headers to the logging
 func (i *ICAPRequest) addHeadersToLogs() {
 	for key, element := range i.req.Header {
 		res := key + " : "

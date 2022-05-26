@@ -38,12 +38,12 @@ func (z *ZLogger) ExceedLoggingTime() bool {
 	return duration >= z.LogFlushTime*minTimeToFlush && len(z.LogContent.Bytes()) > 0
 }
 
-// ExceedLogSize : ExceedLogSize checks if log content exceeds min length to send logs to logging server.
+// ExceedLogSize : ExceedLogSize checks if logging content exceeds min length to send logs to logging server.
 func (z *ZLogger) ExceedLogSize() bool {
 	return len(z.LogContent.Bytes()) > minLogLengthToFlush
 }
 
-// readLogFiles : read the content of the log file and create a glasswall log format
+// readLogFiles : read the content of the logging file and create a glasswall logging format
 func (z *ZLogger) readLogFiles() (tLog TransactionalLog, err error) {
 	tLog.Events.Logs = map[string]TransactionalLogEvent{}
 	tLog.Events.Type = srvName
@@ -85,10 +85,10 @@ func NewZLogger(conf *config.AppConfig) (*ZLogger, error) {
 	zLogger.LogStartTime = time.Now()
 	// setting time format in logs to be in Epoch
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	// setting the log level
+	// setting the logging level
 	zLevel, err := zerolog.ParseLevel(conf.LogLevel)
 	if err != nil {
-		return nil, fmt.Errorf("log level %s provided is not supported by zerolog: %w", conf.LogLevel, err)
+		return nil, fmt.Errorf("logging level %s provided is not supported by zerolog: %w", conf.LogLevel, err)
 	}
 	zLogger.LogContent = &bytes.Buffer{}
 	zerolog.SetGlobalLevel(zLevel)
