@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -10,9 +11,6 @@ import (
 	"icapeg/api"
 	"icapeg/config"
 	"icapeg/icap"
-	"icapeg/logger"
-
-	zlog "github.com/rs/zerolog/log"
 )
 
 // https://github.com/k8-proxy/k8-rebuild-rest-api
@@ -23,25 +21,18 @@ func StartServer() error {
 	// and there, the request will be filtered to check if the service exists or not
 
 	config.Init()
-	// initialize zerolog
-	zLogger, err := logger.NewZLogger(config.App())
-	if err != nil {
-		return fmt.Errorf("could not start logger service %w", err)
-	}
 
-	withICAPLogger := logger.LoggingHandlerICAPFactory(zLogger)
-
-	icap.Handle("/", withICAPLogger(api.ToICAPEGServe))
-	zlog.Debug().Msg("starting the ICAP server")
+	icap.HandleFunc("/", api.ToICAPEGServe)
+	log.Println("starting the ICAP server")
 
 	stop := make(chan os.Signal, 1)
 
 	signal.Notify(stop, syscall.SIGKILL, syscall.SIGINT, syscall.SIGQUIT)
 
 	go func() {
-		if err = icap.ListenAndServe(fmt.Sprintf(":%d", config.App().Port), nil); err != nil {
-			zlog.Error().Err(err)
-			zlog.Fatal()
+		if err := icap.ListenAndServe(fmt.Sprintf(":%d", config.App().Port), nil); err != nil {
+			log.Println(err)
+			log.Fatal(err)
 		}
 	}()
 
@@ -56,12 +47,12 @@ func StartServer() error {
 
 	time.Sleep(5 * time.Millisecond)
 
-	zlog.Debug().Msgf("ICAP server is running on localhost: %d", config.App().Port)
+	log.Printf("ICAP server is running on localhost: %d", config.App().Port)
 
 	<-stop
 	ticker.Stop()
 
-	zlog.Debug().Msg("ICAP server gracefully shut down")
+	log.Printf("ICAP server gracefully shut down")
 
 	return nil
 }
