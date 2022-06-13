@@ -23,6 +23,8 @@ func StartServer() error {
 	config.Init()
 
 	icap.HandleFunc("/", api.ToICAPEGServe)
+	//http.HandleFunc("/", api.ErrorPageHanlder)
+
 	log.Println("starting the ICAP server")
 
 	stop := make(chan os.Signal, 1)

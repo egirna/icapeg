@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"icapeg/config"
 	"icapeg/icap"
 	"icapeg/service"
@@ -60,6 +61,7 @@ func (i *ICAPRequest) RequestInitialization() error {
 	// checking if request method is allowed or not
 	i.methodName = i.req.Method
 	if !i.isMethodAllowed() {
+		fmt.Println(i.req.Method)
 		i.w.WriteHeader(http.StatusMethodNotAllowed, nil, false)
 		err := errors.New("method is not allowed")
 		return err
@@ -166,8 +168,10 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 		} else {
 			i.w.WriteHeader(utils.OkStatusCodeStr, httpMsg, true)
 		}
+		break
 	case utils.OkStatusCodeStr:
 		i.w.WriteHeader(utils.OkStatusCodeStr, httpMsg, true)
+		break
 	}
 }
 
@@ -216,7 +220,7 @@ func (i *ICAPRequest) isMethodAllowed() bool {
 		isMethodEnabled = i.appCfg.ServicesInstances[i.serviceName].ReqMode
 
 	}
-	if isMethodEnabled {
+	if isMethodEnabled || i.methodName == "OPTIONS" {
 		return true
 	}
 	return false
