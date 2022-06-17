@@ -97,6 +97,8 @@ func (i *ICAPRequest) RequestProcessing() {
 		partial = true
 	}
 
+	i.HostHeader()
+
 	// check the method name
 	switch i.methodName {
 	case utils.ICAPModeOptions:
@@ -108,6 +110,17 @@ func (i *ICAPRequest) RequestProcessing() {
 		i.RespAndReqMods(partial)
 	}
 
+}
+
+func (i *ICAPRequest) HostHeader() {
+
+	if i.methodName == "REQMOD" {
+		fmt.Println(i.req.Request.Host)
+		i.req.Request.Header.Set("Host", i.req.Request.Host)
+	} // else if i.methodName == "RESPMOD" {
+	//	fmt.Println(i.req.Request.Host)
+	//	i.req.Response.Header.Set("Host", i.req.Request.Host)
+	//}
 }
 
 func (i *ICAPRequest) RespAndReqMods(partial bool) {
@@ -148,6 +161,7 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 
 	//check the ICAP status code which returned from the service to decide
 	//how should be the ICAP response
+	fmt.Println(IcapStatusCode)
 	switch IcapStatusCode {
 	case utils.InternalServerErrStatusCodeStr:
 		i.w.WriteHeader(IcapStatusCode, nil, false)
@@ -233,8 +247,8 @@ func (i *ICAPRequest) getVendorName() string {
 
 //addingISTAGServiceHeaders is a func to add the important header to ICAP response
 func (i *ICAPRequest) addingISTAGServiceHeaders() {
-	i.h.Set("ISTag", i.appCfg.ServicesInstances[i.serviceName].ServiceTag)
-	i.h.Set("Service", i.appCfg.ServicesInstances[i.serviceName].ServiceCaption)
+	i.h["ISTag"] = []string{i.appCfg.ServicesInstances[i.serviceName].ServiceTag}
+	i.h["Service"] = []string{i.appCfg.ServicesInstances[i.serviceName].ServiceCaption}
 }
 
 //is204Allowed is a func to check if ICAP request has the header "204 : Allowed" or not

@@ -11,8 +11,5 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 		return utils.Continue, nil, nil
 	}
 
-	if e.methodName == utils.ICAPModeReq {
-		return utils.OkStatusCodeStr, e.httpMsg.Request, nil
-	}
-	return utils.OkStatusCodeStr, e.httpMsg.Response, nil
+	return utils.NoModificationStatusCodeStr, e.httpMsg.Response, nil
 }
