@@ -30,5 +30,8 @@ jobs:
 
     - name: Test
       run: |
+        echo "-------------------------------------------------"
+        echo " ---------- Test max_filesize--------------------"
+        echo "-------------------------------------------------"
         sudo chmod 777 ./testing/testByHash.sh
         ./testing/testByHash.sh
