@@ -161,7 +161,6 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 
 	//check the ICAP status code which returned from the service to decide
 	//how should be the ICAP response
-	fmt.Println(IcapStatusCode)
 	switch IcapStatusCode {
 	case utils.InternalServerErrStatusCodeStr:
 		i.w.WriteHeader(IcapStatusCode, nil, false)
