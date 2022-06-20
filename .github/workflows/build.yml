@@ -20,6 +20,7 @@ jobs:
 
     - name: Build
       run: |
+        mv ./testing/config.toml .
         sudo apt-get update
         sudo apt-get install c-icap
         go build .
