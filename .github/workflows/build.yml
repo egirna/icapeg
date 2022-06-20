@@ -1,25 +1,38 @@
-name: Build
+name: Go
 
 on:
   push:
-    branches: [main]
+    branches: [ "restructure" ]
   pull_request:
-    branches: [main]
+    branches: [ "restructure" ]
 
 jobs:
+
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
-      - name: Set up Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: 1.16
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.18
 
-      - name: Build
-        run: go build main.go
+    - name: Build
+      run: |
+        mv ./testing/config.toml .
+        sudo apt-get update
+        sudo apt-get install c-icap
+        go build .
 
-# Tests disabled till dependencies are resolved
-#      - name: Test
-#       run: go test ./...
+    - name: Run ICAPeg
+      run: ./icapeg &
+
+
+    - name: Test
+      run: |
+        echo "-------------------------------------------------"
+        echo " ---------- Test max_filesize--------------------"
+        echo "-------------------------------------------------"
+        sudo chmod 777 ./testing/testByHash.sh
+        ./testing/testByHash.sh
