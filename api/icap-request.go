@@ -3,6 +3,7 @@ package api
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"icapeg/config"
 	"icapeg/icap"
 	"icapeg/service"
@@ -60,6 +61,7 @@ func (i *ICAPRequest) RequestInitialization() error {
 	// checking if request method is allowed or not
 	i.methodName = i.req.Method
 	if !i.isMethodAllowed() {
+		fmt.Println(i.req.Method)
 		i.w.WriteHeader(http.StatusMethodNotAllowed, nil, false)
 		err := errors.New("method is not allowed")
 		return err
@@ -95,6 +97,8 @@ func (i *ICAPRequest) RequestProcessing() {
 		partial = true
 	}
 
+	i.HostHeader()
+
 	// check the method name
 	switch i.methodName {
 	case utils.ICAPModeOptions:
@@ -106,6 +110,17 @@ func (i *ICAPRequest) RequestProcessing() {
 		i.RespAndReqMods(partial)
 	}
 
+}
+
+func (i *ICAPRequest) HostHeader() {
+
+	if i.methodName == "REQMOD" {
+		fmt.Println(i.req.Request.Host)
+		i.req.Request.Header.Set("Host", i.req.Request.Host)
+	} // else if i.methodName == "RESPMOD" {
+	//	fmt.Println(i.req.Request.Host)
+	//	i.req.Response.Header.Set("Host", i.req.Request.Host)
+	//}
 }
 
 func (i *ICAPRequest) RespAndReqMods(partial bool) {
@@ -146,6 +161,7 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 
 	//check the ICAP status code which returned from the service to decide
 	//how should be the ICAP response
+	fmt.Println(IcapStatusCode)
 	switch IcapStatusCode {
 	case utils.InternalServerErrStatusCodeStr:
 		i.w.WriteHeader(IcapStatusCode, nil, false)
@@ -166,12 +182,14 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 		} else {
 			i.w.WriteHeader(utils.OkStatusCodeStr, httpMsg, true)
 		}
+		break
 	case utils.OkStatusCodeStr:
 		i.w.WriteHeader(utils.OkStatusCodeStr, httpMsg, true)
+		break
 	}
 }
 
-//adding headers to the log
+//adding headers to the logging
 func (i *ICAPRequest) addHeadersToLogs() {
 	for key, element := range i.req.Header {
 		res := key + " : "
@@ -216,7 +234,7 @@ func (i *ICAPRequest) isMethodAllowed() bool {
 		isMethodEnabled = i.appCfg.ServicesInstances[i.serviceName].ReqMode
 
 	}
-	if isMethodEnabled {
+	if isMethodEnabled || i.methodName == "OPTIONS" {
 		return true
 	}
 	return false
@@ -229,8 +247,8 @@ func (i *ICAPRequest) getVendorName() string {
 
 //addingISTAGServiceHeaders is a func to add the important header to ICAP response
 func (i *ICAPRequest) addingISTAGServiceHeaders() {
-	i.h.Set("ISTag", i.appCfg.ServicesInstances[i.serviceName].ServiceTag)
-	i.h.Set("Service", i.appCfg.ServicesInstances[i.serviceName].ServiceCaption)
+	i.h["ISTag"] = []string{i.appCfg.ServicesInstances[i.serviceName].ServiceTag}
+	i.h["Service"] = []string{i.appCfg.ServicesInstances[i.serviceName].ServiceCaption}
 }
 
 //is204Allowed is a func to check if ICAP request has the header "204 : Allowed" or not

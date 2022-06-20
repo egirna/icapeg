@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"icapeg/logging"
 	"icapeg/readValues"
 	"os"
 	"strings"
@@ -93,6 +94,7 @@ func Init() {
 			PreviewEnabled: readValues.ReadValuesBool(serviceName + ".preview_enabled"),
 		}
 	}
+	logging.InitLogger()
 }
 
 // InitTestConfig initializes the app with the test config file (for integration test)

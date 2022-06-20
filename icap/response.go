@@ -124,7 +124,7 @@ func (w *respWriter) WriteHeader(code int, httpMessage interface{}, hasBody bool
 		w.Header().Set("Date", time.Now().UTC().Format(http.TimeFormat))
 	}
 
-	w.header.Set("Connection", "close")
+	//w.header.Set("Connection", "close")
 
 	bw := w.conn.buf.Writer
 	status := StatusText(code)
