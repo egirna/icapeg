@@ -29,4 +29,6 @@ jobs:
 
 
     - name: Test
-      run: ./testing/testByHash.sh
+      run: | 
+        chmod +x ./testing/testByHash.sh
+        ./testing/testByHash.sh
