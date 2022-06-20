@@ -26,7 +26,7 @@ func TestResponse(t *testing.T) {
 				headers: http.Header{
 					"Date":         []string{"Mon, 10 Jan 2000  09:55:21 GMT"},
 					"Server":       []string{"ICAP-Server-Software/1.0"},
-					"Istag":        []string{"\"W3E4R7U9-L2E4-2\""},
+					"ISTag":        []string{"\"W3E4R7U9-L2E4-2\""},
 					"Encapsulated": []string{"req-hdr=0, null-body=231"},
 				},
 				status:       "OK",
@@ -36,7 +36,7 @@ func TestResponse(t *testing.T) {
 					"Date: Mon, 10 Jan 2000  09:55:21 GMT\r\n" +
 					"Server: ICAP-Server-Software/1.0\r\n" +
 					"Connection: close\r\n" +
-					"Istag: \"W3E4R7U9-L2E4-2\"\r\n" +
+					"ISTag: \"W3E4R7U9-L2E4-2\"\r\n" +
 					"Encapsulated: req-hdr=0, null-body=231\r\n\r\n",
 				httpReqStr: "GET /modified-path HTTP/1.1\r\n" +
 					"Host: www.origin-server.com\r\n" +
@@ -49,7 +49,7 @@ func TestResponse(t *testing.T) {
 				headers: http.Header{
 					"Date":         []string{"Mon, 10 Jan 2000  09:55:21 GMT"},
 					"Server":       []string{"ICAP-Server-Software/1.0"},
-					"Istag":        []string{"\"W3E4R7U9-L2E4-2\""},
+					"ISTag":        []string{"\"W3E4R7U9-L2E4-2\""},
 					"Encapsulated": []string{"req-hdr=0, req-body=244"},
 				},
 				status:       "OK",
@@ -59,7 +59,7 @@ func TestResponse(t *testing.T) {
 					"Date: Mon, 10 Jan 2000  09:55:21 GMT\r\n" +
 					"Server: ICAP-Server-Software/1.0\r\n" +
 					"Connection: close\r\n" +
-					"Istag: \"W3E4R7U9-L2E4-2\"\r\n" +
+					"ISTag: \"W3E4R7U9-L2E4-2\"\r\n" +
 					"Encapsulated: req-hdr=0, req-body=244\r\n\r\n",
 				httpReqStr: "POST /origin-resource/form.pl HTTP/1.1\r\n" +
 					"Host: www.origin-server.com\r\n" +
@@ -135,7 +135,7 @@ func TestResponse(t *testing.T) {
 				headers: http.Header{
 					"Date":         []string{"Mon, 10 Jan 2000  09:55:21 GMT"},
 					"Server":       []string{"ICAP-Server-Software/1.0"},
-					"Istag":        []string{"\"W3E4R7U9-L2E4-2\""},
+					"ISTag":        []string{"\"W3E4R7U9-L2E4-2\""},
 					"Encapsulated": []string{"req-hdr=0, res-body=222"},
 				},
 				status:       "OK",

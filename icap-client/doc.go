@@ -5,7 +5,7 @@
 //
 //  import (
 // 	  "fmt"
-// 	  "log"
+// 	  "logging"
 // 	  "net/http"
 // 	  "time"
 //
@@ -17,7 +17,7 @@
 // 	 httpReq, err := http.NewRequest(http.MethodGet, "http://localhost:8000/sample.pdf", nil)
 //
 // 	 if err != nil {
-// 	  	log.Fatal(err)
+// 	  	logging.Fatal(err)
 // 	 }
 //
 //   /* making the http client & making the request call to get the response needed for the icap RESPMOD call */
@@ -26,14 +26,14 @@
 // 	 httpResp, err := httpClient.Do(httpReq)
 //
 // 	 if err != nil {
-// 		 log.Fatal(err)
+// 		 logging.Fatal(err)
 // 	 }
 //
 //   /* making a icap request with OPTIONS method */
 // 	 optReq, err := ic.NewRequest(ic.MethodOPTIONS, "icap://127.0.0.1:1344/respmod", nil, nil)
 //
 // 	 if err != nil {
-// 		 log.Fatal(err)
+// 		 logging.Fatal(err)
 // 		 return
 // 	 }
 //
@@ -46,7 +46,7 @@
 // 	 optResp, err := client.Do(optReq)
 //
 // 	 if err != nil {
-// 		 log.Fatal(err)
+// 		 logging.Fatal(err)
 // 		 return
 // 	 }
 //
@@ -54,7 +54,7 @@
 // 	 req, err := ic.NewRequest(ic.MethodRESPMOD, "icap://127.0.0.1:1344/respmod", httpReq, httpResp)
 //
 // 	 if err != nil {
-// 		 log.Fatal(err)
+// 		 logging.Fatal(err)
 // 	 }
 //
 // 	 req.SetPreview(optResp.PreviewBytes) // setting the preview bytes obtained from the OPTIONS call
@@ -63,7 +63,7 @@
 // 	 resp, err := client.Do(req)
 //
 // 	 if err != nil {
-// 		 log.Fatal(err)
+// 		 logging.Fatal(err)
 // 	 }
 //
 // 	 fmt.Println(resp.StatusCode)
