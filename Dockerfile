@@ -1,0 +1,15 @@
+FROM golang:alpine AS Builder
+WORKDIR /home/icapeg
+COPY . .
+RUN go build .
+
+
+FROM alpine
+WORKDIR /home/icapeg
+# RUN apk add --no-cache libc6-compat
+RUN apk --no-cache add ca-certificates
+COPY --from=Builder ./home/icapeg/icapeg .
+COPY --from=Builder ./home/icapeg/config.toml .
+
+EXPOSE 1344
+ENTRYPOINT ["./icapeg"]
