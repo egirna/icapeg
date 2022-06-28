@@ -98,7 +98,7 @@ wait_timeout = 10 #seconds, the time upto which the server will wait for clamav 
 bad_file_status = ["malicious"]
 ok_file_status = ["ok"]
 #max file size value from 1 to 9223372036854775807, and value of zero means unlimited
-max_filesize = 100 #bytes
+max_filesize = 0 #bytes
 return_original_if_max_file_size_exceeded=false
 
 #ICAP possible codes: 204 (No modifications needed) , 400 (Bad Request) , 403 (Forbidden) , 500 (Server Error) , 502 (Bad Gateway)
