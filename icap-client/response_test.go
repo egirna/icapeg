@@ -1,6 +1,6 @@
 package icapclient
 
-//func TestResponse(t *testing.T) {
+//func TestResponse(t *testing.T)   {
 //
 //	t.Run("ReadResponse REQMOD", func(t *testing.T) { // FIXME: headers and content request aren't being tested properly
 //
