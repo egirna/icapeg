@@ -141,7 +141,7 @@ func (g *Glasswall) Processing(partial bool) (int, interface{}, map[string]strin
 
 	//returning the scanned file if everything is ok
 	scannedFile = g.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, g.methodName)
-	return utils.OkStatusCodeStr, g.returningHttpMessage(scannedFile), serviceHeaders
+	return utils.OkStatusCodeStr, g.generalFunc.ReturningHttpMessageWithFile(g.methodName, scannedFile), serviceHeaders
 }
 
 //function to return the suitable http message (http request, http response)
