@@ -68,6 +68,8 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 			return utils.InternalServerErrStatusCodeStr, nil, nil
 		}
 	}
-
-	return utils.OkStatusCodeStr, e.httpMsg.Response, nil
+	if e.methodName == utils.ICAPModeReq {
+		return utils.NoModificationStatusCodeStr, e.httpMsg.Request, nil
+	}
+	return utils.NoModificationStatusCodeStr, e.httpMsg.Response, nil
 }
