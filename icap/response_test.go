@@ -4,11 +4,6 @@
 
 package icap
 
-import (
-	"io"
-	"io/ioutil"
-)
-
 const serverAddr = "localhost:11344"
 
 // REQMOD example 2 from RFC 3507, adjusted for order of headers, etc.
@@ -67,18 +62,18 @@ const serverAddr = "localhost:11344"
 //	checkString("Response", str, resp, t)
 //}
 
-func HandleREQMOD2(w ResponseWriter, req *Request) {
-	w.Header().Set("Date", "Mon, 10 Jan 2000  09:55:21 GMT")
-	w.Header().Set("Server", "ICAP-Server-Software/1.0")
-	w.Header().Set("ISTag", "\"W3E4R7U9-L2E4-2\"")
-
-	req.Request.Header.Set("Via", "1.0 icap-server.net (ICAP Example ReqMod Service 1.1)")
-	req.Request.Header.Set("Accept", "text/html, text/plain, image/gif")
-	req.Request.Header.Set("Accept-Encoding", "gzip, compress")
-
-	body, _ := ioutil.ReadAll(req.Request.Body)
-	newBody := string(body) + "  ICAP powered!"
-
-	w.WriteHeader(200, req.Request, true)
-	io.WriteString(w, newBody)
-}
+//func HandleREQMOD2(w ResponseWriter, req *Request) {
+//	w.Header().Set("Date", "Mon, 10 Jan 2000  09:55:21 GMT")
+//	w.Header().Set("Server", "ICAP-Server-Software/1.0")
+//	w.Header().Set("ISTag", "\"W3E4R7U9-L2E4-2\"")
+//
+//	req.Request.Header.Set("Via", "1.0 icap-server.net (ICAP Example ReqMod Service 1.1)")
+//	req.Request.Header.Set("Accept", "text/html, text/plain, image/gif")
+//	req.Request.Header.Set("Accept-Encoding", "gzip, compress")
+//
+//	body, _ := ioutil.ReadAll(req.Request.Body)
+//	newBody := string(body) + "  ICAP powered!"
+//
+//	w.WriteHeader(200, req.Request, true)
+//	io.WriteString(w, newBody)
+//}
