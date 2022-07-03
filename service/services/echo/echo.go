@@ -5,6 +5,7 @@ import (
 	"icapeg/utils"
 	"io"
 	"net/http"
+	"strconv"
 )
 
 //Processing is a func used for to processing the http message
@@ -68,8 +69,23 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 			return utils.InternalServerErrStatusCodeStr, nil, nil
 		}
 	}
-	if e.methodName == utils.ICAPModeReq {
-		return utils.NoModificationStatusCodeStr, e.httpMsg.Request, nil
+	//returning the scanned file if everything is ok
+	scannedFile := file.Bytes()
+	scannedFile = e.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, e.methodName)
+	return utils.NoModificationStatusCodeStr, e.generalFunc.ReturningHttpMessageWithFile(e.methodName, scannedFile), nil
+}
+
+//function to return the suitable http message (http request, http response)
+func (e *Echo) returningHttpMessage(file []byte) interface{} {
+	switch e.methodName {
+	case utils.ICAPModeReq:
+		e.httpMsg.Request.Header.Set(utils.ContentLength, strconv.Itoa(len(string(file))))
+		e.httpMsg.Request.Body = io.NopCloser(bytes.NewBuffer(file))
+		return e.httpMsg.Request
+	case utils.ICAPModeResp:
+		e.httpMsg.Response.Header.Set(utils.ContentLength, strconv.Itoa(len(string(file))))
+		e.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(file))
+		return e.httpMsg.Response
 	}
-	return utils.NoModificationStatusCodeStr, e.httpMsg.Response, nil
+	return nil
 }
