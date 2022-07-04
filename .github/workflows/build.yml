@@ -35,11 +35,13 @@ jobs:
         kill -9 $(pidof icapeg)
         go build .
         ./icapeg &
+        sleep 3
         ./testing/test.sh "File\tSize" "test_size.csv"
         mv ./testing/extenstion.toml ./config.toml
         kill -9 $(pidof icapeg)
         go build .
         ./icapeg &
+        sleep 3
         ./testing/test.sh "File\tExtention" "test_extension.csv"
     
     - name: Build and push docker image
