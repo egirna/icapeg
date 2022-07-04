@@ -172,6 +172,9 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 		}
 		i.RespAndReqMods(false)
 		break
+	case utils.RequestTimeOutStatusCodeStr:
+		i.w.WriteHeader(IcapStatusCode, nil, false)
+		break
 	case utils.NoModificationStatusCodeStr:
 		if i.Is204Allowed {
 			i.w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)

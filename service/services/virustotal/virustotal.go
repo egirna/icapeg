@@ -68,6 +68,12 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 
 	scannedFile := file.Bytes()
 	score, total, err := v.SendFileToScan(file)
+	if err != nil {
+		if strings.Contains(err.Error(), "context deadline exceeded") {
+			return utils.RequestTimeOutStatusCodeStr, nil, nil
+		}
+		return utils.InternalServerErrStatusCodeStr, nil, nil
+	}
 	serviceHeaders := make(map[string]string)
 	serviceHeaders["Virustotal-Total"] = total
 	serviceHeaders["Virustotal-Positives"] = score
@@ -101,7 +107,6 @@ func (v *Virustotal) SendFileToScan(f *bytes.Buffer) (string, string, error) {
 
 	//headers
 	req.Header.Add("Content-Type", bodyWriter.FormDataContentType())
-	//fmt.Println(req)
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", "", err
@@ -109,8 +114,6 @@ func (v *Virustotal) SendFileToScan(f *bytes.Buffer) (string, string, error) {
 	var data map[string]interface{}
 	err = json.NewDecoder(resp.Body).Decode(&data)
 	resource := fmt.Sprint(data["resource"])
-	//fmt.Println(data["resource"])
-	//fmt.Println(resp.StatusCode)
 	return v.SendFileToGetReport(resource)
 
 }
@@ -125,7 +128,6 @@ func (v *Virustotal) SendFileToGetReport(resource string) (string, string, error
 		part, _ := bodyWriter.CreateFormField("apikey")
 		io.Copy(part, strings.NewReader(v.APIKey))
 		part, _ = bodyWriter.CreateFormField("resource")
-		fmt.Println(resource)
 		io.Copy(part, strings.NewReader(resource))
 
 		req, err := http.NewRequest(http.MethodPost, urlStr, bodyBuf)
@@ -141,15 +143,11 @@ func (v *Virustotal) SendFileToGetReport(resource string) (string, string, error
 		//headers
 		req.Header.Add("Content-Type", bodyWriter.FormDataContentType())
 		resp, err := client.Do(req)
-		//fmt.Println("here")
-		//fmt.Println(req)
-		//fmt.Println(resp.StatusCode)
 		var data map[string]interface{}
 		if err != nil {
 			return "", "", err
 		}
 		err = json.NewDecoder(resp.Body).Decode(&data)
-		//fmt.Println(data)
 		if data["positives"] == nil {
 			time.Sleep(10 * time.Second)
 			continue

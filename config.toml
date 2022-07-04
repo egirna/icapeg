@@ -36,6 +36,7 @@ preview_enabled = true# options send preview header or not
 propagate_error = true
 service_caption ="Go-ICAP server - glasswall Rebuild service"
 services= ["glasswall" , "echo", "virustotal"]
+timeout = 25
 verify_server_cert=false
 #I worked on project using Golang which extracts uploaded files and before uploading and downloaded files
 # before downloading and send it to api to scan it before uploading/downloading it.
@@ -115,7 +116,7 @@ process_extensions = ["*"] # * = everything except the ones in bypass, unknown =
 scan_url = "https://www.virustotal.com/vtapi/v2/file/scan" #
 report_url = "https://www.virustotal.com/vtapi/v2/file/report" #
 api_key = "$_VIRUSTOTAL_API_KEY"
-timeout  = 300 #seconds , ICAP will return 408 - Request timeout
+timeout  = 0 #seconds , ICAP will return 408 - Request timeout
 fail_threshold = 2
 policy= ""
 #max file size value from 1 to 9223372036854775807, and value of zero means unlimited

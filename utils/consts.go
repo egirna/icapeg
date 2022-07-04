@@ -22,6 +22,7 @@ const (
 	OkStatusCodeStr                = 200
 	InternalServerErrStatusCodeStr = 500
 	Continue                       = 100
+	RequestTimeOutStatusCodeStr    = 408
 	HeaderEncapsulated             = "Encapsulated"
 	ICAPPrefix                     = "icap_"
 	NoVendor                       = "none"
