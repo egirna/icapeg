@@ -4,14 +4,16 @@ import (
 	"icapeg/service/services/clamav"
 	"icapeg/service/services/echo"
 	"icapeg/service/services/glasswall"
+	"icapeg/service/services/virustotal"
 	"icapeg/utils"
 )
 
 //Vendors names
 const (
-	VendorGlasswall = "glasswall"
-	VendorEcho      = "echo"
-	VendorClamav    = "clamav"
+	VendorGlasswall  = "glasswall"
+	VendorEcho       = "echo"
+	VendorClamav     = "clamav"
+	VendorVirustotal = "virustotal"
 )
 
 type (
@@ -29,6 +31,8 @@ func GetService(vendor, serviceName, methodName string, httpMsg *utils.HttpMsg) 
 		return glasswall.NewGlasswallService(serviceName, methodName, httpMsg)
 	case VendorEcho:
 		return echo.NewEchoService(serviceName, methodName, httpMsg)
+	case VendorVirustotal:
+		return virustotal.NewVirustotalService(serviceName, methodName, httpMsg)
 	case VendorClamav:
 		return clamav.NewClamavService(serviceName, methodName, httpMsg)
 
@@ -42,5 +46,8 @@ func InitServiceConfig(vendor, serviceName string) {
 		glasswall.InitGlasswallConfig(serviceName)
 	case VendorEcho:
 		echo.InitEchoConfig(serviceName)
+	case VendorVirustotal:
+		virustotal.InitVirustotalConfig(serviceName)
+
 	}
 }
