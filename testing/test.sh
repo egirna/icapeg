@@ -5,12 +5,11 @@ test_file () {
 HashCode=$(sha256sum $1 | cut -d " " -f 1)
 
 # run test code to get file back 
-
 c-icap-client -i 127.0.0.1  -p 1344 -s echo -f "./$1" -o ./resultFile -no204
 
 # check the hash
-
 result=$(echo "$HashCode resultFile" | sha256sum --check | cut -d ":" -f 2)
+
 #  delete hashed file 
 rm -r resultFile
 
@@ -26,6 +25,12 @@ fi
 
 }
 
+
+
+test_fileSize() {
+
+printf "\n\033[1;33m ----------------------------------------------------------\n"
+printf "\n\033[1;33m ------------------ Test$1 -----------------------\n\n\033[0m"
 OK=0
 FAILED=0
 while read line
@@ -33,7 +38,7 @@ do
    fileName=$(echo "$line" | cut -d "," -f 1)
    expectedResult=$(echo "$line" | cut -d "," -f 2)
    test_file "./testing/$fileName" "$expectedResult"
-done < ./testing/input.csv
+done < ./testing/"$2"
 Total=$(($OK+$FAILED))
 printf "\n\033[1;35m ------------------ Result -----------------------\n"
 
@@ -43,4 +48,6 @@ if [ $FAILED -gt 0 ]
 then
     exit 50
 fi
-# c-icap-client -i 127.0.0.1  -p 1344 -s echo -f "./testing/somebook.pdf" -o ./resultFile 
+
+}
+test_fileSize $1 $2
