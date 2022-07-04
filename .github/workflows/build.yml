@@ -34,8 +34,13 @@ jobs:
         mv ./testing/size.toml ./config.toml
         kill -9 $(pidof icapeg)
         go build .
-        run: ./icapeg &
+        ./icapeg &
         ./testing/test.sh "File\tSize" "test_size.csv"
+        mv ./testing/extenstion.toml ./config.toml
+        kill -9 $(pidof icapeg)
+        go build .
+        ./icapeg &
+        ./testing/test.sh "File\tExtention" "test_extension.csv"
     
     - name: Build and push docker image
       uses: mr-smithers-excellent/docker-build-push@v5
