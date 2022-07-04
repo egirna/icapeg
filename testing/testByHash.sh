@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 test_file () {
 # get hash of original file
 HashCode=$(sha256sum $1 | cut -d " " -f 1)

@@ -1,3 +1,5 @@
-somebook.pdf,FAILED 
-book1.pdf,OK
-book2.pdf,FAILED
+file_zero_byte.txt,OK 
+file_1_byte.txt,OK
+file_10_byte.txt,OK
+file_500_byte.txt,FAILED
+file_1k.txt,FAILED
