@@ -61,13 +61,26 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 	}
 
 	//check if the body of the http message is compressed in Gzip or not
-	isGzip = e.generalFunc.IsBodyGzipCompressed(e.methodName)
-	//if it's compressed, we decompress it to send it to Glasswall service
-	if isGzip {
-		if file, err = e.generalFunc.DecompressGzipBody(file); err != nil {
-			return utils.InternalServerErrStatusCodeStr, nil, nil
-		}
-	}
+	//isGzip = e.generalFunc.IsBodyGzipCompressed(e.methodName)
+	////if it's compressed, we decompress it to send it to Glasswall service
+	//if isGzip {
+	//	if file, err = e.generalFunc.DecompressGzipBody(file); err != nil {
+	//		fmt.Println("here")
+	//		return utils.InternalServerErrStatusCodeStr, nil, nil
+	//	}
+	//}
 
-	return utils.OkStatusCodeStr, e.httpMsg.Response, nil
+	scannedFile := file.Bytes()
+
+	//if the original file was compressed in GZIP, we will compress the scanned file in GZIP also
+	//if isGzip {
+	//	scannedFile, err = e.generalFunc.CompressFileGzip(scannedFile)
+	//	if err != nil {
+	//		return utils.InternalServerErrStatusCodeStr, nil, nil
+	//	}
+	//}
+
+	//returning the scanned file if everything is ok
+	scannedFile = e.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, e.methodName)
+	return utils.OkStatusCodeStr, e.generalFunc.ReturningHttpMessageWithFile(e.methodName, scannedFile), nil
 }
