@@ -1,0 +1,14 @@
+version: "3.8"
+services:
+
+  squid:
+    image: mahmoud011/squid
+    ports:
+      - 8081:3128
+    command: ./docker-entrypoint.sh" &&  squid
+
+  icapeg:
+    image: mahmoud011/icapeg
+    ports:
+      - 1344:1344
+ 
