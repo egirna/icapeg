@@ -3,7 +3,6 @@ package api
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"icapeg/config"
 	"icapeg/icap"
 	"icapeg/service"
@@ -61,7 +60,6 @@ func (i *ICAPRequest) RequestInitialization() error {
 	// checking if request method is allowed or not
 	i.methodName = i.req.Method
 	if !i.isMethodAllowed() {
-		fmt.Println(i.req.Method)
 		i.w.WriteHeader(http.StatusMethodNotAllowed, nil, false)
 		err := errors.New("method is not allowed")
 		return err
@@ -115,7 +113,6 @@ func (i *ICAPRequest) RequestProcessing() {
 func (i *ICAPRequest) HostHeader() {
 
 	if i.methodName == "REQMOD" {
-		fmt.Println(i.req.Request.Host)
 		i.req.Request.Header.Set("Host", i.req.Request.Host)
 	} // else if i.methodName == "RESPMOD" {
 	//	fmt.Println(i.req.Request.Host)

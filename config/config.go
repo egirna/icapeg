@@ -68,6 +68,7 @@ func Init() {
 
 	//this loop to make sure that all services in the array of services has sections in the config file and from request mode and response mode
 	//there is one at least from them are enabled in every service
+	AppCfg.ServicesInstances = make(map[string]*serviceIcapInfo)
 	for i := 0; i < len(AppCfg.Services); i++ {
 		serviceName := AppCfg.Services[i]
 		if !readValues.IsSecExists(serviceName) {
@@ -82,7 +83,6 @@ func Init() {
 			fmt.Println("max_filesize value in config.toml file is not valid")
 			os.Exit(1)
 		}
-		AppCfg.ServicesInstances = make(map[string]*serviceIcapInfo)
 		AppCfg.ServicesInstances[serviceName] = &serviceIcapInfo{
 			Vendor:         readValues.ReadValuesString(serviceName + ".vendor"),
 			ServiceTag:     readValues.ReadValuesString(serviceName + ".service_tag"),

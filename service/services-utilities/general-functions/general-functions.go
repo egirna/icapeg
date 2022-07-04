@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"errors"
-	"fmt"
 	"html/template"
 	"icapeg/service/services-utilities/ContentTypes"
 	"icapeg/utils"
@@ -123,12 +122,6 @@ func (f *GeneralFunc) IsBodyGzipCompressed(methodName string) bool {
 func (f *GeneralFunc) DecompressGzipBody(file *bytes.Buffer) (*bytes.Buffer, error) {
 	reader, err := gzip.NewReader(file)
 	defer reader.Close()
-	if err != nil {
-		fmt.Println("-------------------------------------------------------")
-		fmt.Println(err.Error())
-		fmt.Println("-------------------------------------------------------")
-
-	}
 	result, err := ioutil.ReadAll(reader)
 	if err != nil {
 		return nil, err
