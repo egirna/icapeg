@@ -35,7 +35,7 @@ jobs:
         kill -9 $(pidof icapeg)
         go build .
         run: ./icapeg &
-        ./testing/test.sh "File\tSize"
+        ./testing/test.sh "File\tSize" "test_size.csv"
     
     - name: Build and push docker image
       uses: mr-smithers-excellent/docker-build-push@v5
