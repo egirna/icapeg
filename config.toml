@@ -35,7 +35,8 @@ preview_bytes = "1024" #byte
 preview_enabled = true# options send preview header or not
 propagate_error = true
 service_caption ="Go-ICAP server - glasswall Rebuild service"
-services= ["glasswall" , "echo"]
+services= ["glasswall" , "echo", "virustotal"]
+timeout = 25
 verify_server_cert=false
 #I worked on project using Golang which extracts uploaded files and before uploading and downloaded files
 # before downloading and send it to api to scan it before uploading/downloading it.
@@ -100,6 +101,28 @@ ok_file_status = ["ok"]
 #max file size value from 1 to 9223372036854775807, and value of zero means unlimited
 max_filesize = 0 #bytes
 return_original_if_max_file_size_exceeded=false
+
+[virustotal]
+vendor = "virustotal"
+service_caption= "virustotal service"   #Service
+service_tag = "Virustotal ICAP"  #ISTAG
+req_mode=true # enable support for ICAP request mode
+resp_mode=true # enable support for ICAP response mode
+shadow_service=false
+preview_bytes = "1024" #byte
+preview_enabled = true# options send preview header or not
+bypass_extensions = []
+process_extensions = ["*"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
+scan_url = "https://www.virustotal.com/vtapi/v2/file/scan" #
+report_url = "https://www.virustotal.com/vtapi/v2/file/report" #
+api_key = "$_VIRUSTOTAL_API_KEY"
+timeout  = 0 #seconds , ICAP will return 408 - Request timeout
+fail_threshold = 2
+policy= ""
+#max file size value from 1 to 9223372036854775807, and value of zero means unlimited
+max_filesize = 0 #bytes
+return_original_if_max_file_size_exceeded=false
+
 
 #ICAP possible codes: 204 (No modifications needed) , 400 (Bad Request) , 403 (Forbidden) , 500 (Server Error) , 502 (Bad Gateway)
 api_response_400 = 400 #Bad Request
