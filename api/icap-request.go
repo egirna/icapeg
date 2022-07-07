@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 // ICAPRequest struct is used to encapsulate important information of the ICAP request like method name, etc
@@ -245,7 +246,8 @@ func (i *ICAPRequest) getVendorName() string {
 
 //addingISTAGServiceHeaders is a func to add the important header to ICAP response
 func (i *ICAPRequest) addingISTAGServiceHeaders() {
-	i.h["ISTag"] = []string{i.appCfg.ServicesInstances[i.serviceName].ServiceTag}
+	epochTime := strconv.FormatInt(time.Now().Unix(), 10)
+	i.h["ISTag"] = []string{"epoch-" + epochTime}
 	i.h["Service"] = []string{i.appCfg.ServicesInstances[i.serviceName].ServiceCaption}
 }
 
