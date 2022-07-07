@@ -52,7 +52,7 @@ func (i *ICAPRequest) RequestInitialization() error {
 	// if it does not exist, the response will be 404 ICAP Service Not Found
 	i.serviceName = i.req.URL.Path[1:len(i.req.URL.Path)]
 	if !i.isServiceExists() {
-		i.w.WriteHeader(http.StatusNotFound, nil, false)
+		i.w.WriteHeader(utils.ICAPServiceNotFoundCodeStr, nil, false)
 		err := errors.New("service doesn't exist")
 		return err
 	}
@@ -60,7 +60,7 @@ func (i *ICAPRequest) RequestInitialization() error {
 	// checking if request method is allowed or not
 	i.methodName = i.req.Method
 	if !i.isMethodAllowed() {
-		i.w.WriteHeader(http.StatusMethodNotAllowed, nil, false)
+		i.w.WriteHeader(utils.MethodNotAllowedForServiceCodeStr, nil, false)
 		err := errors.New("method is not allowed")
 		return err
 	}
@@ -226,14 +226,13 @@ func (i *ICAPRequest) getMethodName() string {
 
 //isMethodAllowed is a func to check if the method in the ICAP request is allowed in config.go file or not
 func (i *ICAPRequest) isMethodAllowed() bool {
-	isMethodEnabled := false
 	if i.methodName == "RESPMOD" {
-		isMethodEnabled = i.appCfg.ServicesInstances[i.serviceName].RespMode
+		return i.appCfg.ServicesInstances[i.serviceName].RespMode
 	} else if i.methodName == "REQMOD" {
-		isMethodEnabled = i.appCfg.ServicesInstances[i.serviceName].ReqMode
+		return i.appCfg.ServicesInstances[i.serviceName].ReqMode
 
 	}
-	if isMethodEnabled || i.methodName == "OPTIONS" {
+	if i.methodName == "OPTIONS" {
 		return true
 	}
 	return false
