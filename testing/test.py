@@ -395,6 +395,7 @@ def test_istag():
 
 
 # -------------------------------------
+print("Start Testing ...")
 test_service_name()
 test_mode('resp')
 test_mode('req')
