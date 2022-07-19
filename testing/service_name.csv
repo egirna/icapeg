@@ -1,0 +1,7 @@
+echo,200,OK
+ECHO,404,ICAP Service not found
+echoo,404,ICAP Service not found
+glasswalll,200,OK
+glaswall,404,ICAP Service not found
+GLASSWALL,404,ICAP Service not found
+fakeService,404,ICAP Service not found
