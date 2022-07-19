@@ -12,7 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4.1.0
+      
     - name: Set up Go
       uses: actions/setup-go@v3
       with:
@@ -24,25 +27,10 @@ jobs:
         sudo apt-get install c-icap
         go build .
 
-    - name: Run ICAPeg
-      run: ./icapeg &
-
 
     - name: Test 
-      run: |
-        sudo chmod 777 ./testing/test.sh
-        mv ./testing/size.toml ./config.toml
-        kill -9 $(pidof icapeg)
-        go build .
-        ./icapeg &
-        sleep 3
-        ./testing/test.sh "File\tSize" "test_size.csv"
-        mv ./testing/extenstion.toml ./config.toml
-        kill -9 $(pidof icapeg)
-        go build .
-        ./icapeg &
-        sleep 3
-        ./testing/test.sh "File\tExtention" "test_extension.csv"
+      run: python ./testing/test.py
+        
     
     - name: Build and push docker image
       uses: mr-smithers-excellent/docker-build-push@v5
