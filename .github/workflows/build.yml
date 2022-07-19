@@ -32,7 +32,7 @@ jobs:
 
 
     - name: Test 
-      run: python ./testing/test.py
+      run: python3 ./testing/test.py
         
     
     - name: Build and push docker image
