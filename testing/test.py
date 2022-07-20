@@ -21,7 +21,7 @@ class style:
 
 
     def header(text):
-        COLOR = '\033[1;32;45m'
+        COLOR = '\033[1;37;45m'
         ENDC = '\033[0m'
         print('\033[1m' + COLOR + text + ENDC)
 
@@ -408,7 +408,7 @@ test_istag()
 # subprocess.run(['mv ./testing/config.toml ./config.toml'],shell=True)
 subprocess.run(['kill -9 $(pidof icapeg)'],shell=True)
 Total = passed_tests + failed_tests 
-print('\n\033[1m \033[1;32;46m ######### conclusion ######## \033[0m')
+print('\n\033[1m \033[1;37;46m ######### conclusion ######## \033[0m')
 print('\033[93m Total: \033[0m ' + str(Total))
 style.ok("Passed: ", str(passed_tests))
 style.fail("Failed: ", str(failed_tests))
