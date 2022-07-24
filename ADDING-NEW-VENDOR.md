@@ -169,7 +169,7 @@ const (
   	switch vendor {
   	case VendorEcho:
   		echo.InitEchoConfig(serviceName)
-      case VendorAbc:
+     	case VendorAbc:
   		echo.InitAbcConfig(serviceName)
   	}
   }
