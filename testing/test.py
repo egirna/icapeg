@@ -104,7 +104,7 @@ def is_service_exist(testCase, command):
     
     if (test_statusCode == result_statusCode and test_statusMessage == result_statusMessage):
 	out = " --> result: " + result_statusCode + " " + result_statusMessage + "; expected: " + testCase
-        style.ok("Test passed", out)
+	style.ok("Test passed", out)
         passed_tests = passed_tests + 1
     else : 
 	out = " --> result: " + result_statusCode + " " + result_statusMessage + "; expected: " + test_statusCode + " " + test_statusMessage
