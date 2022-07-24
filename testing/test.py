@@ -101,11 +101,13 @@ def is_service_exist(testCase, command):
     test_statusCode = testCase[1]
     test_statusMessage = testCase[2]
     result_statusCode, result_statusMessage = icap_client(command)
-    out = " --> result: " + result_statusCode + " " + result_statusMessage + "; expected: " + test_statusCode + " " + test_statusMessage
+    
     if (test_statusCode == result_statusCode and test_statusMessage == result_statusMessage):
+	out = " --> result: " + result_statusCode + " " + result_statusMessage + "; expected: " + testCase
         style.ok("Test passed", out)
         passed_tests = passed_tests + 1
     else : 
+	out = " --> result: " + result_statusCode + " " + result_statusMessage + "; expected: " + test_statusCode + " " + test_statusMessage
         style.fail("Test Failed", out)
         failed_tests += 1
 
