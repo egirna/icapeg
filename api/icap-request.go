@@ -263,6 +263,7 @@ func (i *ICAPRequest) is204Allowed() bool {
 
 //shadowService is a func to apply the shadow service
 func (i *ICAPRequest) shadowService() {
+	i.w.Header().Set("Shadow-Service", "enabled")
 	if i.Is204Allowed { // following RFC3507, if the request has Allow: 204 header, it is to be checked and if it doesn't exists, return the request as it is to the ICAP client, https://tools.ietf.org/html/rfc3507#section-4.6
 		i.w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
 	} else {
