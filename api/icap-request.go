@@ -148,7 +148,7 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 	IcapStatusCode, httpMsg, serviceHeaders := requiredService.Processing(partial)
 
 	// adding the headers which the service wants to add them in the ICAP response
-	if serviceHeaders != nil && i.appCfg.DebuggingHeaders {
+	if serviceHeaders != nil {
 		for key, value := range serviceHeaders {
 			i.h[key] = []string{value}
 		}

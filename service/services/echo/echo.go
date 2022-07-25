@@ -2,6 +2,7 @@ package echo
 
 import (
 	"bytes"
+	"icapeg/readValues"
 	"icapeg/utils"
 	"io"
 	"net/http"
@@ -30,11 +31,15 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 	//if yes we will not modify the file, and we will return 204 No modifications
 	err = e.generalFunc.IfFileExtIsBypass(fileExtension, e.bypassExts)
 	if err != nil {
-		serviceHeaders["X-ICAPeg-Bypassed"] = "true"
+		if readValues.ReadValuesBool("app.debugging_headers") {
+			serviceHeaders["X-ICAPeg-Bypassed"] = "true"
+		}
 		return utils.NoModificationStatusCodeStr,
 			nil, serviceHeaders
 	}
-	serviceHeaders["X-ICAPeg-Bypassed-"] = "false"
+	if readValues.ReadValuesBool("app.debugging_headers") {
+		serviceHeaders["X-ICAPeg-Bypassed-"] = "false"
+	}
 	//check if the file extension is a bypass extension and not a process extension
 	//if yes we will not modify the file, and we will return 204 No modifications
 	err = e.generalFunc.IfFileExtIsBypassAndNotProcess(fileExtension, e.bypassExts, e.processExts)
