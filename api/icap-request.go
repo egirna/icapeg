@@ -148,7 +148,7 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 	// adding the headers which the service wants to add them in the ICAP response
 	if serviceHeaders != nil {
 		for key, value := range serviceHeaders {
-			i.w.Header().Set(key, value)
+			i.h[key] = []string{value}
 		}
 	}
 
