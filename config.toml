@@ -38,8 +38,7 @@ service_caption ="Go-ICAP server - glasswall Rebuild service"
 services= ["glasswall" , "echo", "virustotal"]
 timeout = 25
 verify_server_cert=false
-#I worked on project using Golang which extracts uploaded files and before uploading and downloaded files
-# before downloading and send it to api to scan it before uploading/downloading it.
+debugging_headers=true
 
 [glasswall]
 vendor = "glasswall"
