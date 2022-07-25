@@ -2,12 +2,11 @@ package config
 
 import (
 	"fmt"
+	"github.com/spf13/viper"
 	"icapeg/logging"
 	"icapeg/readValues"
 	"os"
 	"strings"
-
-	"github.com/spf13/viper"
 )
 
 type serviceIcapInfo struct {

@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 // ICAPRequest struct is used to encapsulate important information of the ICAP request like method name, etc
@@ -52,7 +53,7 @@ func (i *ICAPRequest) RequestInitialization() error {
 	// if it does not exist, the response will be 404 ICAP Service Not Found
 	i.serviceName = i.req.URL.Path[1:len(i.req.URL.Path)]
 	if !i.isServiceExists() {
-		i.w.WriteHeader(http.StatusNotFound, nil, false)
+		i.w.WriteHeader(utils.ICAPServiceNotFoundCodeStr, nil, false)
 		err := errors.New("service doesn't exist")
 		return err
 	}
@@ -60,7 +61,7 @@ func (i *ICAPRequest) RequestInitialization() error {
 	// checking if request method is allowed or not
 	i.methodName = i.req.Method
 	if !i.isMethodAllowed() {
-		i.w.WriteHeader(http.StatusMethodNotAllowed, nil, false)
+		i.w.WriteHeader(utils.MethodNotAllowedForServiceCodeStr, nil, false)
 		err := errors.New("method is not allowed")
 		return err
 	}
@@ -172,6 +173,9 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 		}
 		i.RespAndReqMods(false)
 		break
+	case utils.RequestTimeOutStatusCodeStr:
+		i.w.WriteHeader(IcapStatusCode, nil, false)
+		break
 	case utils.NoModificationStatusCodeStr:
 		if i.Is204Allowed {
 			i.w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
@@ -223,14 +227,13 @@ func (i *ICAPRequest) getMethodName() string {
 
 //isMethodAllowed is a func to check if the method in the ICAP request is allowed in config.go file or not
 func (i *ICAPRequest) isMethodAllowed() bool {
-	isMethodEnabled := false
 	if i.methodName == "RESPMOD" {
-		isMethodEnabled = i.appCfg.ServicesInstances[i.serviceName].RespMode
+		return i.appCfg.ServicesInstances[i.serviceName].RespMode
 	} else if i.methodName == "REQMOD" {
-		isMethodEnabled = i.appCfg.ServicesInstances[i.serviceName].ReqMode
+		return i.appCfg.ServicesInstances[i.serviceName].ReqMode
 
 	}
-	if isMethodEnabled || i.methodName == "OPTIONS" {
+	if i.methodName == "OPTIONS" {
 		return true
 	}
 	return false
@@ -243,7 +246,8 @@ func (i *ICAPRequest) getVendorName() string {
 
 //addingISTAGServiceHeaders is a func to add the important header to ICAP response
 func (i *ICAPRequest) addingISTAGServiceHeaders() {
-	i.h["ISTag"] = []string{i.appCfg.ServicesInstances[i.serviceName].ServiceTag}
+	epochTime := strconv.FormatInt(time.Now().Unix(), 10)
+	i.h["ISTag"] = []string{"epoch-" + epochTime}
 	i.h["Service"] = []string{i.appCfg.ServicesInstances[i.serviceName].ServiceCaption}
 }
 
@@ -259,6 +263,7 @@ func (i *ICAPRequest) is204Allowed() bool {
 
 //shadowService is a func to apply the shadow service
 func (i *ICAPRequest) shadowService() {
+	i.w.Header().Set("Shadow-Service", "enabled")
 	if i.Is204Allowed { // following RFC3507, if the request has Allow: 204 header, it is to be checked and if it doesn't exists, return the request as it is to the ICAP client, https://tools.ietf.org/html/rfc3507#section-4.6
 		i.w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
 	} else {
