@@ -38,7 +38,7 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 			nil, serviceHeaders
 	}
 	if readValues.ReadValuesBool("app.debugging_headers") {
-		serviceHeaders["X-ICAPeg-Bypassed-"] = "false"
+		serviceHeaders["X-ICAPeg-Bypassed"] = "false"
 	}
 	//check if the file extension is a bypass extension and not a process extension
 	//if yes we will not modify the file, and we will return 204 No modifications
