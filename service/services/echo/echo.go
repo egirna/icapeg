@@ -2,6 +2,7 @@ package echo
 
 import (
 	"bytes"
+	"icapeg/readValues"
 	"icapeg/utils"
 	"io"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 
 //Processing is a func used for to processing the http message
 func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
+	serviceHeaders := make(map[string]string)
 	// no need to scan part of the file, this service needs all the file at ine time
 	if partial {
 		return utils.Continue, nil, nil
@@ -19,7 +21,7 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 	//extracting the file from http message
 	file, reqContentType, err := e.generalFunc.CopyingFileToTheBuffer(e.methodName)
 	if err != nil {
-		return utils.InternalServerErrStatusCodeStr, nil, nil
+		return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
 	}
 
 	//getting the extension of the file
@@ -29,16 +31,21 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 	//if yes we will not modify the file, and we will return 204 No modifications
 	err = e.generalFunc.IfFileExtIsBypass(fileExtension, e.bypassExts)
 	if err != nil {
+		if readValues.ReadValuesBool("app.debugging_headers") {
+			serviceHeaders["X-ICAPeg-Bypassed"] = "true"
+		}
 		return utils.NoModificationStatusCodeStr,
-			nil, nil
+			nil, serviceHeaders
 	}
-
+	if readValues.ReadValuesBool("app.debugging_headers") {
+		serviceHeaders["X-ICAPeg-Bypassed"] = "false"
+	}
 	//check if the file extension is a bypass extension and not a process extension
 	//if yes we will not modify the file, and we will return 204 No modifications
 	err = e.generalFunc.IfFileExtIsBypassAndNotProcess(fileExtension, e.bypassExts, e.processExts)
 	if err != nil {
 		return utils.NoModificationStatusCodeStr,
-			nil, nil
+			nil, serviceHeaders
 	}
 
 	//check if the file size is greater than max file size of the service
@@ -47,7 +54,7 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 		status, file, httpMsg := e.generalFunc.IfMaxFileSeizeExc(e.returnOrigIfMaxSizeExc, file, e.maxFileSize)
 		fileAfterPrep, httpMsg := e.generalFunc.IfStatusIs204WithFile(e.methodName, status, file, isGzip, reqContentType, httpMsg)
 		if fileAfterPrep == nil && httpMsg == nil {
-			return utils.InternalServerErrStatusCodeStr, nil, nil
+			return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
 		}
 		switch msg := httpMsg.(type) {
 		case *http.Request:
@@ -82,5 +89,5 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 
 	//returning the scanned file if everything is ok
 	scannedFile = e.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, e.methodName)
-	return utils.OkStatusCodeStr, e.generalFunc.ReturningHttpMessageWithFile(e.methodName, scannedFile), nil
+	return utils.OkStatusCodeStr, e.generalFunc.ReturningHttpMessageWithFile(e.methodName, scannedFile), serviceHeaders
 }

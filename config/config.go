@@ -37,6 +37,7 @@ type AppConfig struct {
 	PreviewEnabled          bool
 	PropagateError          bool
 	VerifyServerCert        bool
+	DebuggingHeaders        bool
 	Services                []string
 	ServicesInstances       map[string]*serviceIcapInfo
 }
@@ -62,6 +63,7 @@ func Init() {
 		PreviewEnabled:          readValues.ReadValuesBool("app.preview_enabled"),
 		PropagateError:          readValues.ReadValuesBool("app.propagate_error"),
 		VerifyServerCert:        readValues.ReadValuesBool("app.verify_server_cert"),
+		DebuggingHeaders:        readValues.ReadValuesBool("app.debugging_headers"),
 		Services:                readValues.ReadValuesSlice("app.services"),
 	}
 
@@ -109,6 +111,7 @@ func InitTestConfig() {
 		ReqScannerVendorShadow:  strings.ToLower(readValues.ReadValuesString("app.req_scanner_vendor_shadow")),
 		PreviewBytes:            readValues.ReadValuesString("app.preview_bytes"),
 		PropagateError:          readValues.ReadValuesBool("app.propagate_error"),
+		DebuggingHeaders:        readValues.ReadValuesBool("app.debugging_headers"),
 	}
 }
 

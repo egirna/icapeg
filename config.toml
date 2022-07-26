@@ -35,35 +35,10 @@ preview_bytes = "1024" #byte
 preview_enabled = true# options send preview header or not
 propagate_error = true
 service_caption ="Go-ICAP server - glasswall Rebuild service"
-services= ["glasswall" , "echo", "virustotal"]
+services= ["echo", "virustotal"]
 timeout = 25
 verify_server_cert=false
-#I worked on project using Golang which extracts uploaded files and before uploading and downloaded files
-# before downloading and send it to api to scan it before uploading/downloading it.
-
-[glasswall]
-vendor = "glasswall"
-service_caption= "glasswall service"   #Service
-service_tag = "Glasswall ICAP"  #ISTAG
-req_mode=true # enable support for ICAP request mode
-resp_mode=true # enable support for ICAP response mode
-shadow_service=false
-preview_bytes = "1024" #byte
-preview_enabled = true# options send preview header or not
-bypass_extensions = []
-process_extensions = ["*"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
-base_url = "$_CLOUDAPI_URL" #
-scan_endpoint = "/api/rebuild/file"
-api_key = "$_AUTH_TOKENS"
-timeout  = 300 #seconds , ICAP will return 408 - Request timeout
-fail_threshold = 2
-policy= ""
-#max file size value from 1 to 9223372036854775807, and value of zero means unlimited
-max_filesize = 0 #bytes
-return_original_if_max_file_size_exceeded=false
-return_original_if_unprocessable_file_type=true
-return_original_if_400_response=true # returning the original file to the user if GW engine http response status is 400
-
+debugging_headers=true
 
 [echo]
 vendor = "echo"
