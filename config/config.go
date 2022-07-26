@@ -92,7 +92,7 @@ func Init() {
 			if ext[bypass[i]] == false {
 				ext[bypass[i]] = true
 			} else {
-				fmt.Println("This extension was stored in another array (process_extensions or reject_extensions)")
+				fmt.Println("This extension \"" + bypass[i] + "\" was stored in multiple arrays (bypass_extensions or reject_extensions)")
 				os.Exit(1)
 			}
 		}
@@ -102,7 +102,7 @@ func Init() {
 			if ext[process[i]] == false {
 				ext[process[i]] = true
 			} else {
-				fmt.Println("This extension was stored in another array (bypass_extensions or reject_extensions)")
+				fmt.Println("This extension \"" + process[i] + "\" is stored in multiple arrays")
 				os.Exit(1)
 			}
 		}
@@ -112,7 +112,7 @@ func Init() {
 			if ext[reject[i]] == false {
 				ext[reject[i]] = true
 			} else {
-				fmt.Println("This extension was stored in another array (bypass_extensions or process_extensions)")
+				fmt.Println("This extension \"" + reject[i] + "\" is stored in multiple arrays")
 				os.Exit(1)
 			}
 		}
