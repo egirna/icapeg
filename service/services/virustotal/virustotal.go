@@ -9,6 +9,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -157,4 +158,9 @@ func (v *Virustotal) SendFileToGetReport(resource string) (string, string, error
 		break
 	}
 	return score, total, nil
+}
+
+func (v *Virustotal) ISTagValue() string {
+	epochTime := strconv.FormatInt(time.Now().UnixMilli(), 10)
+	return "epoch-" + epochTime
 }

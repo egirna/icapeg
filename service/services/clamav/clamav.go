@@ -8,6 +8,7 @@ import (
 	"icapeg/readValues"
 	general_functions "icapeg/service/services-utilities/general-functions"
 	"net/http"
+	"strconv"
 
 	"icapeg/utils"
 	"io"
@@ -193,4 +194,9 @@ func (c *Clamav) RespSupported() bool {
 // ReqSupported returns the reqSupported field of the service
 func (c *Clamav) ReqSupported() bool {
 	return c.reqSupported
+}
+
+func (c *Clamav) ISTagValue() string {
+	epochTime := strconv.FormatInt(time.Now().UnixMilli(), 10)
+	return "epoch-" + epochTime
 }

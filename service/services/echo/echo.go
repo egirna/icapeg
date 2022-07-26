@@ -6,6 +6,8 @@ import (
 	"icapeg/utils"
 	"io"
 	"net/http"
+	"strconv"
+	"time"
 )
 
 //Processing is a func used for to processing the http message
@@ -90,4 +92,9 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 	//returning the scanned file if everything is ok
 	scannedFile = e.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, e.methodName)
 	return utils.OkStatusCodeStr, e.generalFunc.ReturningHttpMessageWithFile(e.methodName, scannedFile), serviceHeaders
+}
+
+func (e *Echo) ISTagValue() string {
+	epochTime := strconv.FormatInt(time.Now().UnixMilli(), 10)
+	return "epoch-" + epochTime
 }
