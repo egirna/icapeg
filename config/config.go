@@ -84,6 +84,39 @@ func Init() {
 			fmt.Println("max_filesize value in config.toml file is not valid")
 			os.Exit(1)
 		}
+
+		ext := make(map[string]bool)
+		//bypass
+		bypass := readValues.ReadValuesSlice(serviceName + ".bypass_extensions")
+		for i := 0; i < len(bypass); i++ {
+			if ext[bypass[i]] == false {
+				ext[bypass[i]] = true
+			} else {
+				fmt.Println("This extension was stored in another array (process_extensions or reject_extensions)")
+				os.Exit(1)
+			}
+		}
+		//process
+		process := readValues.ReadValuesSlice(serviceName + ".process_extensions")
+		for i := 0; i < len(process); i++ {
+			if ext[process[i]] == false {
+				ext[process[i]] = true
+			} else {
+				fmt.Println("This extension was stored in another array (bypass_extensions or reject_extensions)")
+				os.Exit(1)
+			}
+		}
+		//reject
+		reject := readValues.ReadValuesSlice(serviceName + ".reject_extensions")
+		for i := 0; i < len(reject); i++ {
+			if ext[reject[i]] == false {
+				ext[reject[i]] = true
+			} else {
+				fmt.Println("This extension was stored in another array (bypass_extensions or process_extensions)")
+				os.Exit(1)
+			}
+		}
+
 		AppCfg.ServicesInstances[serviceName] = &serviceIcapInfo{
 			Vendor:         readValues.ReadValuesString(serviceName + ".vendor"),
 			ServiceTag:     readValues.ReadValuesString(serviceName + ".service_tag"),
