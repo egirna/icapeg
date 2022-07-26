@@ -193,6 +193,9 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 	case utils.OkStatusCodeStr:
 		i.w.WriteHeader(utils.OkStatusCodeStr, httpMsg, true)
 		break
+	case utils.BadRequestStatusCodeStr:
+		i.w.WriteHeader(IcapStatusCode, httpMsg, true)
+		break
 	}
 }
 

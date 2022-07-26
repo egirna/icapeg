@@ -42,6 +42,21 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 	if readValues.ReadValuesBool("app.debugging_headers") {
 		serviceHeaders["X-ICAPeg-Bypassed"] = "false"
 	}
+
+	//check if the file extension is a reject extension
+	//if yes we will return 400 No modifications
+	err = e.generalFunc.IfFileExtIsReject(fileExtension, e.rejectExts)
+	if err != nil {
+		reason := "File rejected"
+		if e.return400IfFileExtRejected {
+			return utils.BadRequestStatusCodeStr, nil, serviceHeaders
+		}
+		errPage := e.generalFunc.GenHtmlPage("service/unprocessable-file.html", reason, e.httpMsg.Request.RequestURI)
+		e.httpMsg.Response = e.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
+		e.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
+		return utils.OkStatusCodeStr, e.httpMsg.Response, serviceHeaders
+	}
+
 	//check if the file extension is a bypass extension and not a process extension
 	//if yes we will not modify the file, and we will return 204 No modifications
 	err = e.generalFunc.IfFileExtIsBypassAndNotProcess(fileExtension, e.bypassExts, e.processExts)

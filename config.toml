@@ -60,6 +60,7 @@ fail_threshold = 2
 #max file size value from 1 to 9223372036854775807, and value of zero means unlimited
 max_filesize = 0 #bytes
 return_original_if_max_file_size_exceeded=false
+return_400_if_file_ext_rejected=false
 
 [clamav]
 vendor = "clamav"
