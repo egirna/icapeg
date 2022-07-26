@@ -59,12 +59,14 @@ func (i *ICAPRequest) RequestInitialization() error {
 
 	// checking if request method is allowed or not
 	i.methodName = i.req.Method
-	if !i.isMethodAllowed() {
-		i.w.WriteHeader(utils.MethodNotAllowedForServiceCodeStr, nil, false)
-		err := errors.New("method is not allowed")
-		return err
+	if i.methodName != "options" {
+		if !i.isMethodAllowed() {
+			i.w.WriteHeader(utils.MethodNotAllowedForServiceCodeStr, nil, false)
+			err := errors.New("method is not allowed")
+			return err
+		}
+		i.methodName = i.req.Method
 	}
-	i.methodName = i.req.Method
 
 	//getting vendor name which depends on the name of the service
 	i.vendor = i.getVendorName()
