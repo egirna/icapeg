@@ -197,6 +197,6 @@ func (c *Clamav) ReqSupported() bool {
 }
 
 func (c *Clamav) ISTagValue() string {
-	epochTime := strconv.FormatInt(time.Now().UnixMilli(), 10)
+	epochTime := strconv.FormatInt(time.Now().Unix(), 10)
 	return "epoch-" + epochTime
 }

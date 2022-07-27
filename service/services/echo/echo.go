@@ -110,6 +110,6 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 }
 
 func (e *Echo) ISTagValue() string {
-	epochTime := strconv.FormatInt(time.Now().UnixMilli(), 10)
+	epochTime := strconv.FormatInt(time.Now().Unix(), 10)
 	return "epoch-" + epochTime
 }

@@ -161,6 +161,6 @@ func (v *Virustotal) SendFileToGetReport(resource string) (string, string, error
 }
 
 func (v *Virustotal) ISTagValue() string {
-	epochTime := strconv.FormatInt(time.Now().UnixMilli(), 10)
+	epochTime := strconv.FormatInt(time.Now().Unix(), 10)
 	return "epoch-" + epochTime
 }
