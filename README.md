@@ -7,9 +7,11 @@
     <a href="https://github.com/k8-proxy/go-icap-server/actions/workflows/build.yml">
         <img src="https://github.com/k8-proxy/go-icap-server/actions/workflows/build.yml/badge.svg"/>
     </a>
-    <a href="https://codecov.io/gh/k8-proxy/go-icap-server">
-        <img src="https://codecov.io/gh/k8-proxy/go-icap-server/branch/main/graph/badge.svg"/>
-    </a>	    
+
+      <a href="https://codecov.io/gh/MahmoudRabee/icapeg">
+        <img src="https://codecov.io/gh/MahmoudRabee/icapeg/branch/restructure/graph/badge.svg?token=5LFS8J70EX"/>
+      </a>
+    	    
     <a href="https://goreportcard.com/report/github.com/k8-proxy/go-icap-server">
       <img src="https://goreportcard.com/badge/k8-proxy/go-icap-server" alt="Go Report Card">
     </a>
