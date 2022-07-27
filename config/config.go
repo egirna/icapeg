@@ -2,12 +2,23 @@ package config
 
 import (
 	"fmt"
+	"github.com/spf13/viper"
+	"icapeg/logging"
 	"icapeg/readValues"
 	"os"
 	"strings"
-
-	"github.com/spf13/viper"
 )
+
+type serviceIcapInfo struct {
+	Vendor         string
+	ServiceCaption string
+	ServiceTag     string
+	ReqMode        bool
+	RespMode       bool
+	ShadowService  bool
+	PreviewEnabled bool
+	PreviewBytes   string
+}
 
 // AppConfig represents the app configuration
 type AppConfig struct {
@@ -26,10 +37,12 @@ type AppConfig struct {
 	PreviewEnabled          bool
 	PropagateError          bool
 	VerifyServerCert        bool
-	services                []string
+	DebuggingHeaders        bool
+	Services                []string
+	ServicesInstances       map[string]*serviceIcapInfo
 }
 
-var appCfg AppConfig
+var AppCfg AppConfig
 
 // Init initializes the configuration
 func Init() {
@@ -39,45 +52,88 @@ func Init() {
 	if readValues.IsSecExists("app") {
 		fmt.Println("app section doesn't exist in config file")
 	}
-	appCfg = AppConfig{
+	AppCfg = AppConfig{
 		Port:                    readValues.ReadValuesInt("app.port"),
 		LogLevel:                readValues.ReadValuesString("app.log_level"),
 		LoggingServerURL:        readValues.ReadValuesString("app.log_service_url"),
 		WriteLogsToConsole:      readValues.ReadValuesBool("app.write_logs_to_console"),
 		RespScannerVendorShadow: strings.ToLower(readValues.ReadValuesString("app.resp_scanner_vendor_shadow")),
 		ReqScannerVendorShadow:  strings.ToLower(readValues.ReadValuesString("app.req_scanner_vendor_shadow")),
-		BypassExtensions:        readValues.ReadValuesSlice("app.bypass_extensions"),
-		ProcessExtensions:       readValues.ReadValuesSlice("app.process_extensions"),
 		PreviewBytes:            readValues.ReadValuesString("app.preview_bytes"),
 		PreviewEnabled:          readValues.ReadValuesBool("app.preview_enabled"),
 		PropagateError:          readValues.ReadValuesBool("app.propagate_error"),
 		VerifyServerCert:        readValues.ReadValuesBool("app.verify_server_cert"),
-		services:                readValues.ReadValuesSlice("app.services"),
+		DebuggingHeaders:        readValues.ReadValuesBool("app.debugging_headers"),
+		Services:                readValues.ReadValuesSlice("app.services"),
 	}
-	for i := 0; i < len(appCfg.services); i++ {
-		if readValues.ReadValuesInt(appCfg.services[i]+".max_filesize") < 0 {
+
+	//this loop to make sure that all services in the array of services has sections in the config file and from request mode and response mode
+	//there is one at least from them are enabled in every service
+	AppCfg.ServicesInstances = make(map[string]*serviceIcapInfo)
+	for i := 0; i < len(AppCfg.Services); i++ {
+		serviceName := AppCfg.Services[i]
+		if !readValues.IsSecExists(serviceName) {
+			fmt.Println(serviceName + " section doesn't exist")
+			os.Exit(1)
+		}
+		if !readValues.ReadValuesBool(serviceName+".req_mode") && !readValues.ReadValuesBool(serviceName+".resp_mode") {
+			fmt.Println("Request mode and response mode are disabled together in " + serviceName + " service")
+			os.Exit(1)
+		}
+		if readValues.ReadValuesInt(serviceName+".max_filesize") < 0 {
 			fmt.Println("max_filesize value in config.toml file is not valid")
 			os.Exit(1)
 		}
-	}
-	//this loop to make sure that all services in the array of services has sections in the config file and from request mode and response mode
-	//there is one at least from them are enabled in every service
-	for i := 0; i < len(appCfg.services); i++ {
-		if !readValues.IsSecExists(appCfg.services[i]) {
-			fmt.Println(appCfg.services[i] + " section doesn't exist")
-			os.Exit(1)
-		}
-		if !readValues.ReadValuesBool(appCfg.services[i]+".req_mode") && !readValues.ReadValuesBool(appCfg.services[i]+".resp_mode") {
-			fmt.Println("Request mode and response mode are disabled together in " + appCfg.services[i] + " service")
-			os.Exit(1)
-		}
-	}
 
+		ext := make(map[string]bool)
+		//bypass
+		bypass := readValues.ReadValuesSlice(serviceName + ".bypass_extensions")
+		for i := 0; i < len(bypass); i++ {
+			if ext[bypass[i]] == false {
+				ext[bypass[i]] = true
+			} else {
+				fmt.Println("This extension \"" + bypass[i] + "\" was stored in multiple arrays (bypass_extensions or reject_extensions)")
+				os.Exit(1)
+			}
+		}
+		//process
+		process := readValues.ReadValuesSlice(serviceName + ".process_extensions")
+		for i := 0; i < len(process); i++ {
+			if ext[process[i]] == false {
+				ext[process[i]] = true
+			} else {
+				fmt.Println("This extension \"" + process[i] + "\" is stored in multiple arrays")
+				os.Exit(1)
+			}
+		}
+		//reject
+		reject := readValues.ReadValuesSlice(serviceName + ".reject_extensions")
+		for i := 0; i < len(reject); i++ {
+			if ext[reject[i]] == false {
+				ext[reject[i]] = true
+			} else {
+				fmt.Println("This extension \"" + reject[i] + "\" is stored in multiple arrays")
+				os.Exit(1)
+			}
+		}
+
+		AppCfg.ServicesInstances[serviceName] = &serviceIcapInfo{
+			Vendor:         readValues.ReadValuesString(serviceName + ".vendor"),
+			ServiceTag:     readValues.ReadValuesString(serviceName + ".service_tag"),
+			ServiceCaption: readValues.ReadValuesString(serviceName + ".service_caption"),
+			ReqMode:        readValues.ReadValuesBool(serviceName + ".req_mode"),
+			RespMode:       readValues.ReadValuesBool(serviceName + ".resp_mode"),
+			ShadowService:  readValues.ReadValuesBool(serviceName + ".shadow_service"),
+			PreviewBytes:   readValues.ReadValuesString(serviceName + ".preview_bytes"),
+			PreviewEnabled: readValues.ReadValuesBool(serviceName + ".preview_enabled"),
+		}
+	}
+	logging.InitLogger()
 }
 
 // InitTestConfig initializes the app with the test config file (for integration test)
 func InitTestConfig() {
-	appCfg = AppConfig{
+	AppCfg = AppConfig{
 		Port:                 readValues.ReadValuesInt("app.port"),
 		LogLevel:             readValues.ReadValuesString("app.log_level"),
 		LoggingServerURL:     readValues.ReadValuesString("app.log_service_url"),
@@ -86,14 +142,13 @@ func InitTestConfig() {
 		//ReqScannerVendor:        strings.ToLower(readValues.ReadValuesString("app.req_scanner_vendor")),
 		RespScannerVendorShadow: strings.ToLower(readValues.ReadValuesString("app.resp_scanner_vendor_shadow")),
 		ReqScannerVendorShadow:  strings.ToLower(readValues.ReadValuesString("app.req_scanner_vendor_shadow")),
-		BypassExtensions:        readValues.ReadValuesSlice("app.bypass_extensions"),
-		ProcessExtensions:       readValues.ReadValuesSlice("app.process_extensions"),
 		PreviewBytes:            readValues.ReadValuesString("app.preview_bytes"),
 		PropagateError:          readValues.ReadValuesBool("app.propagate_error"),
+		DebuggingHeaders:        readValues.ReadValuesBool("app.debugging_headers"),
 	}
 }
 
 // App returns the the app configuration instance
 func App() *AppConfig {
-	return &appCfg
+	return &AppCfg
 }

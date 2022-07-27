@@ -3,15 +3,12 @@ package utils
 import (
 	"bytes"
 	"fmt"
-	"html/template"
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 
 	"icapeg/config"
-	"icapeg/dtos"
 	"icapeg/readValues"
 
 	"github.com/h2non/filetype"
@@ -90,23 +87,6 @@ func InStringSlice(data string, ss []string) bool {
 		}
 	}
 	return false
-}
-
-// GetTemplateBufferAndResponse returns the html template buffer and the response to be returned for RESPMOD
-func GetTemplateBufferAndResponse(templateName string, data *dtos.TemplateData) (*bytes.Buffer, *http.Response) {
-	tmpl, _ := template.ParseFiles(templateName)
-	htmlBuf := &bytes.Buffer{}
-	tmpl.Execute(htmlBuf, data)
-	newResp := &http.Response{
-		StatusCode: http.StatusForbidden,
-		Status:     http.StatusText(http.StatusForbidden),
-		Header: http.Header{
-			"Content-Type":   []string{"text/html"},
-			"Content-Length": []string{strconv.Itoa(htmlBuf.Len())},
-		},
-	}
-
-	return htmlBuf, newResp
 }
 
 // ByteToMegaBytes returns the mega-byte equivalence of the byte
