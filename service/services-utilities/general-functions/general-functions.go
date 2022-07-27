@@ -95,6 +95,14 @@ func (f *GeneralFunc) IfFileExtIsBypass(fileExtension string, bypassExts []strin
 	return nil
 }
 
+//IfFileExtIsReject is a func to check if a file extension is bypass extension or not
+func (f *GeneralFunc) IfFileExtIsReject(fileExtension string, rejectExts []string) error {
+	if utils.InStringSlice(fileExtension, rejectExts) {
+		return errors.New("processing rejected for file type")
+	}
+	return nil
+}
+
 //IfFileExtIsBypassAndNotProcess is a func to check if a file extension is bypass extension and not a process extension
 func (f *GeneralFunc) IfFileExtIsBypassAndNotProcess(fileExtension string, bypassExts []string, processExts []string) error {
 	if utils.InStringSlice(utils.Any, bypassExts) && !utils.InStringSlice(fileExtension, processExts) {

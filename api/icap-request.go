@@ -11,7 +11,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
-	"time"
 )
 
 // ICAPRequest struct is used to encapsulate important information of the ICAP request like method name, etc
@@ -60,18 +59,22 @@ func (i *ICAPRequest) RequestInitialization() error {
 
 	// checking if request method is allowed or not
 	i.methodName = i.req.Method
-	if !i.isMethodAllowed() {
-		i.w.WriteHeader(utils.MethodNotAllowedForServiceCodeStr, nil, false)
-		err := errors.New("method is not allowed")
-		return err
+	if i.methodName != "options" {
+		if !i.isMethodAllowed() {
+			i.w.WriteHeader(utils.MethodNotAllowedForServiceCodeStr, nil, false)
+			err := errors.New("method is not allowed")
+			return err
+		}
+		i.methodName = i.req.Method
 	}
-	i.methodName = i.req.Method
 
 	//getting vendor name which depends on the name of the service
 	i.vendor = i.getVendorName()
 
 	//adding important headers to options ICAP response
-	i.addingISTAGServiceHeaders()
+	requiredService := service.GetService(i.vendor, i.serviceName, i.methodName,
+		&utils.HttpMsg{Request: i.req.Request, Response: i.req.Response})
+	i.addingISTAGServiceHeaders(requiredService.ISTagValue())
 
 	i.Is204Allowed = i.is204Allowed()
 
@@ -190,6 +193,9 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 	case utils.OkStatusCodeStr:
 		i.w.WriteHeader(utils.OkStatusCodeStr, httpMsg, true)
 		break
+	case utils.BadRequestStatusCodeStr:
+		i.w.WriteHeader(IcapStatusCode, httpMsg, true)
+		break
 	}
 }
 
@@ -249,9 +255,8 @@ func (i *ICAPRequest) getVendorName() string {
 }
 
 //addingISTAGServiceHeaders is a func to add the important header to ICAP response
-func (i *ICAPRequest) addingISTAGServiceHeaders() {
-	epochTime := strconv.FormatInt(time.Now().Unix(), 10)
-	i.h["ISTag"] = []string{"epoch-" + epochTime}
+func (i *ICAPRequest) addingISTAGServiceHeaders(ISTgValue string) {
+	i.h["ISTag"] = []string{ISTgValue}
 	i.h["Service"] = []string{i.appCfg.ServicesInstances[i.serviceName].ServiceCaption}
 }
 
