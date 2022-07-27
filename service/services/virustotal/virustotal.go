@@ -16,6 +16,8 @@ import (
 
 //Processing is a func used for to processing the http message
 func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]string) {
+	serviceHeaders := make(map[string]string)
+
 	// no need to scan part of the file, this service needs all the file at ine time
 	if partial {
 		return utils.Continue, nil, nil
@@ -38,6 +40,19 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 	if err != nil {
 		return utils.NoModificationStatusCodeStr,
 			nil, nil
+	}
+
+	err = v.generalFunc.IfFileExtIsReject(fileExtension, v.rejectExts)
+	if err != nil {
+		fmt.Println("here")
+		reason := "File rejected"
+		if v.return400IfFileExtRejected {
+			return utils.BadRequestStatusCodeStr, nil, serviceHeaders
+		}
+		errPage := v.generalFunc.GenHtmlPage("service/unprocessable-file.html", reason, v.httpMsg.Request.RequestURI)
+		v.httpMsg.Response = v.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
+		v.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
+		return utils.OkStatusCodeStr, v.httpMsg.Response, serviceHeaders
 	}
 
 	//check if the file extension is a bypass extension and not a process extension
@@ -75,10 +90,17 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 		}
 		return utils.InternalServerErrStatusCodeStr, nil, nil
 	}
-	serviceHeaders := make(map[string]string)
 	serviceHeaders["Virustotal-Total"] = total
 	serviceHeaders["Virustotal-Positives"] = score
 
+	scoreInt, err := strconv.Atoi(score)
+	if scoreInt > 0 {
+		reason := "File is not safe"
+		errPage := v.generalFunc.GenHtmlPage("service/unprocessable-file.html", reason, v.httpMsg.Request.RequestURI)
+		v.httpMsg.Response = v.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
+		v.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
+		return utils.OkStatusCodeStr, v.httpMsg.Response, serviceHeaders
+	}
 	//returning the scanned file if everything is ok
 	scannedFile = v.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, v.methodName)
 	return utils.OkStatusCodeStr, v.generalFunc.ReturningHttpMessageWithFile(v.methodName, scannedFile), serviceHeaders
