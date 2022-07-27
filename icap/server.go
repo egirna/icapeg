@@ -206,7 +206,7 @@ func (srv *Server) Serve(l net.Listener) error {
 		}
 		go c.serve(srv.DebugLevel)
 	}
-	// The next line is only there to see one specific edge case whichc should never happen.
+	// The next line is only there to see one specific edge case which should never happen.
 	panic("Shuold never be reached")
 }
 

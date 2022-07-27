@@ -1,11 +1,12 @@
 package readValues
 
 import (
-	str2duration "github.com/xhit/go-str2duration/v2"
 	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	str2duration "github.com/xhit/go-str2duration/v2"
 )
 
 //ReadIntFromEnv is used to get int value from env vars
@@ -33,13 +34,13 @@ func ReadDurationFromEnv(varName string) time.Duration {
 
 //ReadSliceFromEnv is used to get string slice value from env vars
 func ReadSliceFromEnv(varName string) []string {
-	result:= os.Getenv(varName)
-	result=strings.ReplaceAll(result, " ", "")
-	result=strings.ReplaceAll(result, "\"", "")
+	result := os.Getenv(varName)
+	result = strings.ReplaceAll(result, " ", "")
+	result = strings.ReplaceAll(result, "\"", "")
 	arr := strings.Split(result, ",")
-	arr[0]=arr[0][1:len(arr[0])]
-	temp:=arr[len(arr)-1]
-	temp=temp[0:len(temp)-1]
+	arr[0] = arr[0][1:len(arr[0])]
+	temp := arr[len(arr)-1]
+	temp = temp[0 : len(temp)-1]
 	arr[len(arr)-1] = temp
 	return arr
 }

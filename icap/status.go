@@ -11,17 +11,17 @@ import (
 )
 
 var statusText = map[int]string{
-	100: "Continue",
-	204: "No Modifications",
-	400: "Bad Request",
-	404: "ICAP Service Not Found",
-	405: "Method Not Allowed",
-	408: "Request Timeout",
-	500: "Server Error",
-	501: "Method Not Implemented",
+	100: "Continue after ICAP Preview",
+	204: "No modifications needed",
+	400: "Bad request",
+	404: "ICAP Service not found",
+	405: "Method not allowed for service",
+	408: "Request timeout",
+	500: "Server error",
+	501: "Method not implemented",
 	502: "Bad Gateway",
-	503: "Service Overloaded",
-	505: "ICAP Version Not Supported",
+	503: "Service overloaded",
+	505: "ICAP version not supported by server",
 }
 
 // StatusText returns a text for the ICAP status code. It returns the empty string if the code is unknown.
