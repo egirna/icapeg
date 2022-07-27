@@ -49,8 +49,8 @@ resp_mode=true
 shadow_service=false
 preview_bytes = "1024" #byte
 preview_enabled = true# options send preview header or not
-bypass_extensions = []
 process_extensions = ["*"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
+bypass_extensions = []
 reject_extensions = []
 base_url = "echo" #
 scan_endpoint = "echo"
@@ -69,9 +69,9 @@ service_tag = "CLAMAV ICAP"  #ISTAG
 req_mode=true
 resp_mode=true
 shadow_service=false
-bypass_extensions = []
 process_extensions = ["*"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
 reject_extensions = []
+bypass_extensions = []
 socket_path = "/var/run/clamav/clamd.ctl"
 wait_timeout = 10 #seconds, the time upto which the server will wait for clamav to scan the results
 bad_file_status = ["malicious"]
@@ -89,9 +89,9 @@ resp_mode=true # enable support for ICAP response mode
 shadow_service=false
 preview_bytes = "1024" #byte
 preview_enabled = true# options send preview header or not
-bypass_extensions = ["*"]
 process_extensions = ["pdf", "com", "zip"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
-reject_extensions = ["html"]
+reject_extensions = ["x"]
+bypass_extensions = ["y"]
 scan_url = "https://www.virustotal.com/vtapi/v2/file/scan" #
 report_url = "https://www.virustotal.com/vtapi/v2/file/report" #
 api_key = "$_VIRUSTOTAL_API_KEY"

@@ -33,36 +33,51 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 
 	//getting the extension of the file
 	fileExtension := utils.GetMimeExtension(file.Bytes())
-
-	//check if the file extension is a bypass extension
-	//if yes we will not modify the file, and we will return 204 No modifications
-	err = v.generalFunc.IfFileExtIsBypass(fileExtension, v.bypassExts)
-	if err != nil {
-		return utils.NoModificationStatusCodeStr,
-			nil, nil
+	extArrs := make(map[int]map[string][]string)
+	ind := 1
+	processMap := make(map[string][]string)
+	processMap["process"] = v.processExts
+	if len(v.processExts) == 1 && v.processExts[0] == "*" {
+		extArrs[3] = processMap
+	} else {
+		extArrs[ind] = processMap
+		ind++
 	}
-
-	err = v.generalFunc.IfFileExtIsReject(fileExtension, v.rejectExts)
-	if err != nil {
-		fmt.Println("here")
-		reason := "File rejected"
-		if v.return400IfFileExtRejected {
-			return utils.BadRequestStatusCodeStr, nil, serviceHeaders
+	rejectMap := make(map[string][]string)
+	rejectMap["reject"] = v.rejectExts
+	if len(v.rejectExts) == 1 && v.rejectExts[0] == "*" {
+		extArrs[3] = rejectMap
+	} else {
+		extArrs[ind] = rejectMap
+	}
+	bypassMap := make(map[string][]string)
+	bypassMap["bypass"] = v.bypassExts
+	if len(v.bypassExts) == 1 && v.bypassExts[0] == "*" {
+		extArrs[3] = bypassMap
+	} else {
+		extArrs[ind] = bypassMap
+	}
+	for _, element := range extArrs {
+		if _, found := element["process"]; found {
+			break
+		} else if _, found := element["reject"]; found {
+			if !v.generalFunc.IfFileExtIsX(fileExtension, v.rejectExts) {
+				reason := "File rejected"
+				if v.return400IfFileExtRejected {
+					return utils.BadRequestStatusCodeStr, nil, serviceHeaders
+				}
+				errPage := v.generalFunc.GenHtmlPage("service/unprocessable-file.html", reason, v.httpMsg.Request.RequestURI)
+				v.httpMsg.Response = v.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
+				v.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
+				return utils.OkStatusCodeStr, v.httpMsg.Response, serviceHeaders
+			}
+		} else if _, found := element["bypass"]; found {
+			if !v.generalFunc.IfFileExtIsX(fileExtension, v.bypassExts) {
+				return utils.NoModificationStatusCodeStr,
+					nil, nil
+			}
 		}
-		errPage := v.generalFunc.GenHtmlPage("service/unprocessable-file.html", reason, v.httpMsg.Request.RequestURI)
-		v.httpMsg.Response = v.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
-		v.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
-		return utils.OkStatusCodeStr, v.httpMsg.Response, serviceHeaders
 	}
-
-	//check if the file extension is a bypass extension and not a process extension
-	//if yes we will not modify the file, and we will return 204 No modifications
-	err = v.generalFunc.IfFileExtIsBypassAndNotProcess(fileExtension, v.bypassExts, v.processExts)
-	if err != nil {
-		return utils.NoModificationStatusCodeStr,
-			nil, nil
-	}
-
 	//check if the file size is greater than max file size of the service
 	//if yes we will return 200 ok or 204 no modification, it depends on the configuration of the service
 	if v.maxFileSize != 0 && v.maxFileSize < file.Len() {
