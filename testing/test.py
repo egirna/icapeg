@@ -154,7 +154,13 @@ def is_respmode_working(test_filename,test_result, command):
         result = "OK"
     else : 
         result = "FAILED"
-    out = " -->File: " + test_filename +" result: " + result + " " + "; expected: " + test_result 
+    if (result == "OK"):
+        resultMessage = "File Recieved and status code " + result_statusCode + " " + result_statusMessage
+    else:
+        resultMessage = "File Not Recieved and status code " + result_statusCode + " " + result_statusMessage
+
+    out = " -->File: " + test_filename +" result: " + resultMessage + " " + "; expected: " + test_result 
+    
     if (result == test_result and result_statusCode + result_statusMessage == "200OK"):
         style.ok("Test passed", out)
         passed_tests = passed_tests + 1
@@ -395,10 +401,10 @@ def test_istag():
 
 
 # -------------------------------------
-test_service_name()
+# test_service_name()
 test_mode('resp')
 test_mode('req')
-test_istag()
+# test_istag()
 
 # reconfigure("echo", "max_filesize", 50)
 
