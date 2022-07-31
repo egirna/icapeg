@@ -49,9 +49,9 @@ resp_mode=true
 shadow_service=false
 preview_bytes = "1024" #byte
 preview_enabled = true# options send preview header or not
-process_extensions = ["*"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
-bypass_extensions = []
-reject_extensions = []
+process_extensions = ["pdf", "zip", "com"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
+reject_extensions = ["docx"]
+bypass_extensions = ["*"]
 base_url = "echo" #
 scan_endpoint = "echo"
 api_key = "<api key>"
@@ -89,9 +89,9 @@ resp_mode=true # enable support for ICAP response mode
 shadow_service=false
 preview_bytes = "1024" #byte
 preview_enabled = true# options send preview header or not
-process_extensions = ["pdf", "com", "zip"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
-reject_extensions = ["x"]
-bypass_extensions = ["y"]
+process_extensions = ["pdf", "zip", "com"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
+reject_extensions = ["docx"]
+bypass_extensions = ["*"]
 scan_url = "https://www.virustotal.com/vtapi/v2/file/scan" #
 report_url = "https://www.virustotal.com/vtapi/v2/file/report" #
 api_key = "$_VIRUSTOTAL_API_KEY"

@@ -207,7 +207,7 @@ func (srv *Server) Serve(l net.Listener) error {
 		go c.serve(srv.DebugLevel)
 	}
 	// The next line is only there to see one specific edge case which should never happen.
-	panic("Shuold never be reached")
+	panic("Should never be reached")
 }
 
 // Serve accepts incoming ICAP connections on the listener l,

@@ -1,6 +1,8 @@
 package virustotal
 
 import (
+	"fmt"
+	"icapeg/config"
 	"icapeg/readValues"
 	general_functions "icapeg/service/services-utilities/general-functions"
 	"icapeg/utils"
@@ -20,6 +22,7 @@ type Virustotal struct {
 	bypassExts                 []string
 	processExts                []string
 	rejectExts                 []string
+	extArrs                    []config.Extension
 	ScanUrl                    string
 	ReportUrl                  string
 	Timeout                    time.Duration
@@ -47,6 +50,31 @@ func InitVirustotalConfig(serviceName string) {
 			returnOrigIfMaxSizeExc:     readValues.ReadValuesBool(serviceName + ".return_original_if_max_file_size_exceeded"),
 			return400IfFileExtRejected: readValues.ReadValuesBool(serviceName + ".return_400_if_file_ext_rejected"),
 		}
+		process := config.Extension{Name: "process", Exts: virustoalConfig.processExts}
+		reject := config.Extension{Name: "reject", Exts: virustoalConfig.rejectExts}
+		bypass := config.Extension{Name: "bypass", Exts: virustoalConfig.bypassExts}
+		extArrs := make([]config.Extension, 3)
+		ind := 0
+		if len(process.Exts) == 1 && process.Exts[0] == "*" {
+			extArrs[2] = process
+		} else {
+			extArrs[ind] = process
+			ind++
+		}
+		if len(reject.Exts) == 1 && reject.Exts[0] == "*" {
+			extArrs[2] = reject
+		} else {
+			extArrs[ind] = reject
+			ind++
+		}
+		if len(bypass.Exts) == 1 && bypass.Exts[0] == "*" {
+			extArrs[2] = bypass
+		} else {
+			extArrs[ind] = bypass
+			ind++
+		}
+		fmt.Println(extArrs)
+		virustoalConfig.extArrs = extArrs
 	})
 }
 
@@ -60,6 +88,7 @@ func NewVirustotalService(serviceName, methodName string, httpMsg *utils.HttpMsg
 		bypassExts:                 virustoalConfig.bypassExts,
 		processExts:                virustoalConfig.processExts,
 		rejectExts:                 virustoalConfig.rejectExts,
+		extArrs:                    virustoalConfig.extArrs,
 		ScanUrl:                    virustoalConfig.ScanUrl,
 		ReportUrl:                  virustoalConfig.ReportUrl,
 		Timeout:                    virustoalConfig.Timeout * time.Second,

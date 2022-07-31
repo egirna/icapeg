@@ -2,7 +2,7 @@ package echo
 
 import (
 	"bytes"
-	"icapeg/readValues"
+	"fmt"
 	"icapeg/utils"
 	"io"
 	"net/http"
@@ -28,41 +28,50 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 
 	//getting the extension of the file
 	fileExtension := utils.GetMimeExtension(file.Bytes())
+	fmt.Println(fileExtension)
 
 	//check if the file extension is a bypass extension
 	//if yes we will not modify the file, and we will return 204 No modifications
-	err = e.generalFunc.IfFileExtIsBypass(fileExtension, e.bypassExts)
-	if err != nil {
-		if readValues.ReadValuesBool("app.debugging_headers") {
-			serviceHeaders["X-ICAPeg-Bypassed"] = "true"
-		}
-		return utils.NoModificationStatusCodeStr,
-			nil, serviceHeaders
-	}
-	if readValues.ReadValuesBool("app.debugging_headers") {
-		serviceHeaders["X-ICAPeg-Bypassed"] = "false"
-	}
 
-	//check if the file extension is a reject extension
-	//if yes we will return 400 No modifications
-	err = e.generalFunc.IfFileExtIsReject(fileExtension, e.rejectExts)
-	if err != nil {
-		reason := "File rejected"
-		if e.return400IfFileExtRejected {
-			return utils.BadRequestStatusCodeStr, nil, serviceHeaders
-		}
-		errPage := e.generalFunc.GenHtmlPage("service/unprocessable-file.html", reason, e.httpMsg.Request.RequestURI)
-		e.httpMsg.Response = e.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
-		e.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
-		return utils.OkStatusCodeStr, e.httpMsg.Response, serviceHeaders
-	}
+	for i := 0; i < 3; i++ {
+		if e.extArrs[i].Name == "process" {
+			if e.generalFunc.IfFileExtIsX(fileExtension, e.processExts) {
+				fmt.Println("process")
+				break
+			}
+		} else if e.extArrs[i].Name == "reject" {
+			if e.generalFunc.IfFileExtIsX(fileExtension, e.rejectExts) {
+				fmt.Println("reject")
+				reason := "File rejected"
+				if e.return400IfFileExtRejected {
+					return utils.BadRequestStatusCodeStr, nil, serviceHeaders
+				}
+				errPage := e.generalFunc.GenHtmlPage("service/unprocessable-file.html", reason, e.httpMsg.Request.RequestURI)
+				e.httpMsg.Response = e.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
+				e.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
+				return utils.OkStatusCodeStr, e.httpMsg.Response, serviceHeaders
+			}
+		} else if e.extArrs[i].Name == "bypass" {
+			if e.generalFunc.IfFileExtIsX(fileExtension, e.bypassExts) {
+				fmt.Println("bypass")
+				fileAfterPrep, httpMsg := e.generalFunc.IfICAPStatusIs204(e.methodName, utils.NoModificationStatusCodeStr,
+					file, false, reqContentType, e.httpMsg)
+				if fileAfterPrep == nil && httpMsg == nil {
+					return utils.InternalServerErrStatusCodeStr, nil, nil
+				}
 
-	//check if the file extension is a bypass extension and not a process extension
-	//if yes we will not modify the file, and we will return 204 No modifications
-	err = e.generalFunc.IfFileExtIsBypassAndNotProcess(fileExtension, e.bypassExts, e.processExts)
-	if err != nil {
-		return utils.NoModificationStatusCodeStr,
-			nil, serviceHeaders
+				//returning the http message and the ICAP status code
+				switch msg := httpMsg.(type) {
+				case *http.Request:
+					msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
+					return utils.NoModificationStatusCodeStr, msg, serviceHeaders
+				case *http.Response:
+					msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
+					return utils.NoModificationStatusCodeStr, msg, serviceHeaders
+				}
+				return utils.NoModificationStatusCodeStr, nil, serviceHeaders
+			}
+		}
 	}
 
 	//check if the file size is greater than max file size of the service
