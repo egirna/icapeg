@@ -2,7 +2,6 @@ package echo
 
 import (
 	"bytes"
-	"fmt"
 	"icapeg/utils"
 	"io"
 	"net/http"
@@ -28,20 +27,16 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 
 	//getting the extension of the file
 	fileExtension := utils.GetMimeExtension(file.Bytes())
-	fmt.Println(fileExtension)
 
 	//check if the file extension is a bypass extension
 	//if yes we will not modify the file, and we will return 204 No modifications
-
 	for i := 0; i < 3; i++ {
 		if e.extArrs[i].Name == "process" {
 			if e.generalFunc.IfFileExtIsX(fileExtension, e.processExts) {
-				fmt.Println("process")
 				break
 			}
 		} else if e.extArrs[i].Name == "reject" {
 			if e.generalFunc.IfFileExtIsX(fileExtension, e.rejectExts) {
-				fmt.Println("reject")
 				reason := "File rejected"
 				if e.return400IfFileExtRejected {
 					return utils.BadRequestStatusCodeStr, nil, serviceHeaders
@@ -53,7 +48,6 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 			}
 		} else if e.extArrs[i].Name == "bypass" {
 			if e.generalFunc.IfFileExtIsX(fileExtension, e.bypassExts) {
-				fmt.Println("bypass")
 				fileAfterPrep, httpMsg := e.generalFunc.IfICAPStatusIs204(e.methodName, utils.NoModificationStatusCodeStr,
 					file, false, reqContentType, e.httpMsg)
 				if fileAfterPrep == nil && httpMsg == nil {

@@ -36,12 +36,10 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 	for i := 0; i < 3; i++ {
 		if v.extArrs[i].Name == "process" {
 			if v.generalFunc.IfFileExtIsX(fileExtension, v.processExts) {
-				fmt.Println("process")
 				break
 			}
 		} else if v.extArrs[i].Name == "reject" {
 			if v.generalFunc.IfFileExtIsX(fileExtension, v.rejectExts) {
-				fmt.Println("reject")
 				reason := "File rejected"
 				if v.return400IfFileExtRejected {
 					return utils.BadRequestStatusCodeStr, nil, serviceHeaders
@@ -53,7 +51,6 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 			}
 		} else if v.extArrs[i].Name == "bypass" {
 			if v.generalFunc.IfFileExtIsX(fileExtension, v.bypassExts) {
-				fmt.Println("bypass")
 				fileAfterPrep, httpMsg := v.generalFunc.IfICAPStatusIs204(v.methodName, utils.NoModificationStatusCodeStr,
 					file, false, reqContentType, v.httpMsg)
 				if fileAfterPrep == nil && httpMsg == nil {
@@ -73,7 +70,6 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 			}
 		}
 	}
-	fmt.Println("hello")
 
 	//check if the file size is greater than max file size of the service
 	//if yes we will return 200 ok or 204 no modification, it depends on the configuration of the service
@@ -143,7 +139,6 @@ func (v *Virustotal) SendFileToScan(f *bytes.Buffer) (string, string, error) {
 	//headers
 	req.Header.Add("Content-Type", bodyWriter.FormDataContentType())
 	resp, err := client.Do(req)
-	fmt.Println(resp)
 	if err != nil {
 		return "", "", err
 	}
