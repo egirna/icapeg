@@ -92,7 +92,7 @@ Assume that the name of the vendor is **abc** and the name of the service **xyz*
 
       ```go
       var doOnce sync.Once
-      var echoConfig *Abc
+      var abcConfig *Abc
       ```
 
     - Add **InitAbcConfig** function:
