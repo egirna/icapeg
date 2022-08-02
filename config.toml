@@ -120,7 +120,6 @@ allow_scripts = false
 allow_password_protected_files = false
 allow_macros = false
 allow_xml_external_entities = false
-restrict_file_types = false
 
 
 

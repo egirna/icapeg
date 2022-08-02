@@ -2,6 +2,7 @@ package service
 
 import (
 	"icapeg/service/services/clamav"
+	"icapeg/service/services/cloudmersive"
 	"icapeg/service/services/echo"
 	"icapeg/service/services/glasswall"
 	"icapeg/utils"
@@ -9,9 +10,10 @@ import (
 
 //Vendors names
 const (
-	VendorGlasswall = "glasswall"
-	VendorEcho      = "echo"
-	VendorClamav    = "clamav"
+	VendorGlasswall    = "glasswall"
+	VendorEcho         = "echo"
+	VendorClamav       = "clamav"
+	VendorCloudMersive = "cloudmersive"
 )
 
 type (
@@ -33,6 +35,10 @@ func GetService(vendor, serviceName, methodName string, httpMsg *utils.HttpMsg) 
 		return clamav.NewClamavService(serviceName, methodName, httpMsg)
 
 	}
+	switch vendor {
+	case VendorCloudMersive:
+		return cloudmersive.NewCloudMersiveService(serviceName, methodName, httpMsg)
+	}
 	return nil
 }
 
@@ -42,5 +48,7 @@ func InitServiceConfig(vendor, serviceName string) {
 		glasswall.InitGlasswallConfig(serviceName)
 	case VendorEcho:
 		echo.InitEchoConfig(serviceName)
+	case VendorCloudMersive:
+		cloudmersive.InitCloudMersiveConfig(serviceName)
 	}
 }
