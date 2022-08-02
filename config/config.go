@@ -41,6 +41,10 @@ type AppConfig struct {
 	Services                []string
 	ServicesInstances       map[string]*serviceIcapInfo
 }
+type Extension struct {
+	Name string
+	Exts []string
+}
 
 var AppCfg AppConfig
 
@@ -86,9 +90,17 @@ func Init() {
 		}
 
 		ext := make(map[string]bool)
+		asterisks := 0
 		//bypass
 		bypass := readValues.ReadValuesSlice(serviceName + ".bypass_extensions")
 		for i := 0; i < len(bypass); i++ {
+			if bypass[i] == "*" && len(bypass) != 1 {
+				fmt.Println("bypass_extensions array has one asterisk \"*\" and other extensions but asterisk should be the only element in the array otherwise add extensions as you want")
+				os.Exit(1)
+			}
+			if bypass[i] == "*" {
+				asterisks++
+			}
 			if ext[bypass[i]] == false {
 				ext[bypass[i]] = true
 			} else {
@@ -99,6 +111,13 @@ func Init() {
 		//process
 		process := readValues.ReadValuesSlice(serviceName + ".process_extensions")
 		for i := 0; i < len(process); i++ {
+			if process[i] == "*" && len(process) != 1 {
+				fmt.Println("process_extensions array has one asterisk \"*\" and other extensions but asterisk should be the only element in the array otherwise add extensions as you want")
+				os.Exit(1)
+			}
+			if process[i] == "*" {
+				asterisks++
+			}
 			if ext[process[i]] == false {
 				ext[process[i]] = true
 			} else {
@@ -109,12 +128,23 @@ func Init() {
 		//reject
 		reject := readValues.ReadValuesSlice(serviceName + ".reject_extensions")
 		for i := 0; i < len(reject); i++ {
+			if reject[i] == "*" && len(reject) != 1 {
+				fmt.Println("reject_extensions array has one asterisk \"*\" and other extensions but asterisk should be the only element in the array otherwise add extensions as you want")
+				os.Exit(1)
+			}
+			if reject[i] == "*" {
+				asterisks++
+			}
 			if ext[reject[i]] == false {
 				ext[reject[i]] = true
 			} else {
 				fmt.Println("This extension \"" + reject[i] + "\" is stored in multiple arrays")
 				os.Exit(1)
 			}
+		}
+		if asterisks != 1 {
+			fmt.Println("There is no \"*\" stored in any extension arrays")
+			os.Exit(1)
 		}
 
 		AppCfg.ServicesInstances[serviceName] = &serviceIcapInfo{
