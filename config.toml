@@ -24,18 +24,11 @@
 title = "ICAP configuration file"
 
 [app]
-log_level = "info" # the log levels for tha app, available values: info-->logging the overall progress of the app, debug --> log everything including errors, error --> log infos and just errors
-write_logs_to_console = false
-log_service_url = "http://logging-transaction-logging-api:8080/upload"
+log_level = "debug" # the log levels for tha app, available values: info-->logging the overall progress of the app, debug --> log everything including errors, error --> log infos and just errors
+write_logs_to_console= false
 log_flush_duration = 2
 port = 1344
-resp_scanner_vendor_shadow = "none"
-req_scanner_vendor_shadow = "none"
-preview_bytes = "1024" #byte
-preview_enabled = true# options send preview header or not
-propagate_error = true
-service_caption ="Go-ICAP server - glasswall Rebuild service"
-services= ["glasswall" , "echo"]
+services= ["glasswall" , "echo", "clamav","cloudmersive"]
 verify_server_cert=false
 #I worked on project using Golang which extracts uploaded files and before uploading and downloaded files
 # before downloading and send it to api to scan it before uploading/downloading it.
@@ -100,6 +93,38 @@ ok_file_status = ["ok"]
 #max file size value from 1 to 9223372036854775807, and value of zero means unlimited
 max_filesize = 0 #bytes
 return_original_if_max_file_size_exceeded=false
+
+[cloudmersive]
+vendor = "cloudmersive"
+service_caption= "cloudmersive service"   #Service
+service_tag = "CLOUDMERSIVE ICAP"  #ISTAG
+req_mode=true
+resp_mode=true
+shadow_service=false
+preview_enabled = false# options send preview header or not
+preview_bytes = "1024" #byte
+timeout  = 300 #seconds , ICAP will return 408 - Request timeout
+fail_threshold = 2
+#max file size value from 1 to 9223372036854775807, and value of zero means unlimited
+max_filesize = 0 #bytes
+return_original_if_max_file_size_exceeded=false
+bypass_extensions = []
+process_extensions = ["*"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
+reject_extensions = []
+base_url = "$_CLOUDAPI_URL" #
+scan_endpoint = "/virus/scan/file/advanced"
+api_key = "$_AUTH_TOKENS"
+allow_executables = false
+allow_invalid_files = false
+allow_scripts = false
+allow_password_protected_files = false
+allow_macros = false
+allow_xml_external_entities = false
+restrict_file_types = false
+
+
+
+
 
 #ICAP possible codes: 204 (No modifications needed) , 400 (Bad Request) , 403 (Forbidden) , 500 (Server Error) , 502 (Bad Gateway)
 api_response_400 = 400 #Bad Request
