@@ -35,7 +35,6 @@ func GetService(vendor, serviceName, methodName string, httpMsg *utils.HttpMsg) 
 		return clamav.NewClamavService(serviceName, methodName, httpMsg)
 	case VendorCloudMersive:
 		return cloudmersive.NewCloudMersiveService(serviceName, methodName, httpMsg)
-
 	}
 
 	return nil
