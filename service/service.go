@@ -33,12 +33,11 @@ func GetService(vendor, serviceName, methodName string, httpMsg *utils.HttpMsg) 
 		return echo.NewEchoService(serviceName, methodName, httpMsg)
 	case VendorClamav:
 		return clamav.NewClamavService(serviceName, methodName, httpMsg)
-
-	}
-	switch vendor {
 	case VendorCloudMersive:
 		return cloudmersive.NewCloudMersiveService(serviceName, methodName, httpMsg)
+
 	}
+
 	return nil
 }
 

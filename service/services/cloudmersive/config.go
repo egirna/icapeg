@@ -21,10 +21,9 @@ type CloudMersive struct {
 	allowPasswordProtectedFiles bool
 	allowMacros                 bool
 	allowXmlExternalEntities    bool
+	restrictFileTypes           string
 	maxFileSize                 int
-	bypassExts                  []string
-	processExts                 []string
-	rejectExts                  []string
+	BaseURL                     string
 	ScanEndPoint                string
 	Timeout                     time.Duration
 	APIKey                      string
@@ -39,9 +38,7 @@ func InitCloudMersiveConfig(serviceName string) {
 	doOnce.Do(func() {
 		cloudMersiveConfig = &CloudMersive{
 			maxFileSize:                 readValues.ReadValuesInt(serviceName + ".max_filesize"),
-			bypassExts:                  readValues.ReadValuesSlice(serviceName + ".bypass_extensions"),
-			processExts:                 readValues.ReadValuesSlice(serviceName + ".process_extensions"),
-			rejectExts:                  readValues.ReadValuesSlice(serviceName + ".reject_extensions"),
+			BaseURL:                     readValues.ReadValuesString(serviceName + ".base_url"),
 			ScanEndPoint:                readValues.ReadValuesString(serviceName + ".scan_endpoint"),
 			Timeout:                     readValues.ReadValuesDuration(serviceName + ".timeout"),
 			APIKey:                      readValues.ReadValuesString(serviceName + ".api_key"),
@@ -49,6 +46,7 @@ func InitCloudMersiveConfig(serviceName string) {
 			policy:                      readValues.ReadValuesString(serviceName + ".policy"),
 			returnOrigIfMaxSizeExc:      readValues.ReadValuesBool(serviceName + ".return_original_if_max_file_size_exceeded"),
 			return400IfFileExtRejected:  readValues.ReadValuesBool(serviceName + ".return_400_if_file_ext_rejected"),
+			restrictFileTypes:           readValues.ReadValuesString(serviceName + ".restrict_file_types"),
 			allowScripts:                readValues.ReadValuesBool(serviceName + ".allow_scripts"),
 			allowExecutables:            readValues.ReadValuesBool(serviceName + ".allow_executables"),
 			allowMacros:                 readValues.ReadValuesBool(serviceName + ".allow_macros"),
@@ -64,6 +62,7 @@ func NewCloudMersiveService(serviceName, methodName string, httpMsg *utils.HttpM
 		httpMsg:                     httpMsg,
 		serviceName:                 serviceName,
 		methodName:                  methodName,
+		restrictFileTypes:           cloudMersiveConfig.restrictFileTypes,
 		allowExecutables:            cloudMersiveConfig.allowExecutables,
 		allowXmlExternalEntities:    cloudMersiveConfig.allowXmlExternalEntities,
 		allowMacros:                 cloudMersiveConfig.allowMacros,
@@ -71,9 +70,7 @@ func NewCloudMersiveService(serviceName, methodName string, httpMsg *utils.HttpM
 		allowInvalidFiles:           cloudMersiveConfig.allowInvalidFiles,
 		allowPasswordProtectedFiles: cloudMersiveConfig.allowPasswordProtectedFiles,
 		maxFileSize:                 cloudMersiveConfig.maxFileSize,
-		bypassExts:                  cloudMersiveConfig.bypassExts,
-		processExts:                 cloudMersiveConfig.processExts,
-		rejectExts:                  cloudMersiveConfig.rejectExts,
+		BaseURL:                     cloudMersiveConfig.BaseURL,
 		ScanEndPoint:                cloudMersiveConfig.ScanEndPoint,
 		Timeout:                     cloudMersiveConfig.Timeout * time.Second,
 		APIKey:                      cloudMersiveConfig.APIKey,
