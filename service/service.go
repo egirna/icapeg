@@ -41,6 +41,8 @@ func InitServiceConfig(vendor, serviceName string) {
 	switch vendor {
 	case VendorEcho:
 		echo.InitEchoConfig(serviceName)
+	case VendorClamav:
+		clamav.InitClamavConfig(serviceName)
 	case VendorVirustotal:
 		virustotal.InitVirustotalConfig(serviceName)
 

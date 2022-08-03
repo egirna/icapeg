@@ -140,12 +140,12 @@ def reconfigure(service, model, value):
     toml.dump(data, f)
     f.close()
 
-    # kill icap to restart 
+    # kill icap and restart 
     subprocess.run(['kill -9 $(pidof icapeg)'],shell=True)
     subprocess.run(['./icapeg 2> /dev/null &'],shell=True)
     time.sleep(3)
     
-def is_respmode_working(test_filename,test_result, command):
+def is_mode_working(test_filename,test_result, command):
     global passed_tests, failed_tests
     result_statusCode, result_statusMessage = icap_client(command)
     subprocess.run(['touch ./testing/output'],shell=True)
@@ -154,13 +154,35 @@ def is_respmode_working(test_filename,test_result, command):
         result = "OK"
     else : 
         result = "FAILED"
-    out = " -->File: " + test_filename +" result: " + result + " " + "; expected: " + test_result 
-    if (result == test_result and result_statusCode + result_statusMessage == "200OK"):
+    if (result == "OK"):
+        resultMessage = "File Recieved and status code " + result_statusCode + " " + result_statusMessage
+    else:
+        resultMessage = "File Not Recieved and status code " + result_statusCode + " " + result_statusMessage
+
+    out = " -->File: " + test_filename +" result: " + resultMessage + " " + "; expected: " + test_result 
+    
+    if (result == test_result.strip() and result_statusCode + result_statusMessage == "200OK"):
         style.ok("Test passed", out)
         passed_tests = passed_tests + 1
     else : 
         style.fail("Test Failed", out)
         failed_tests += 1
+
+def is_mode_working_with204(test_filename,test_result, command):
+    global passed_tests, failed_tests
+    result_statusCode, result_statusMessage = icap_client(command)
+
+
+    resultMessage = "result Header: " + result_statusCode + " " + result_statusMessage + "; expected: " + test_result
+
+    
+    if (result_statusCode +" " + result_statusMessage == test_result):
+        style.ok("Test passed", resultMessage)
+        passed_tests = passed_tests + 1
+    else : 
+        style.fail("Test Failed", resultMessage)
+        failed_tests += 1
+
 
 def test_mode(mode=''):
     if (mode == "req"):
@@ -180,7 +202,7 @@ def test_mode(mode=''):
         fileName = row[0]
         inputfile = './testing/' + fileName
         command = 'c-icap-client -i 127.0.0.1  -p 1344 -s '+ service + ' -f '+ inputfile +' -o ./testing/output '+ options +' -v'
-        is_respmode_working(fileName,'OK', command)
+        is_mode_working_with204(fileName,'204 No modifications needed', command)
 
 
     # test without 204 
@@ -190,9 +212,10 @@ def test_mode(mode=''):
         fileName = row[0]
         inputfile = './testing/' + fileName
         command = 'c-icap-client -i 127.0.0.1  -p 1344 -s '+ service + ' -f '+ inputfile +' -o ./testing/output '+ options +' -v -no204'
-        is_respmode_working(fileName,'OK', command)
+        is_mode_working(fileName,'OK', command)
 
     # test with max file size 
+    # subprocess.run(['mv ./testing/config.toml ./config.toml'],shell=True)
     reconfigure("echo", "max_filesize", 100)
     style.header("***** Test " + modeName + " mode echo service with max file size *****")
     for row in data:
@@ -200,14 +223,15 @@ def test_mode(mode=''):
         fileName = row[0]
         expected = row[1]
         inputfile = './testing/' + fileName
-        command = 'c-icap-client -i 127.0.0.1  -p 1344 -s '+ service + ' -f '+ inputfile +' -o ./testing/output '+ options +' -v'
-        is_respmode_working(fileName,expected, command)
+        command = 'c-icap-client -i 127.0.0.1  -p 1344 -s '+ service + ' -f '+ inputfile +' -o ./testing/output '+ options +' -v -no204'
+        is_mode_working(fileName,expected, command)
     subprocess.run(['mv ./testing/config.toml ./config.toml'],shell=True)
     subprocess.run(['kill -9 $(pidof icapeg)'],shell=True)
     subprocess.run(['./icapeg 2> /dev/null &'],shell=True)
     time.sleep(3)
 
         # test  Without Preview (Server Side) 
+    subprocess.run(['mv ./testing/config.toml ./config.toml'],shell=True)
     reconfigure("echo", "preview_enabled", False)
     style.header("***** Test " + modeName + " mode echo service Without Preview (Server Side) *****")
     for row in data:
@@ -215,8 +239,8 @@ def test_mode(mode=''):
         fileName = row[0]
         expected = "OK"
         inputfile = './testing/' + fileName
-        command = 'c-icap-client -i 127.0.0.1  -p 1344 -s '+ service + ' -f '+ inputfile +' -o ./testing/output '+ options +' -v'
-        is_respmode_working(fileName,expected, command)
+        command = 'c-icap-client -i 127.0.0.1  -p 1344 -s '+ service + ' -f '+ inputfile +' -o ./testing/output '+ options +' -v -no204'
+        is_mode_working(fileName,expected, command)
     subprocess.run(['mv ./testing/config.toml ./config.toml'],shell=True)
     subprocess.run(['kill -9 $(pidof icapeg)'],shell=True)
     subprocess.run(['./icapeg 2> /dev/null &'],shell=True)
@@ -229,8 +253,8 @@ def test_mode(mode=''):
         fileName = row[0]
         expected = "OK"
         inputfile = './testing/' + fileName
-        command = 'c-icap-client -i 127.0.0.1  -p 1344 -s '+ service + ' -f '+ inputfile +' -o ./testing/output '+ options +' -nopreview -v'
-        is_respmode_working(fileName,expected, command)
+        command = 'c-icap-client -i 127.0.0.1  -p 1344 -s '+ service + ' -f '+ inputfile +' -o ./testing/output '+ options +' -nopreview -v -no204'
+        is_mode_working(fileName,expected, command)
 
 
     # test  With Preview 0 (client Side) 
@@ -240,8 +264,8 @@ def test_mode(mode=''):
         fileName = row[0]
         expected = "OK"
         inputfile = './testing/' + fileName
-        command = 'c-icap-client -i 127.0.0.1  -p 1344 -s '+ service + ' -f '+ inputfile +' -o ./testing/output '+ options +' -w 0 -v'
-        is_respmode_working(fileName,expected, command)
+        command = 'c-icap-client -i 127.0.0.1  -p 1344 -s '+ service + ' -f '+ inputfile +' -o ./testing/output '+ options +' -w 0 -v -no204'
+        is_mode_working(fileName,expected, command)
 
     # test  With preview exceeding limit and file size sent 
     style.header("***** Test " + modeName + " mode echo service With Preview exceeding limit  *****")
@@ -250,8 +274,8 @@ def test_mode(mode=''):
         fileName = row[0]
         expected = "OK"
         inputfile = './testing/' + fileName
-        command = 'c-icap-client -i 127.0.0.1  -p 1344 -s '+ service + ' -f '+ inputfile +' -o ./testing/output '+ options +' -w 2048 -v'
-        is_respmode_working(fileName,expected, command)
+        command = 'c-icap-client -i 127.0.0.1  -p 1344 -s '+ service + ' -f '+ inputfile +' -o ./testing/output '+ options +' -w 2048 -v -no204'
+        is_mode_working(fileName,expected, command)
 
     # test  With preview less than file size sent  
     style.header("***** Test " + modeName + " mode echo service With Preview exceeding file size sent  *****")
@@ -260,8 +284,8 @@ def test_mode(mode=''):
         fileName = row[0]
         expected = "OK"
         inputfile = './testing/' + fileName
-        command = 'c-icap-client -i 127.0.0.1  -p 1344 -s '+ service + ' -f '+ inputfile +' -o ./testing/output '+ options +' -w 100 -v'
-        is_respmode_working(fileName,expected, command)
+        command = 'c-icap-client -i 127.0.0.1  -p 1344 -s '+ service + ' -f '+ inputfile +' -o ./testing/output '+ options +' -w 100 -v -no204'
+        is_mode_working(fileName,expected, command)
 
     # test  With request methods GET POST PUT CONNECT  
     style.header("***** Test " + modeName + " mode echo service With HTTP Methods *****")
@@ -273,8 +297,8 @@ def test_mode(mode=''):
             fileName = row[0]
             expected = "OK"
             inputfile = './testing/' + fileName
-            command = 'c-icap-client -i 127.0.0.1  -p 1344 -s '+ service + ' -f '+ inputfile +' -o ./testing/output '+ options +' -method '+ method +' -w 100 -v'
-            is_respmode_working(fileName,expected, command)
+            command = 'c-icap-client -i 127.0.0.1  -p 1344 -s '+ service + ' -f '+ inputfile +' -o ./testing/output '+ options +' -method '+ method +' -w 100 -v -no204'
+            is_mode_working(fileName,expected, command)
 
 def icap_client_istag(command):
     subprocess.run(['touch ./testing/output && rm -f ./testing/output'],shell=True)
@@ -365,6 +389,7 @@ def test_istag():
             is_tags_matched(IStag, tag)
 
         # test with no preview (server side)
+        subprocess.run(['mv ./testing/config.toml ./config.toml'],shell=True)
         reconfigure("echo", "preview_enabled", False)
         style.yellow(service + ":  with no preview (server side)")
         for row in data:
@@ -395,12 +420,13 @@ def test_istag():
 
 
 # -------------------------------------
-test_service_name()
+# add txt extensions to process_extensions
+reconfigure("echo", "process_extensions", ["txt"])
+
+# test_service_name()
 test_mode('resp')
 test_mode('req')
-test_istag()
-
-# reconfigure("echo", "max_filesize", 50)
+# test_istag()
 
 # =====================================
 

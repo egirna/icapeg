@@ -1,4 +1,4 @@
-package echo
+package clamav
 
 import (
 	"fmt"
@@ -10,11 +10,16 @@ import (
 	"time"
 )
 
-var doOnce sync.Once
-var echoConfig *Echo
+// the clamav constants
+const (
+	ClamavMalStatus = "FOUND"
+)
 
-// Echo represents the information regarding the Echo service
-type Echo struct {
+var doOnce sync.Once
+var clamavConfig *Clamav
+
+// Clamav represents the informations regarding the clamav service
+type Clamav struct {
 	httpMsg                    *utils.HttpMsg
 	elapsed                    time.Duration
 	serviceName                string
@@ -24,35 +29,31 @@ type Echo struct {
 	processExts                []string
 	rejectExts                 []string
 	extArrs                    []config.Extension
-	BaseURL                    string
+	SocketPath                 string
 	Timeout                    time.Duration
-	APIKey                     string
-	ScanEndpoint               string
-	FailThreshold              int
+	badFileStatus              []string
+	okFileStatus               []string
 	returnOrigIfMaxSizeExc     bool
 	return400IfFileExtRejected bool
 	generalFunc                *general_functions.GeneralFunc
 }
 
-func InitEchoConfig(serviceName string) {
+func InitClamavConfig(serviceName string) {
 	doOnce.Do(func() {
-		echoConfig = &Echo{
+		clamavConfig = &Clamav{
 			maxFileSize:                readValues.ReadValuesInt(serviceName + ".max_filesize"),
 			bypassExts:                 readValues.ReadValuesSlice(serviceName + ".bypass_extensions"),
 			processExts:                readValues.ReadValuesSlice(serviceName + ".process_extensions"),
 			rejectExts:                 readValues.ReadValuesSlice(serviceName + ".reject_extensions"),
-			BaseURL:                    readValues.ReadValuesString(serviceName + ".base_url"),
-			Timeout:                    readValues.ReadValuesDuration(serviceName+".timeout") * time.Second,
-			APIKey:                     readValues.ReadValuesString(serviceName + ".api_key"),
-			ScanEndpoint:               readValues.ReadValuesString(serviceName + ".scan_endpoint"),
-			FailThreshold:              readValues.ReadValuesInt(serviceName + ".fail_threshold"),
 			returnOrigIfMaxSizeExc:     readValues.ReadValuesBool(serviceName + ".return_original_if_max_file_size_exceeded"),
+			SocketPath:                 readValues.ReadValuesString(serviceName + ".socket_path"),
+			Timeout:                    readValues.ReadValuesDuration(serviceName+".timeout") * time.Second,
 			return400IfFileExtRejected: readValues.ReadValuesBool(serviceName + ".return_400_if_file_ext_rejected"),
 		}
 
-		process := config.Extension{Name: "process", Exts: echoConfig.processExts}
-		reject := config.Extension{Name: "reject", Exts: echoConfig.rejectExts}
-		bypass := config.Extension{Name: "bypass", Exts: echoConfig.bypassExts}
+		process := config.Extension{Name: "process", Exts: clamavConfig.processExts}
+		reject := config.Extension{Name: "reject", Exts: clamavConfig.rejectExts}
+		bypass := config.Extension{Name: "bypass", Exts: clamavConfig.bypassExts}
 		extArrs := make([]config.Extension, 3)
 		ind := 0
 		if len(process.Exts) == 1 && process.Exts[0] == "*" {
@@ -74,28 +75,24 @@ func InitEchoConfig(serviceName string) {
 			ind++
 		}
 		fmt.Println(extArrs)
-		echoConfig.extArrs = extArrs
+		clamavConfig.extArrs = extArrs
 	})
 }
 
-// NewEchoService returns a new populated instance of the Echo service
-func NewEchoService(serviceName, methodName string, httpMsg *utils.HttpMsg) *Echo {
-	return &Echo{
+func NewClamavService(serviceName, methodName string, httpMsg *utils.HttpMsg) *Clamav {
+	return &Clamav{
 		httpMsg:                    httpMsg,
 		serviceName:                serviceName,
 		methodName:                 methodName,
 		generalFunc:                general_functions.NewGeneralFunc(httpMsg),
-		maxFileSize:                echoConfig.maxFileSize,
-		bypassExts:                 echoConfig.bypassExts,
-		processExts:                echoConfig.processExts,
-		rejectExts:                 echoConfig.rejectExts,
-		extArrs:                    echoConfig.extArrs,
-		BaseURL:                    echoConfig.BaseURL,
-		Timeout:                    echoConfig.Timeout * time.Second,
-		APIKey:                     echoConfig.APIKey,
-		ScanEndpoint:               echoConfig.ScanEndpoint,
-		FailThreshold:              echoConfig.FailThreshold,
-		returnOrigIfMaxSizeExc:     echoConfig.returnOrigIfMaxSizeExc,
-		return400IfFileExtRejected: echoConfig.return400IfFileExtRejected,
+		maxFileSize:                clamavConfig.maxFileSize,
+		bypassExts:                 clamavConfig.bypassExts,
+		processExts:                clamavConfig.processExts,
+		rejectExts:                 clamavConfig.rejectExts,
+		extArrs:                    clamavConfig.extArrs,
+		Timeout:                    clamavConfig.Timeout * time.Second,
+		SocketPath:                 clamavConfig.SocketPath,
+		returnOrigIfMaxSizeExc:     clamavConfig.returnOrigIfMaxSizeExc,
+		return400IfFileExtRejected: clamavConfig.return400IfFileExtRejected,
 	}
 }
