@@ -146,7 +146,7 @@ def reconfigure(service, model, value):
     # kill icap and restart 
     subprocess.run(['kill -9 $(pidof icapeg)'],shell=True)
     subprocess.run(['./icapeg 2> /dev/null &'],shell=True)
-    time.sleep(3)
+    time.sleep(6)
     
 def is_mode_working(test_filename,test_result, command):
     global passed_tests, failed_tests
@@ -301,7 +301,6 @@ def test_mode(mode=''):
             expected = "OK"
             inputfile = './testing/' + fileName
             command = 'c-icap-client -i 127.0.0.1  -p 1344 -s '+ service + ' -f '+ inputfile +' -o ./testing/output '+ options +' -method '+ method +' -w 100 -v -no204'
-            print(command)
             is_mode_working(fileName,expected, command)
 
 def icap_client_istag(command):
