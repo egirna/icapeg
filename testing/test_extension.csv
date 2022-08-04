@@ -1,0 +1,4 @@
+book.pdf,FAILED
+docker.yml,OK
+file_zero_byte.txt,OK 
+file_1_byte.txt,OK
