@@ -26,7 +26,7 @@ type ICAPRequest struct {
 	vendor                 string
 }
 
-//NewICAPRequest is a func to create a new instance from struct IcapRequest yo handle upcoming ICAP requests
+// NewICAPRequest is a func to create a new instance from struct IcapRequest yo handle upcoming ICAP requests
 func NewICAPRequest(w icap.ResponseWriter, req *icap.Request) *ICAPRequest {
 	ICAPRequest := &ICAPRequest{
 		w:      w,
@@ -40,8 +40,8 @@ func NewICAPRequest(w icap.ResponseWriter, req *icap.Request) *ICAPRequest {
 	return ICAPRequest
 }
 
-//RequestInitialization is a fun to retrieve the important information from the ICAP request
-//and initialize the ICAP response
+// RequestInitialization is a fun to retrieve the important information from the ICAP request
+// and initialize the ICAP response
 func (i *ICAPRequest) RequestInitialization() error {
 	i.appCfg = config.App()
 
@@ -94,7 +94,7 @@ func (i *ICAPRequest) RequestInitialization() error {
 	return nil
 }
 
-//RequestProcessing is a func to process the ICAP request upon the service and method required
+// RequestProcessing is a func to process the ICAP request upon the service and method required
 func (i *ICAPRequest) RequestProcessing() {
 	partial := false
 
@@ -131,12 +131,6 @@ func (i *ICAPRequest) HostHeader() {
 func (i *ICAPRequest) RespAndReqMods(partial bool) {
 	if i.methodName == utils.ICAPModeReq {
 		defer i.req.Request.Body.Close()
-		if i.req.Request != nil {
-			if i.req.Request.Method == "CONNECT" {
-				i.w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
-				return
-			}
-		}
 	} else {
 		defer i.req.Response.Body.Close()
 	}
@@ -199,7 +193,7 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 	}
 }
 
-//adding headers to the logging
+// adding headers to the logging
 func (i *ICAPRequest) addHeadersToLogs() {
 	for key, element := range i.req.Header {
 		res := key + " : "
@@ -212,8 +206,8 @@ func (i *ICAPRequest) addHeadersToLogs() {
 	}
 }
 
-//isServiceExists is a func to make sure that service which required in ICAP
-//request is existing in the config.go file
+// isServiceExists is a func to make sure that service which required in ICAP
+// request is existing in the config.go file
 func (i *ICAPRequest) isServiceExists() bool {
 	services := i.appCfg.Services
 	for r := 0; r < len(services); r++ {
@@ -225,7 +219,7 @@ func (i *ICAPRequest) isServiceExists() bool {
 
 }
 
-//getMethodName is a func to get the name of the method of the ICAP request
+// getMethodName is a func to get the name of the method of the ICAP request
 func (i *ICAPRequest) getMethodName() string {
 	if i.methodName == "REQMOD" {
 		i.methodName = "req_mode"
@@ -235,7 +229,7 @@ func (i *ICAPRequest) getMethodName() string {
 	return i.methodName
 }
 
-//isMethodAllowed is a func to check if the method in the ICAP request is allowed in config.go file or not
+// isMethodAllowed is a func to check if the method in the ICAP request is allowed in config.go file or not
 func (i *ICAPRequest) isMethodAllowed() bool {
 	if i.methodName == "RESPMOD" {
 		return i.appCfg.ServicesInstances[i.serviceName].RespMode
@@ -249,18 +243,18 @@ func (i *ICAPRequest) isMethodAllowed() bool {
 	return false
 }
 
-//getVendorName is a func to get the vendor of the service which in the ICAP request
+// getVendorName is a func to get the vendor of the service which in the ICAP request
 func (i *ICAPRequest) getVendorName() string {
 	return i.appCfg.ServicesInstances[i.serviceName].Vendor
 }
 
-//addingISTAGServiceHeaders is a func to add the important header to ICAP response
+// addingISTAGServiceHeaders is a func to add the important header to ICAP response
 func (i *ICAPRequest) addingISTAGServiceHeaders(ISTgValue string) {
 	i.h["ISTag"] = []string{ISTgValue}
 	i.h["Service"] = []string{i.appCfg.ServicesInstances[i.serviceName].ServiceCaption}
 }
 
-//is204Allowed is a func to check if ICAP request has the header "204 : Allowed" or not
+// is204Allowed is a func to check if ICAP request has the header "204 : Allowed" or not
 func (i *ICAPRequest) is204Allowed() bool {
 	Is204Allowed := false
 	if _, exist := i.req.Header["Allow"]; exist &&
@@ -270,7 +264,7 @@ func (i *ICAPRequest) is204Allowed() bool {
 	return Is204Allowed
 }
 
-//shadowService is a func to apply the shadow service
+// shadowService is a func to apply the shadow service
 func (i *ICAPRequest) shadowService() {
 	if i.appCfg.DebuggingHeaders {
 		i.h["X-ICAPeg-Shadow-Service"] = []string{"true"}
@@ -292,7 +286,7 @@ func (i *ICAPRequest) shadowService() {
 	}
 }
 
-//getEnabledMethods is a func get all enable method of a specific service
+// getEnabledMethods is a func get all enable method of a specific service
 func (i *ICAPRequest) getEnabledMethods() string {
 	var allMethods []string
 	if i.appCfg.ServicesInstances[i.serviceName].RespMode {
@@ -312,7 +306,7 @@ func (i *ICAPRequest) servicePreview() (bool, string) {
 		i.appCfg.ServicesInstances[i.serviceName].PreviewBytes
 }
 
-//optionsMode is a func to return an ICAP response in OPTIONS mode
+// optionsMode is a func to return an ICAP response in OPTIONS mode
 func (i *ICAPRequest) optionsMode(serviceName string) {
 	//optionsModeRemote(vendor, req, w, appCfg, zlogger)
 	i.h.Set("Methods", i.getEnabledMethods())
