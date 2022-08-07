@@ -3,9 +3,11 @@ package api
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"icapeg/config"
 	"icapeg/icap"
 	"icapeg/service"
+	"icapeg/service/services-utilities/ContentTypes"
 	"icapeg/utils"
 	"io"
 	"io/ioutil"
@@ -99,8 +101,31 @@ func (i *ICAPRequest) RequestProcessing() {
 	partial := false
 
 	//check if there is a preview header in the ICAP request or not
-	if i.req.Header.Get("Preview") != "" && i.req.EndIndicator != "0; ieof" {
-		partial = true
+	if i.methodName != utils.ICAPModeOptions {
+		file := &bytes.Buffer{}
+		fileLen := 0
+		if i.methodName == utils.ICAPModeResp {
+			io.Copy(file, i.req.Response.Body)
+			fileLen = file.Len()
+			i.req.Response.Header.Set(utils.ContentLength, strconv.Itoa(len(file.Bytes())))
+			i.req.Response.Body = io.NopCloser(bytes.NewBuffer(file.Bytes()))
+		} else {
+			reqContentType := ContentTypes.GetContentType(i.req.Request)
+			// getting the file from request and store it in buf as a type of bytes.Buffer
+			file = reqContentType.GetFileFromRequest()
+			fileLen = file.Len()
+			fileBytes := []byte(reqContentType.BodyAfterScanning(file.Bytes()))
+			i.req.Request.Header.Set(utils.ContentLength, strconv.Itoa(len(fileBytes)))
+			i.req.Request.Body = io.NopCloser(bytes.NewBuffer(fileBytes))
+		}
+		if fileLen == 0 {
+			partial = false
+
+		} else {
+			if i.req.Header.Get("Preview") != "" && i.req.EndIndicator != "0; ieof" {
+				partial = true
+			}
+		}
 	}
 
 	i.HostHeader()
@@ -113,6 +138,8 @@ func (i *ICAPRequest) RequestProcessing() {
 
 	//for reqmod and respmod
 	default:
+		fmt.Println("here")
+
 		i.RespAndReqMods(partial)
 	}
 
@@ -143,6 +170,7 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 
 	//calling Processing func to process the http message which encapsulated inside the ICAP request
 	IcapStatusCode, httpMsg, serviceHeaders := requiredService.Processing(partial)
+	fmt.Println(IcapStatusCode)
 
 	// adding the headers which the service wants to add them in the ICAP response
 	if serviceHeaders != nil {
@@ -324,6 +352,7 @@ func (i *ICAPRequest) optionsMode(serviceName string) {
 
 func (i *ICAPRequest) preview() *bytes.Buffer {
 	r := icap.GetTheRest()
+	fmt.Println(r)
 	c := io.NopCloser(r)
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(c)
