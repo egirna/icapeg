@@ -56,57 +56,57 @@ func TestContentType(t *testing.T) {
 
 }
 
-func TestMimeExtension(t *testing.T) {
-	type testSample struct {
-		data []byte
-		ext  string
-	}
-
-	sampleTable := []testSample{
-		{
-			data: []byte{0x42, 0x5A, 0x68},
-			ext:  "bz2",
-		},
-		{
-			data: []byte{0x78, 0xDA},
-			ext:  "dmg",
-		},
-		{
-			data: []byte{0x58, 0x35},
-			ext:  "com",
-		},
-		{
-			data: []byte{0xFF, 0xD8, 0xFF},
-			ext:  "jpg",
-		},
-		{
-			data: []byte{0x4D, 0x5A},
-			ext:  "exe",
-		},
-		{
-			data: []byte{0x25, 0x50, 0x44, 0x46, 0x2d},
-			ext:  "pdf",
-		},
-		{
-			data: []byte{0x52, 0x61, 0x72, 0x21, 0x1A, 0x07, 0x00},
-			ext:  "rar",
-		},
-		{
-			data: []byte{},
-			ext:  "unknown",
-		},
-	}
-
-	for _, sample := range sampleTable {
-		got := GetMimeExtension(sample.data)
-		want := sample.ext
-
-		if got != want {
-			t.Errorf("GetMimeExtension Failed for %s , wanted: %s got: %s", want, want, got)
-		}
-	}
-
-}
+//func TestMimeExtension(t *testing.T) {
+//	type testSample struct {
+//		data []byte
+//		ext  string
+//	}
+//
+//	sampleTable := []testSample{
+//		{
+//			data: []byte{0x42, 0x5A, 0x68},
+//			ext:  "bz2",
+//		},
+//		{
+//			data: []byte{0x78, 0xDA},
+//			ext:  "dmg",
+//		},
+//		{
+//			data: []byte{0x58, 0x35},
+//			ext:  "com",
+//		},
+//		{
+//			data: []byte{0xFF, 0xD8, 0xFF},
+//			ext:  "jpg",
+//		},
+//		{
+//			data: []byte{0x4D, 0x5A},
+//			ext:  "exe",
+//		},
+//		{
+//			data: []byte{0x25, 0x50, 0x44, 0x46, 0x2d},
+//			ext:  "pdf",
+//		},
+//		{
+//			data: []byte{0x52, 0x61, 0x72, 0x21, 0x1A, 0x07, 0x00},
+//			ext:  "rar",
+//		},
+//		{
+//			data: []byte{},
+//			ext:  "unknown",
+//		},
+//	}
+//
+//	for _, sample := range sampleTable {
+//		got := GetMimeExtension(sample.data)
+//		want := sample.ext
+//
+//		if got != want {
+//			t.Errorf("GetMimeExtension Failed for %s , wanted: %s got: %s", want, want, got)
+//		}
+//	}
+//
+//}
 
 func TestFileExtension(t *testing.T) {
 
