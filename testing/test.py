@@ -19,8 +19,6 @@ time.sleep(3)
 
 
 class style:
-
-
     def header(text):
         COLOR = '\033[1;37;45m'
         ENDC = '\033[0m'
@@ -178,7 +176,7 @@ def is_mode_working_with204(test_filename,test_result, command):
     global passed_tests, failed_tests
     result_statusCode, result_statusMessage = icap_client(command)
 
-    print(result_statusCode, result_statusMessage)
+
     resultMessage = "result Header: " + result_statusCode + " " + result_statusMessage + "; expected: " + test_result
 
     
@@ -208,7 +206,6 @@ def test_mode(mode=''):
         fileName = row[0]
         inputfile = './testing/' + fileName
         command = 'c-icap-client -i 127.0.0.1  -p 1344 -s '+ service + ' -f '+ inputfile +' -o ./testing/output '+ options +' -v'
-        print(command)
         is_mode_working_with204(fileName,'204 No modifications needed', command)
 
 
@@ -230,7 +227,7 @@ def test_mode(mode=''):
         fileName = row[0]
         expected = row[1]
         inputfile = './testing/' + fileName
-        command = 'c-icap-client -i 127.0.0.1  -p 1344 -s '+ service + ' -f '+ inputfile +' -o ./testing/output '+ options +' -v'
+        command = 'c-icap-client -i 127.0.0.1  -p 1344 -s '+ service + ' -f '+ inputfile +' -o ./testing/output '+ options +' -v -no204'
         is_mode_working(fileName,expected, command)
     subprocess.run(['mv ./testing/config.toml ./config.toml'],shell=True)
     subprocess.run(['kill -9 $(pidof icapeg)'],shell=True)
