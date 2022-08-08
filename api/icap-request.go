@@ -3,7 +3,6 @@ package api
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"icapeg/config"
 	"icapeg/icap"
 	"icapeg/service"
@@ -138,8 +137,6 @@ func (i *ICAPRequest) RequestProcessing() {
 
 	//for reqmod and respmod
 	default:
-		fmt.Println("here")
-
 		i.RespAndReqMods(partial)
 	}
 
@@ -170,7 +167,6 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 
 	//calling Processing func to process the http message which encapsulated inside the ICAP request
 	IcapStatusCode, httpMsg, serviceHeaders := requiredService.Processing(partial)
-	fmt.Println(IcapStatusCode)
 
 	// adding the headers which the service wants to add them in the ICAP response
 	if serviceHeaders != nil {
@@ -352,7 +348,6 @@ func (i *ICAPRequest) optionsMode(serviceName string) {
 
 func (i *ICAPRequest) preview() *bytes.Buffer {
 	r := icap.GetTheRest()
-	fmt.Println(r)
 	c := io.NopCloser(r)
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(c)

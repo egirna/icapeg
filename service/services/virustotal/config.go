@@ -1,7 +1,6 @@
 package virustotal
 
 import (
-	"fmt"
 	"icapeg/config"
 	"icapeg/readValues"
 	general_functions "icapeg/service/services-utilities/general-functions"
@@ -73,7 +72,6 @@ func InitVirustotalConfig(serviceName string) {
 			extArrs[ind] = bypass
 			ind++
 		}
-		fmt.Println(extArrs)
 		virustoalConfig.extArrs = extArrs
 	})
 }
