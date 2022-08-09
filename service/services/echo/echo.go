@@ -2,6 +2,7 @@ package echo
 
 import (
 	"bytes"
+	"fmt"
 	"icapeg/utils"
 	"io"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 
 // Processing is a func used for to processing the http message
 func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
+	fmt.Println("here echo")
 	serviceHeaders := make(map[string]string)
 	// no need to scan part of the file, this service needs all the file at ine time
 	if partial {
@@ -25,12 +27,20 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 		return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
 	}
 	//getting the extension of the file
-	contentType := e.httpMsg.Response.Header["Content-Type"]
+	var contentType []string
+	if len(contentType) == 0 {
+		contentType = append(contentType, "")
+	}
 	var fileName string
 	if e.methodName == utils.ICAPModeReq {
+		contentType = e.httpMsg.Request.Header["Content-Type"]
 		fileName = utils.GetFileName(e.httpMsg.Request)
 	} else {
+		contentType = e.httpMsg.Response.Header["Content-Type"]
 		fileName = utils.GetFileName(e.httpMsg.Response)
+	}
+	if len(contentType) == 0 {
+		contentType = append(contentType, "")
 	}
 	fileExtension := utils.GetMimeExtension(file.Bytes(), contentType[0], fileName)
 
