@@ -2,7 +2,6 @@ package echo
 
 import (
 	"bytes"
-	"fmt"
 	"icapeg/utils"
 	"io"
 	"net/http"
@@ -12,7 +11,6 @@ import (
 
 // Processing is a func used for to processing the http message
 func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
-	fmt.Println("here echo")
 	serviceHeaders := make(map[string]string)
 	// no need to scan part of the file, this service needs all the file at ine time
 	if partial {
