@@ -1,4 +1,5 @@
 from ast import Is
+from concurrent.futures import process
 from email.header import Header
 from inspect import istraceback
 import os.path
@@ -6,6 +7,7 @@ import subprocess
 import sys
 import hashlib
 import csv
+from setuptools import Command
 import toml
 import time
 
@@ -14,7 +16,7 @@ passed_tests = 0
 failed_tests = 0 
 # start ICAPeg 
 subprocess.run(['./icapeg 2> /dev/null &'],shell=True)
-time.sleep(3)
+time.sleep(10)
 
 
 
@@ -121,7 +123,9 @@ def test_service_name():
     for row in data:
         service = row[0]
         command = 'c-icap-client -i 127.0.0.1  -p 1344 -s '+ service + ' -f "./testing/book.pdf" -o ./testing/output -v'
+
         is_service_exist(row, command)
+
         
 
 
@@ -146,7 +150,7 @@ def reconfigure(service, model, value):
     # kill icap and restart 
     subprocess.run(['kill -9 $(pidof icapeg)'],shell=True)
     subprocess.run(['./icapeg 2> /dev/null &'],shell=True)
-    time.sleep(6)
+    time.sleep(10)
     
 def is_mode_working(test_filename,test_result, command):
     global passed_tests, failed_tests
@@ -187,7 +191,6 @@ def is_mode_working_with204(test_filename,test_result, command):
         style.fail("Test Failed", resultMessage)
         failed_tests += 1
 
-
 def test_mode(mode=''):
     if (mode == "req"):
         options = '-req http://www.example.com'
@@ -206,7 +209,7 @@ def test_mode(mode=''):
         fileName = row[0]
         inputfile = './testing/' + fileName
         command = 'c-icap-client -i 127.0.0.1  -p 1344 -s '+ service + ' -f '+ inputfile +' -o ./testing/output '+ options +' -v'
-        is_mode_working_with204(fileName,'204 No modifications needed', command)
+         is_mode_working_with204(fileName,'200 OK', command)
 
 
     # test without 204 
@@ -232,7 +235,7 @@ def test_mode(mode=''):
     subprocess.run(['mv ./testing/config.toml ./config.toml'],shell=True)
     subprocess.run(['kill -9 $(pidof icapeg)'],shell=True)
     subprocess.run(['./icapeg 2> /dev/null &'],shell=True)
-    time.sleep(3)
+    time.sleep(10)
 
         # test  Without Preview (Server Side) 
     reconfigure("echo", "preview_enabled", False)
@@ -247,7 +250,7 @@ def test_mode(mode=''):
     subprocess.run(['mv ./testing/config.toml ./config.toml'],shell=True)
     subprocess.run(['kill -9 $(pidof icapeg)'],shell=True)
     subprocess.run(['./icapeg 2> /dev/null &'],shell=True)
-    time.sleep(3)
+    time.sleep(10)
 
     # test  Without Preview (client Side) 
     style.header("***** Test " + modeName + " mode echo service Without Preview (client Side) *****")
@@ -292,7 +295,8 @@ def test_mode(mode=''):
 
     # test  With request methods GET POST PUT CONNECT  
     style.header("***** Test " + modeName + " mode echo service With HTTP Methods *****")
-    methods = ['GET', 'POST', 'PUT', 'CONNECT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS', 'TRACE', 'FackeMehod']
+    # methods = ['GET', 'POST', 'PUT', 'CONNECT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS', 'TRACE', 'FackeMehod'] 
+    methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'TRACE', 'FackeMehod'] 
     for method in methods:
         style.yellow("Method: " + method)
         for row in data:
@@ -403,7 +407,7 @@ def test_istag():
         subprocess.run(['mv ./testing/config.toml ./config.toml'],shell=True)
         subprocess.run(['kill -9 $(pidof icapeg)'],shell=True)
         subprocess.run(['./icapeg 2> /dev/null &'],shell=True)
-        time.sleep(3)
+        time.sleep(10)
 
 
         # test  With request methods GET POST PUT CONNECT  
@@ -423,8 +427,9 @@ def test_istag():
 
 # -------------------------------------
 # add txt extensions to process_extensions
-reconfigure("echo", "process_extensions", ["txt"])
-
+reconfigure("echo", "bypass_extensions", ["pdf"])
+reconfigure("echo", "process_extensions", ["*"])
+time.sleep(10)
 # test_service_name()
 test_mode('resp')
 test_mode('req')
