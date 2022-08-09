@@ -209,7 +209,7 @@ def test_mode(mode=''):
         fileName = row[0]
         inputfile = './testing/' + fileName
         command = 'c-icap-client -i 127.0.0.1  -p 1344 -s '+ service + ' -f '+ inputfile +' -o ./testing/output '+ options +' -v'
-         is_mode_working_with204(fileName,'200 OK', command)
+        is_mode_working_with204(fileName,'200 OK', command)
 
 
     # test without 204 
