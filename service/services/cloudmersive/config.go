@@ -12,47 +12,51 @@ var doOnce sync.Once
 var cloudMersiveConfig *CloudMersive
 
 type CloudMersive struct {
-	httpMsg                     *utils.HttpMsg
-	serviceName                 string
-	methodName                  string
-	allowExecutables            bool
-	allowInvalidFiles           bool
-	allowScripts                bool
-	allowPasswordProtectedFiles bool
-	allowMacros                 bool
-	allowXmlExternalEntities    bool
-	restrictFileTypes           string
-	maxFileSize                 int
-	BaseURL                     string
-	ScanEndPoint                string
-	Timeout                     time.Duration
-	APIKey                      string
-	FailThreshold               int
-	policy                      string
-	returnOrigIfMaxSizeExc      bool
-	return400IfFileExtRejected  bool
-	generalFunc                 *general_functions.GeneralFunc
+	httpMsg                      *utils.HttpMsg
+	serviceName                  string
+	methodName                   string
+	allowExecutables             bool
+	allowInvalidFiles            bool
+	allowScripts                 bool
+	allowPasswordProtectedFiles  bool
+	allowMacros                  bool
+	allowXmlExternalEntities     bool
+	allowHtml                    bool
+	allowInsecureDeserialization bool
+	restrictFileTypes            string
+	maxFileSize                  int
+	BaseURL                      string
+	ScanEndPoint                 string
+	Timeout                      time.Duration
+	APIKey                       string
+	FailThreshold                int
+	policy                       string
+	returnOrigIfMaxSizeExc       bool
+	return400IfFileExtRejected   bool
+	generalFunc                  *general_functions.GeneralFunc
 }
 
 func InitCloudMersiveConfig(serviceName string) {
 	doOnce.Do(func() {
 		cloudMersiveConfig = &CloudMersive{
-			maxFileSize:                 readValues.ReadValuesInt(serviceName + ".max_filesize"),
-			BaseURL:                     readValues.ReadValuesString(serviceName + ".base_url"),
-			ScanEndPoint:                readValues.ReadValuesString(serviceName + ".scan_endpoint"),
-			Timeout:                     readValues.ReadValuesDuration(serviceName + ".timeout"),
-			APIKey:                      readValues.ReadValuesString(serviceName + ".api_key"),
-			FailThreshold:               readValues.ReadValuesInt(serviceName + ".fail_threshold"),
-			policy:                      readValues.ReadValuesString(serviceName + ".policy"),
-			returnOrigIfMaxSizeExc:      readValues.ReadValuesBool(serviceName + ".return_original_if_max_file_size_exceeded"),
-			return400IfFileExtRejected:  readValues.ReadValuesBool(serviceName + ".return_400_if_file_ext_rejected"),
-			restrictFileTypes:           readValues.ReadValuesString(serviceName + ".restrict_file_types"),
-			allowScripts:                readValues.ReadValuesBool(serviceName + ".allow_scripts"),
-			allowExecutables:            readValues.ReadValuesBool(serviceName + ".allow_executables"),
-			allowMacros:                 readValues.ReadValuesBool(serviceName + ".allow_macros"),
-			allowInvalidFiles:           readValues.ReadValuesBool(serviceName + ".allow_invalid_files"),
-			allowXmlExternalEntities:    readValues.ReadValuesBool(serviceName + ".allow_xml_external_ntities"),
-			allowPasswordProtectedFiles: readValues.ReadValuesBool(serviceName + ".allow_password_protected_files"),
+			maxFileSize:                  readValues.ReadValuesInt(serviceName + ".max_filesize"),
+			BaseURL:                      readValues.ReadValuesString(serviceName + ".base_url"),
+			ScanEndPoint:                 readValues.ReadValuesString(serviceName + ".scan_endpoint"),
+			Timeout:                      readValues.ReadValuesDuration(serviceName + ".timeout"),
+			APIKey:                       readValues.ReadValuesString(serviceName + ".api_key"),
+			FailThreshold:                readValues.ReadValuesInt(serviceName + ".fail_threshold"),
+			policy:                       readValues.ReadValuesString(serviceName + ".policy"),
+			returnOrigIfMaxSizeExc:       readValues.ReadValuesBool(serviceName + ".return_original_if_max_file_size_exceeded"),
+			return400IfFileExtRejected:   readValues.ReadValuesBool(serviceName + ".return_400_if_file_ext_rejected"),
+			restrictFileTypes:            readValues.ReadValuesString(serviceName + ".restrict_file_types"),
+			allowScripts:                 readValues.ReadValuesBool(serviceName + ".allow_scripts"),
+			allowExecutables:             readValues.ReadValuesBool(serviceName + ".allow_executables"),
+			allowMacros:                  readValues.ReadValuesBool(serviceName + ".allow_macros"),
+			allowInvalidFiles:            readValues.ReadValuesBool(serviceName + ".allow_invalid_files"),
+			allowXmlExternalEntities:     readValues.ReadValuesBool(serviceName + ".allow_xml_external_entities"),
+			allowPasswordProtectedFiles:  readValues.ReadValuesBool(serviceName + ".allow_password_protected_files"),
+			allowInsecureDeserialization: readValues.ReadValuesBool(serviceName + ".allow_insecure_deserialization"),
+			allowHtml:                    readValues.ReadValuesBool(serviceName + ".allow_html"),
 		}
 	})
 }

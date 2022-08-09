@@ -24,14 +24,21 @@
 title = "ICAP configuration file"
 
 [app]
-log_level = "debug" # the log levels for tha app, available values: info-->logging the overall progress of the app, debug --> log everything including errors, error --> log infos and just errors
-write_logs_to_console= false
+log_level = "info" # the log levels for tha app, available values: info-->logging the overall progress of the app, debug --> log everything including errors, error --> log infos and just errors
+write_logs_to_console = true
+log_service_url = "http://logging-transaction-logging-api:8080/upload"
 log_flush_duration = 2
 port = 1344
-services= ["glasswall" , "echo", "clamav","cloudmersive"]
+resp_scanner_vendor_shadow = "none"
+req_scanner_vendor_shadow = "none"
+preview_bytes = "1024" #byte
+preview_enabled = true# options send preview header or not
+propagate_error = true
+service_caption ="Go-ICAP server - glasswall Rebuild service"
+services= ["echo", "cloudmersive"]
+timeout = 25
 verify_server_cert=false
-#I worked on project using Golang which extracts uploaded files and before uploading and downloaded files
-# before downloading and send it to api to scan it before uploading/downloading it.
+debugging_headers=true
 
 [glasswall]
 vendor = "glasswall"
@@ -108,11 +115,13 @@ fail_threshold = 2
 #max file size value from 1 to 9223372036854775807, and value of zero means unlimited
 max_filesize = 0 #bytes
 return_original_if_max_file_size_exceeded=false
-bypass_extensions = []
-process_extensions = ["*"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
+return_400_if_file_ext_rejected=false
+bypass_extensions = ["*"]
+process_extensions = [] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
 reject_extensions = []
 base_url = "$_CLOUDAPI_URL" #
 scan_endpoint = "/virus/scan/file/advanced"
+policy = ""
 api_key = "$_AUTH_TOKENS"
 allow_executables = false
 allow_invalid_files = false
@@ -120,7 +129,9 @@ allow_scripts = false
 allow_password_protected_files = false
 allow_macros = false
 allow_xml_external_entities = false
-restrict_file_types = false
+allow_html = false
+allow_insecure_deserialization = false
+restrict_file_types = ".pdf"
 
 
 
