@@ -4,15 +4,15 @@
 </p>
 
 <p align="center">
-    <a href="https://github.com/k8-proxy/go-icap-server/actions/workflows/build.yml">
-        <img src="https://github.com/k8-proxy/go-icap-server/actions/workflows/build.yml/badge.svg"/>
+    <a href="https://github.com/egirna/icapeg/actions/workflows/build.yml">
+        <img src="https://github.com/egirna/icapeg/actions/workflows/build.yml/badge.svg"/>
     </a>
-    <a href="https://codecov.io/gh/MahmoudRabee/icapeg">
-        <img src="https://codecov.io/gh/MahmoudRabee/icapeg/branch/restructure/graph/badge.svg?token=5LFS8J70EX"/>
-    </a>   
-    <a href="https://goreportcard.com/report/github.com/k8-proxy/go-icap-server">
+    <a href="https://codecov.io/gh/egirna/icapeg">
+        <img src="https://codecov.io/gh/egirna/icapeg/branch/master/graph/badge.svg?token=HRMICTHXBQ)"/>
+    </a>	    
+    <!-- <a href="https://goreportcard.com/report/github.com/k8-proxy/go-icap-server">
       <img src="https://goreportcard.com/badge/k8-proxy/go-icap-server" alt="Go Report Card">
-    </a>
+    </a> -->
 	<a href="https://github.com/egirna/icapeg/pulls">
         <img src="https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat" alt="Contributions welcome">
     </a>
@@ -40,9 +40,9 @@ Before starting to play with ICAPeg, make sure you have the following things in 
 
 1. **Golang**(latest enough to be able to use go mod)
 
-   You should install at least **go version 1.16**.
+     You should install at least **go version 1.16**.
 
-   You can get how to **install Golang** from [here](https://go.dev/doc/install).
+     You can get how to **install Golang** from [here](https://go.dev/doc/install).
 
 2. A **proxy** server
 
@@ -54,9 +54,9 @@ Before starting to play with ICAPeg, make sure you have the following things in 
   $ git clone https://github.com/egirna/icapeg.git
   ```
 
-4. Run the project with the default configuration in **config.toml** file
+4. Run the project with the default configuration in **config.toml** file 
 
-1. Run the following command in the directory where you've installed **ICAPeg**
+  1. Run the following command in the directory where you've installed **ICAPeg**
 
 ```bash
 $ cd ~/ICAPeg
@@ -90,7 +90,7 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
 
   - ### Config.toml file sections
 
-    - #### **[app] section**
+    - #### **[app] section** 
 
       - This section includes the configuration variables that are responsible for the application overall like the port number and current services integrated with **ICAPeg**.
 
@@ -136,12 +136,8 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
           The array that contains integrated services names with **ICAPeg**, possible values:
 
           - Integrated services names with **ICAPeg** (ex: ["echo"]).
-        - **verify_server_cert**
 
-          Controls whether a client verifies the server's certificate
-          - true
-          - false
-      - **[echo] section**
+      - **[echo] section** 
 
         >  **Note**: Variables explained in **echo** service are mandatory with any service integrated with **ICAPeg**.
 
@@ -166,117 +162,117 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
         scan_endpoint = "/api/rebuild/file"
         api_key = "$_AUTH_TOKENS"
         ```
-
+        
         - ### **Mandatory variables (Variables that should any service has)**
-
+        
           - **vendor**
-
+        
             The name of the vendor's service, possible values:
-
+        
             - The vendor of that service (ex: **"echo"**)
-
+        
           - **service_caption**
-
+        
             Service caption header value.
-
+        
           - **service_tag**
-
-            Service tag header value.
-
+        
+            Service caption header value.
+        
           - **req_mode**
-
+        
             Boolean variable that indicates to wether **request mode** is enabled or not, possible values:
-
+        
             - **true**: Request mode is enabled.
             - **false**: Request mode is disabled.
-
+        
             Get more details about **request mode** from [here](https://datatracker.ietf.org/doc/html/rfc3507#section-3.1).
-
+        
           - **resp_mode**
-
+        
             Boolean variable that indicates to wether **response mode** is enabled or not, possible values:
-
+        
             - **true**: Response mode is enabled.
             - **false**: Response mode is disabled.
-
+        
             Get more details about **response mode** from [here](https://datatracker.ietf.org/doc/html/rfc3507#section-3.2).
-
+        
           - **shadow_service**
-
+        
             Boolean variable that indicates to wether **shadow service mode** is enabled or not, possible values:
-
+        
             - **true**: Shadow service mode is enabled.
             - **false**: Shadow service mode is disabled.
-
+        
             > **Note**: Shadow servie mode is used for debugging purposes. it means that when user/client sent a request to **ICAPeg**, **ICAPeg** will send an **ICAP** response with **204 (No modifications) ICAP status code** incase **ICAP** request has (**Allow: 204**) header or with **200 (OK) ICAP status code** with the **original HTTP message** incase **ICAP** request hasn't (**Allow: 204**) header.
-
+        
           - **preview_enabled**
-
+        
             Boolean variable that indicates to wether **message preview** is enabled or not, possible values:
-
+        
             - **true**: Message Preview is enabled.
             - **false**: Message Preview is disabled.
-
+        
             Get more details about **Message Preview** from [here](https://datatracker.ietf.org/doc/html/rfc3507#section-4.5).
-
+        
           - **preview_bytes**
-
+        
             It indicates how many bytes of preview are needed for a particular **ICAP** application on a per-resource basis, possible values:
-
+        
             - Any string numeric value
-
+        
           - **timeout**
-
+        
             It indicates to How many seconds that **ICAP will return 408 - Request timeout** after, possible value:
-
+        
             - Any integer value.
-
+        
         - ### **Optional variables** (Variables that depends on the service)
-
-          > **Note:**
+        
+          > **Note:** 
           >
           > - You may not use these variables in your service and you may use, It depends on your service and It's up to you.
           > - We will pretend that this service is for file processing and it sends that file to an external api to process it then it gets it back again, So all optional variables depends on that scenario in this service. (It's just a fake scenario service can do any thing not just for processing files).
-
+        
           - **max_filesize**
-
+        
             It's the maximum **HTTP** message file size that service can process , possible values:
-
+        
             - Any valid integer value.
-
+        
           - **return_original_if_max_file_size_exceeded**
-
+        
             Boolean variable that indicates to wether service should return the original file if the file size exceeds the maximum file size or not, possible values:
-
+        
             - **true**: Returning the original file.
             - **false**: Returning **400 Bad request**.
-
+        
             Get more details about **request mode** from [here](https://datatracker.ietf.org/doc/html/rfc3507#section-3.1).
-
+        
           - **bypass_extensions**
-
+        
             An Array that contains the extensions of that service can't process if the **HTTP** message contains a file.
-
+        
             - Any valid file extenstions.
-
+        
           - **process_extensions**
-
+        
             An Array that contains the extensions of that service canprocess if the **HTTP** message contains a file.
-
+        
             - Any valid file extenstions.
-
+        
           - **base_url**
-
+        
             The external **API URL** that service sends the files through a request to it.
-
+        
           - **scan_endpoint**
-
+        
             Endoint of the exyernal **API URL** that service sends the files through a request to it..
-
+        
           - **api_key**
-
+        
             The key of the external **API** that service sends the files through a request to it.
-
+        
 
 ## Adding a new service ot ICAPeg
 
