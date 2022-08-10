@@ -1,6 +1,6 @@
 <h1 align="center">Go ICAP Server</h1>
 <p align="center">
-    <em> k8-go-icap server.</em>
+    <em>ICAPeg Server.</em>
 </p>
 
 <p align="center">
