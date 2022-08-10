@@ -235,6 +235,7 @@ def test_mode(mode=''):
     time.sleep(3)
 
         # test  Without Preview (Server Side) 
+    subprocess.run(['mv ./testing/config.toml ./config.toml'],shell=True)
     reconfigure("echo", "preview_enabled", False)
     style.header("***** Test " + modeName + " mode echo service Without Preview (Server Side) *****")
     for row in data:
@@ -301,7 +302,6 @@ def test_mode(mode=''):
             expected = "OK"
             inputfile = './testing/' + fileName
             command = 'c-icap-client -i 127.0.0.1  -p 1344 -s '+ service + ' -f '+ inputfile +' -o ./testing/output '+ options +' -method '+ method +' -w 100 -v -no204'
-            print(command)
             is_mode_working(fileName,expected, command)
 
 def icap_client_istag(command):
@@ -393,6 +393,7 @@ def test_istag():
             is_tags_matched(IStag, tag)
 
         # test with no preview (server side)
+        subprocess.run(['mv ./testing/config.toml ./config.toml'],shell=True)
         reconfigure("echo", "preview_enabled", False)
         style.yellow(service + ":  with no preview (server side)")
         for row in data:

@@ -36,6 +36,7 @@ func (c *Clamav) Processing(partial bool) (int, interface{}, map[string]string) 
 	}
 	fileExtension := utils.GetMimeExtension(file.Bytes(), contentType[0], fileName)
 
+
 	//check if the file extension is a bypass extension
 	//if yes we will not modify the file, and we will return 204 No modifications
 	for i := 0; i < 3; i++ {
