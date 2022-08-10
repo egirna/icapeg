@@ -16,6 +16,8 @@ import (
 
 //Processing is a func used for to processing the http message
 func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]string) {
+	serviceHeaders := make(map[string]string)
+
 	// no need to scan part of the file, this service needs all the file at ine time
 	if partial {
 		return utils.Continue, nil, nil
@@ -31,21 +33,42 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 
 	//getting the extension of the file
 	fileExtension := utils.GetMimeExtension(file.Bytes())
+	for i := 0; i < 3; i++ {
+		if v.extArrs[i].Name == "process" {
+			if v.generalFunc.IfFileExtIsX(fileExtension, v.processExts) {
+				break
+			}
+		} else if v.extArrs[i].Name == "reject" {
+			if v.generalFunc.IfFileExtIsX(fileExtension, v.rejectExts) {
+				reason := "File rejected"
+				if v.return400IfFileExtRejected {
+					return utils.BadRequestStatusCodeStr, nil, serviceHeaders
+				}
+				errPage := v.generalFunc.GenHtmlPage("service/unprocessable-file.html", reason, v.httpMsg.Request.RequestURI)
+				v.httpMsg.Response = v.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
+				v.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
+				return utils.OkStatusCodeStr, v.httpMsg.Response, serviceHeaders
+			}
+		} else if v.extArrs[i].Name == "bypass" {
+			if v.generalFunc.IfFileExtIsX(fileExtension, v.bypassExts) {
+				fileAfterPrep, httpMsg := v.generalFunc.IfICAPStatusIs204(v.methodName, utils.NoModificationStatusCodeStr,
+					file, false, reqContentType, v.httpMsg)
+				if fileAfterPrep == nil && httpMsg == nil {
+					return utils.InternalServerErrStatusCodeStr, nil, nil
+				}
 
-	//check if the file extension is a bypass extension
-	//if yes we will not modify the file, and we will return 204 No modifications
-	err = v.generalFunc.IfFileExtIsBypass(fileExtension, v.bypassExts)
-	if err != nil {
-		return utils.NoModificationStatusCodeStr,
-			nil, nil
-	}
-
-	//check if the file extension is a bypass extension and not a process extension
-	//if yes we will not modify the file, and we will return 204 No modifications
-	err = v.generalFunc.IfFileExtIsBypassAndNotProcess(fileExtension, v.bypassExts, v.processExts)
-	if err != nil {
-		return utils.NoModificationStatusCodeStr,
-			nil, nil
+				//returning the http message and the ICAP status code
+				switch msg := httpMsg.(type) {
+				case *http.Request:
+					msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
+					return utils.NoModificationStatusCodeStr, msg, serviceHeaders
+				case *http.Response:
+					msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
+					return utils.NoModificationStatusCodeStr, msg, serviceHeaders
+				}
+				return utils.NoModificationStatusCodeStr, nil, serviceHeaders
+			}
+		}
 	}
 
 	//check if the file size is greater than max file size of the service
@@ -75,10 +98,17 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 		}
 		return utils.InternalServerErrStatusCodeStr, nil, nil
 	}
-	serviceHeaders := make(map[string]string)
 	serviceHeaders["Virustotal-Total"] = total
 	serviceHeaders["Virustotal-Positives"] = score
 
+	scoreInt, err := strconv.Atoi(score)
+	if scoreInt > 0 {
+		reason := "File is not safe"
+		errPage := v.generalFunc.GenHtmlPage("service/unprocessable-file.html", reason, v.httpMsg.Request.RequestURI)
+		v.httpMsg.Response = v.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
+		v.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
+		return utils.OkStatusCodeStr, v.httpMsg.Response, serviceHeaders
+	}
 	//returning the scanned file if everything is ok
 	scannedFile = v.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, v.methodName)
 	return utils.OkStatusCodeStr, v.generalFunc.ReturningHttpMessageWithFile(v.methodName, scannedFile), serviceHeaders

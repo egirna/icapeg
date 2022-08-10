@@ -2,117 +2,28 @@ package clamav
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/dutchcoders/go-clamd"
-	"github.com/spf13/viper"
-	"icapeg/readValues"
-	general_functions "icapeg/service/services-utilities/general-functions"
-	"net/http"
-	"strconv"
-
 	"icapeg/utils"
 	"io"
+	"log"
+	"net/http"
+	"strconv"
 	"time"
 )
 
-// the clamav constants
-const (
-	ClamavMalStatus = "FOUND"
-)
-
-// Clamav represents the informations regarding the clamav service
-type Clamav struct {
-	httpMsg                *utils.HttpMsg
-	elapsed                time.Duration
-	serviceName            string
-	methodName             string
-	maxFileSize            int
-	bypassExts             []string
-	processExts            []string
-	SocketPath             string
-	WaitTimeOut            time.Duration
-	badFileStatus          []string
-	okFileStatus           []string
-	respSupported          bool
-	reqSupported           bool
-	returnOrigIfMaxSizeExc bool
-	generalFunc            *general_functions.GeneralFunc
-}
-
-// NewClamavService returns a new populated instance of the clamav service
-func NewClamavService(serviceName, methodName string, httpMsg *utils.HttpMsg) *Clamav {
-	return &Clamav{
-		httpMsg:                httpMsg,
-		serviceName:            serviceName,
-		methodName:             methodName,
-		maxFileSize:            readValues.ReadValuesInt(serviceName + ".max_filesize"),
-		bypassExts:             readValues.ReadValuesSlice(serviceName + ".bypass_extensions"),
-		processExts:            readValues.ReadValuesSlice(serviceName + ".process_extensions"),
-		SocketPath:             viper.GetString("clamav.socket_path"),
-		WaitTimeOut:            viper.GetDuration("clamav.wait_timeout") * time.Second,
-		badFileStatus:          viper.GetStringSlice("clamav.bad_file_status"),
-		okFileStatus:           viper.GetStringSlice("clamav.ok_file_status"),
-		respSupported:          true,
-		reqSupported:           false,
-		returnOrigIfMaxSizeExc: readValues.ReadValuesBool(serviceName + ".return_original_if_max_file_size_exceeded"),
-		generalFunc:            general_functions.NewGeneralFunc(httpMsg),
-	}
-}
-
-//// ScanFileStream scans a file stream using clamav
-//func (c *Clamav) ScanFileStream(file io.Reader, fileMetaInfo dtos.FileMetaInfo) (*dtos.SampleInfo, error) {
-//
-//	clmd := clamd.NewClamd(c.SocketPath)
-//
-//	response, err := clmd.ScanStream(file, make(chan bool))
-//
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	result := &clamd.ScanResult{}
-//	scanFinished := false
-//
-//	go func() {
-//		for s := range response {
-//			result = s
-//		}
-//		scanFinished = true
-//	}()
-//
-//	time.Sleep(c.WaitTimeOut)
-//
-//	if !scanFinished {
-//		return nil, errors.New("scanning time out")
-//	}
-//
-//	severity := "ok"
-//
-//	if result.Status == ClamavMalStatus {
-//		severity = "malicious"
-//	}
-//
-//	fileSizeStr := fmt.Sprintf("%.2fmb", utils.ByteToMegaBytes(int(fileMetaInfo.FileSize)))
-//
-//	si := &dtos.SampleInfo{
-//		FileName:           fileMetaInfo.FileName,
-//		SampleType:         fileMetaInfo.FileType,
-//		SampleSeverity:     severity,
-//		FileSizeStr:        fileSizeStr,
-//		VTIScore:           "N/A",
-//		SubmissionFinished: scanFinished,
-//	}
-//
-//	return si, nil
-//}
-
 func (c *Clamav) Processing(partial bool) (int, interface{}, map[string]string) {
+	serviceHeaders := make(map[string]string)
+	// no need to scan part of the file, this service needs all the file at ine time
+	if partial {
+		return utils.Continue, nil, nil
+	}
+
 	isGzip := false
 
 	//extracting the file from http message
 	file, reqContentType, err := c.generalFunc.CopyingFileToTheBuffer(c.methodName)
 	if err != nil {
-		return utils.InternalServerErrStatusCodeStr, nil, nil
+		return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
 	}
 
 	//getting the extension of the file
@@ -120,18 +31,42 @@ func (c *Clamav) Processing(partial bool) (int, interface{}, map[string]string) 
 
 	//check if the file extension is a bypass extension
 	//if yes we will not modify the file, and we will return 204 No modifications
-	err = c.generalFunc.IfFileExtIsBypass(fileExtension, c.bypassExts)
-	if err != nil {
-		return utils.NoModificationStatusCodeStr,
-			nil, nil
-	}
+	for i := 0; i < 3; i++ {
+		if c.extArrs[i].Name == "process" {
+			if c.generalFunc.IfFileExtIsX(fileExtension, c.processExts) {
+				break
+			}
+		} else if c.extArrs[i].Name == "reject" {
+			if c.generalFunc.IfFileExtIsX(fileExtension, c.rejectExts) {
+				reason := "File rejected"
+				if c.return400IfFileExtRejected {
+					return utils.BadRequestStatusCodeStr, nil, serviceHeaders
+				}
+				errPage := c.generalFunc.GenHtmlPage("service/unprocessable-file.html", reason, c.httpMsg.Request.RequestURI)
+				c.httpMsg.Response = c.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
+				c.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
+				return utils.OkStatusCodeStr, c.httpMsg.Response, serviceHeaders
+			}
+		} else if c.extArrs[i].Name == "bypass" {
+			if c.generalFunc.IfFileExtIsX(fileExtension, c.bypassExts) {
+				fileAfterPrep, httpMsg := c.generalFunc.IfICAPStatusIs204(c.methodName, utils.NoModificationStatusCodeStr,
+					file, false, reqContentType, c.httpMsg)
+				if fileAfterPrep == nil && httpMsg == nil {
+					return utils.InternalServerErrStatusCodeStr, nil, nil
+				}
 
-	//check if the file extension is a bypass extension and not a process extension
-	//if yes we will not modify the file, and we will return 204 No modifications
-	err = c.generalFunc.IfFileExtIsBypassAndNotProcess(fileExtension, c.bypassExts, c.processExts)
-	if err != nil {
-		return utils.NoModificationStatusCodeStr,
-			nil, nil
+				//returning the http message and the ICAP status code
+				switch msg := httpMsg.(type) {
+				case *http.Request:
+					msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
+					return utils.NoModificationStatusCodeStr, msg, serviceHeaders
+				case *http.Response:
+					msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
+					return utils.NoModificationStatusCodeStr, msg, serviceHeaders
+				}
+				return utils.NoModificationStatusCodeStr, nil, serviceHeaders
+			}
+		}
 	}
 
 	//check if the file size is greater than max file size of the service
@@ -140,7 +75,7 @@ func (c *Clamav) Processing(partial bool) (int, interface{}, map[string]string) 
 		status, file, httpMsg := c.generalFunc.IfMaxFileSeizeExc(c.returnOrigIfMaxSizeExc, file, c.maxFileSize)
 		fileAfterPrep, httpMsg := c.generalFunc.IfStatusIs204WithFile(c.methodName, status, file, isGzip, reqContentType, httpMsg)
 		if fileAfterPrep == nil && httpMsg == nil {
-			return utils.InternalServerErrStatusCodeStr, nil, nil
+			return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
 		}
 		switch msg := httpMsg.(type) {
 		case *http.Request:
@@ -153,47 +88,56 @@ func (c *Clamav) Processing(partial bool) (int, interface{}, map[string]string) 
 		return status, nil, nil
 	}
 
-	// function to reverse string
+	clmd := clamd.NewClamd(c.SocketPath)
+	response, err := clmd.ScanStream(bytes.NewReader(file.Bytes()), make(chan bool))
+	if err != nil {
+		log.Println("error in scanning")
+		return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
+	}
 
-	//check if the body of the http message is compressed in Gzip or not
-	isGzip = c.generalFunc.IsBodyGzipCompressed(c.methodName)
-	//if it's compressed, we decompress it to send it to Glasswall service
-	if isGzip {
-		if file, err = c.generalFunc.DecompressGzipBody(file); err != nil {
-			return utils.InternalServerErrStatusCodeStr, nil, nil
+	result := &clamd.ScanResult{}
+	scanFinished := false
+
+	go func() {
+		for s := range response {
+			result = s
 		}
+		scanFinished = true
+	}()
+
+	time.Sleep(5 * time.Second)
+
+	if !scanFinished {
+		log.Println("Scannng time out")
+		return utils.RequestTimeOutStatusCodeStr, nil, serviceHeaders
 	}
 
-	clamav := clamd.NewClamd("/tmp/clamd.socket")
-
-	reader := bytes.NewReader(clamd.EICAR)
-	response, err := clamav.ScanStream(reader, make(chan bool))
-
-	for s := range response {
-		fmt.Printf("%v %v\n", s, err)
+	if result.Status == ClamavMalStatus {
+		reason := "File is not safe"
+		errPage := c.generalFunc.GenHtmlPage("service/unprocessable-file.html", reason, c.httpMsg.Request.RequestURI)
+		c.httpMsg.Response = c.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
+		c.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
+		return utils.OkStatusCodeStr, c.httpMsg.Response, serviceHeaders
 	}
 
-	return 500, nil, nil
-}
+	//returning the scanned file if everything is ok
+	fileAfterPrep, httpMsg := c.generalFunc.IfICAPStatusIs204(c.methodName, utils.NoModificationStatusCodeStr,
+		file, false, reqContentType, c.httpMsg)
+	if fileAfterPrep == nil && httpMsg == nil {
+		return utils.InternalServerErrStatusCodeStr, nil, nil
+	}
 
-// GetBadFileStatus returns the bad_file_status slice of the service
-func (c *Clamav) GetBadFileStatus() []string {
-	return c.badFileStatus
-}
+	//returning the http message and the ICAP status code
+	switch msg := httpMsg.(type) {
+	case *http.Request:
+		msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
+		return utils.NoModificationStatusCodeStr, msg, serviceHeaders
+	case *http.Response:
+		msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
+		return utils.NoModificationStatusCodeStr, msg, serviceHeaders
+	}
+	return utils.NoModificationStatusCodeStr, nil, serviceHeaders
 
-// GetOkFileStatus returns the ok_file_status slice of the service
-func (c *Clamav) GetOkFileStatus() []string {
-	return c.okFileStatus
-}
-
-// RespSupported returns the respSupported field of the service
-func (c *Clamav) RespSupported() bool {
-	return c.respSupported
-}
-
-// ReqSupported returns the reqSupported field of the service
-func (c *Clamav) ReqSupported() bool {
-	return c.reqSupported
 }
 
 func (c *Clamav) ISTagValue() string {
