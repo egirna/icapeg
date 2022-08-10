@@ -149,10 +149,9 @@ func (w *respWriter) WriteHeader(code int, httpMessage interface{}, hasBody bool
 			requestBody, _ := ioutil.ReadAll(msg.Body)
 			w.Write(requestBody)
 		case *http.Request:
-			if msg.Method != http.MethodHead {
-				requestBody, _ := ioutil.ReadAll(msg.Body)
-				w.Write(requestBody)
-			}
+			requestBody, _ := ioutil.ReadAll(msg.Body)
+			w.Write(requestBody)
+
 		}
 	}
 
