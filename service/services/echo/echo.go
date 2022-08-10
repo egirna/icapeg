@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-//Processing is a func used for to processing the http message
+// Processing is a func used for to processing the http message
 func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 	serviceHeaders := make(map[string]string)
 	// no need to scan part of the file, this service needs all the file at ine time
@@ -24,9 +24,23 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 	if err != nil {
 		return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
 	}
-
 	//getting the extension of the file
-	fileExtension := utils.GetMimeExtension(file.Bytes())
+	var contentType []string
+	if len(contentType) == 0 {
+		contentType = append(contentType, "")
+	}
+	var fileName string
+	if e.methodName == utils.ICAPModeReq {
+		contentType = e.httpMsg.Request.Header["Content-Type"]
+		fileName = utils.GetFileName(e.httpMsg.Request)
+	} else {
+		contentType = e.httpMsg.Response.Header["Content-Type"]
+		fileName = utils.GetFileName(e.httpMsg.Response)
+	}
+	if len(contentType) == 0 {
+		contentType = append(contentType, "")
+	}
+	fileExtension := utils.GetMimeExtension(file.Bytes(), contentType[0], fileName)
 
 	//check if the file extension is a bypass extension
 	//if yes we will not modify the file, and we will return 204 No modifications

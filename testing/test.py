@@ -1,6 +1,7 @@
 from ast import Is
 from email.header import Header
 from inspect import istraceback
+import os.path
 import subprocess
 import sys
 import hashlib
@@ -18,8 +19,6 @@ time.sleep(3)
 
 
 class style:
-
-
     def header(text):
         COLOR = '\033[1;37;45m'
         ENDC = '\033[0m'
@@ -91,10 +90,14 @@ def hashfile(file):
 	return sha256.hexdigest()
 
 def Compare_files(file1, file2):
-    f1_hash = hashfile(file1)
-    f2_hash = hashfile(file2)
-
-    return f1_hash == f2_hash
+    file1_exist = os.path.exists(file1)
+    file2_exist = os.path.exists(file2)
+    if (file1_exist and file2_exist):
+        f1_hash = hashfile(file1)
+        f2_hash = hashfile(file2)
+        return f1_hash == f2_hash
+    else:
+        return False
   
 def is_service_exist(testCase, command):
     global passed_tests, failed_tests
@@ -133,7 +136,7 @@ def test_service_name():
     file.close()
 
 def reconfigure(service, model, value):
-    subprocess.run(['cp ./config.toml ./testing '],shell=True)
+    subprocess.run(['cp ./config.toml ./testing'],shell=True)
     data = toml.load("./testing/config.toml") 
     data[service][model] = value 
     f = open("./config.toml",'w')
@@ -147,8 +150,9 @@ def reconfigure(service, model, value):
     
 def is_mode_working(test_filename,test_result, command):
     global passed_tests, failed_tests
+    subprocess.run(['touch ./testing/output && rm ./testing/output'],shell=True)
+
     result_statusCode, result_statusMessage = icap_client(command)
-    subprocess.run(['touch ./testing/output'],shell=True)
     ismatched = Compare_files('./testing/'+test_filename, './testing/output')
     if (ismatched):
         result = "OK"

@@ -27,7 +27,15 @@ func (c *Clamav) Processing(partial bool) (int, interface{}, map[string]string) 
 	}
 
 	//getting the extension of the file
-	fileExtension := utils.GetMimeExtension(file.Bytes())
+	contentType := c.httpMsg.Response.Header["Content-Type"]
+	var fileName string
+	if c.methodName == utils.ICAPModeReq {
+		fileName = utils.GetFileName(c.httpMsg.Request)
+	} else {
+		fileName = utils.GetFileName(c.httpMsg.Response)
+	}
+	fileExtension := utils.GetMimeExtension(file.Bytes(), contentType[0], fileName)
+
 
 	//check if the file extension is a bypass extension
 	//if yes we will not modify the file, and we will return 204 No modifications

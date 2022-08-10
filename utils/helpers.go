@@ -30,38 +30,57 @@ func GetContentType(r *http.Response) string {
 }
 
 // GetMimeExtension returns the mime type extension of the data
-func GetMimeExtension(data []byte) string {
+func GetMimeExtension(data []byte, contentType string, filename string) string {
 	kind, _ := filetype.Match(data)
-
+	exts := map[string]string{"application/xml": "xml", "application/html": "html", "text/html": "html", "text/json": "html", "application/json": "json", "text/plain": "txt"}
+	contentType = strings.Split(contentType, ";")[0]
+	if kind == filetype.Unknown {
+		if _, ok := exts[contentType]; ok {
+			return exts[contentType]
+		}
+	}
+	if kind == filetype.Unknown {
+		filenameArr := strings.Split(filename, ".")
+		if len(filenameArr) > 1 {
+			return filenameArr[len(filenameArr)-1]
+		}
+	}
 	if kind == filetype.Unknown {
 		return Unknown
 	}
-
 	return kind.Extension
 
 }
 
 // GetFileName returns the filename from the http request
-func GetFileName(req *http.Request) string {
-	// req.RequestURI  inserting dummy response if the http request is nil
-	var Requrl string
-	if req == nil || req.RequestURI == "" {
-		Requrl = "http://www.example/images/unnamed_file"
+func GetFileName(httpMsg interface{}) string {
+	switch msg := httpMsg.(type) {
+	case *http.Request:
+		var Requrl string
+		if msg == nil || msg.RequestURI == "" {
+			Requrl = "http://www.example/images/unnamed_file"
 
-	} else {
-		Requrl = req.RequestURI
-		if Requrl[len(Requrl)-1] == '/' {
-			Requrl = Requrl[0 : len(Requrl)-1]
+		} else {
+			Requrl = msg.RequestURI
+			if Requrl[len(Requrl)-1] == '/' {
+				Requrl = Requrl[0 : len(Requrl)-1]
+			}
+
 		}
+		u, _ := url.Parse(Requrl)
 
+		uu := strings.Split(u.EscapedPath(), "/")
+
+		if len(uu) > 0 {
+			return uu[len(uu)-1]
+		}
+		return "unnamed_file"
+
+	case *http.Response:
+		return "unnamed_file"
 	}
-	u, _ := url.Parse(Requrl)
 
-	uu := strings.Split(u.EscapedPath(), "/")
-
-	if len(uu) > 0 {
-		return uu[len(uu)-1]
-	}
+	// req.RequestURI  inserting dummy response if the http request is nil
 	return "unnamed_file"
 }
 

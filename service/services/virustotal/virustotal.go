@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-//Processing is a func used for to processing the http message
+// Processing is a func used for to processing the http message
 func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]string) {
 	serviceHeaders := make(map[string]string)
 
@@ -32,7 +32,14 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 	}
 
 	//getting the extension of the file
-	fileExtension := utils.GetMimeExtension(file.Bytes())
+	contentType := v.httpMsg.Response.Header["Content-Type"]
+	var fileName string
+	if v.methodName == utils.ICAPModeReq {
+		fileName = utils.GetFileName(v.httpMsg.Request)
+	} else {
+		fileName = utils.GetFileName(v.httpMsg.Response)
+	}
+	fileExtension := utils.GetMimeExtension(file.Bytes(), contentType[0], fileName)
 	for i := 0; i < 3; i++ {
 		if v.extArrs[i].Name == "process" {
 			if v.generalFunc.IfFileExtIsX(fileExtension, v.processExts) {
@@ -114,7 +121,7 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 	return utils.OkStatusCodeStr, v.generalFunc.ReturningHttpMessageWithFile(v.methodName, scannedFile), serviceHeaders
 }
 
-//SendFileToScan is a function to send the file to GW API
+// SendFileToScan is a function to send the file to GW API
 func (v *Virustotal) SendFileToScan(f *bytes.Buffer) (string, string, error) {
 	urlStr := v.ScanUrl
 
