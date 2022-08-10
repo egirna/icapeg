@@ -7,7 +7,7 @@
     <a href="https://github.com/egirna/icapeg/actions/workflows/build.yml">
         <img src="https://github.com/egirna/icapeg/actions/workflows/build.yml/badge.svg"/>
     </a>
-    <a href="https://codecov.io/gh/egirna/icapegr">
+    <a href="https://codecov.io/gh/egirna/icapeg">
         <img src="https://codecov.io/gh/egirna/icapeg/branch/master/graph/badge.svg?token=HRMICTHXBQ)"/>
     </a>	    
     <!-- <a href="https://goreportcard.com/report/github.com/k8-proxy/go-icap-server">
