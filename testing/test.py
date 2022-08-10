@@ -280,14 +280,14 @@ def test_mode(mode=''):
 
 
     # test  With Preview 0 (client Side) 
-    style.header("***** Test " + modeName + " mode echo service With Preview 0 (client Side) *****")
-    for row in data:
-        service = 'echo'
-        fileName = row[0]
-        expected = "OK"
-        inputfile = './testing/' + fileName
-        command = 'c-icap-client -i 127.0.0.1  -p 1344 -s '+ service + ' -f '+ inputfile +' -o ./testing/output '+ options +' -w 0 -v -no204'
-        is_mode_working(fileName,expected, command)
+    # style.header("***** Test " + modeName + " mode echo service With Preview 0 (client Side) *****")
+    # for row in data:
+    #     service = 'echo'
+    #     fileName = row[0]
+    #     expected = "OK"
+    #     inputfile = './testing/' + fileName
+    #     command = 'c-icap-client -i 127.0.0.1  -p 1344 -s '+ service + ' -f '+ inputfile +' -o ./testing/output '+ options +' -w 0 -v -no204'
+    #     is_mode_working(fileName,expected, command)
 
     # test  With preview exceeding limit and file size sent 
     style.header("***** Test " + modeName + " mode echo service With Preview exceeding limit  *****")
