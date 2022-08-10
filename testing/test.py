@@ -151,7 +151,23 @@ def reconfigure(service, model, value):
     subprocess.run(['kill -9 $(pidof icapeg)'],shell=True)
     subprocess.run(['./icapeg 2> /dev/null &'],shell=True)
     time.sleep(10)
-    
+
+def reconfigure_multi(*arr):
+    subprocess.run(['cp ./config.toml ./testing'],shell=True)
+    data = toml.load("./testing/config.toml") 
+    for values in arr:
+        service, model, value = values
+        data[service][model] = value 
+        
+    f = open("./config.toml",'w')
+    toml.dump(data, f)
+    f.close()
+
+    # kill icap and restart 
+    subprocess.run(['kill -9 $(pidof icapeg)'],shell=True)
+    subprocess.run(['./icapeg 2> /dev/null &'],shell=True)
+    time.sleep(10)
+
 def is_mode_working(test_filename,test_result, command):
     global passed_tests, failed_tests
     subprocess.run(['touch ./testing/output && rm ./testing/output'],shell=True)
@@ -295,8 +311,8 @@ def test_mode(mode=''):
 
     # test  With request methods GET POST PUT CONNECT  
     style.header("***** Test " + modeName + " mode echo service With HTTP Methods *****")
-    # methods = ['GET', 'POST', 'PUT', 'CONNECT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS', 'TRACE', 'FackeMehod'] 
-    methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'TRACE', 'FackeMehod'] 
+    methods = ['GET', 'POST', 'PUT', 'CONNECT', 'PATCH', 'DELETE', 'OPTIONS', 'TRACE', 'FackeMehod'] 
+    # methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'TRACE', 'FackeMehod'] 
     for method in methods:
         style.yellow("Method: " + method)
         for row in data:
@@ -306,6 +322,20 @@ def test_mode(mode=''):
             inputfile = './testing/' + fileName
             command = 'c-icap-client -i 127.0.0.1  -p 1344 -s '+ service + ' -f '+ inputfile +' -o ./testing/output '+ options +' -method '+ method +' -w 100 -v -no204'
             is_mode_working(fileName,expected, command)
+    if (mode == "req"):
+        style.yellow("Method: HEAD" )
+        data = toml.load("./config.toml") 
+        command = 'c-icap-client -i 127.0.0.1  -p 1344 -s echo -req http://www.example.com -method HEAD -v'
+        test_head_method(command,"200 OK")
+        command = 'c-icap-client -i 127.0.0.1  -p 1344 -s echo -req http://www.example.com -method HEAD -v -no204'
+        test_head_method(command,"200 OK")
+        reconfigure_multi(["echo", "bypass_extensions", ["*"]],["echo", "process_extensions", ["pdf"]])
+        data = toml.load("./config.toml") 
+        command = 'c-icap-client -i 127.0.0.1  -p 1344 -s echo -req http://www.example.com -method HEAD -v'
+        test_head_method(command,"204 No modifications needed")
+        command = 'c-icap-client -i 127.0.0.1  -p 1344 -s echo -req http://www.example.com -method HEAD -v -no204'
+        test_head_method(command,"200 OK")
+
 
 def icap_client_istag(command):
     subprocess.run(['touch ./testing/output && rm -f ./testing/output'],shell=True)
@@ -421,14 +451,30 @@ def test_istag():
                 command = 'c-icap-client -i 127.0.0.1  -p 1344 -s '+ service + ' -f '+ inputfile +' -o ./testing/output ' + ' -method '+ method +' -v'
                 is_tags_matched(IStag, tag)
 
+def test_head_method(command,test_result):
+    global passed_tests, failed_tests
+
+    result_statusCode, result_statusMessage = icap_client(command)
+
+ 
+    resultMessage = result_statusCode + " " + result_statusMessage
+
+    out = " --> result: " + resultMessage + " " + "; expected: " + test_result 
+    
+    if (resultMessage == test_result):
+        style.ok("Test passed", out)
+        passed_tests = passed_tests + 1
+    else : 
+        style.fail("Test Failed", out)
+        failed_tests += 1
 #--------------------------------------
 
 
 
 # -------------------------------------
 # add txt extensions to process_extensions
-reconfigure("echo", "bypass_extensions", ["pdf"])
-reconfigure("echo", "process_extensions", ["*"])
+reconfigure_multi(["echo", "bypass_extensions", ["pdf"]],["echo", "process_extensions", ["*"]])
+
 time.sleep(10)
 # test_service_name()
 test_mode('resp')
