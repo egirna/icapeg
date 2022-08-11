@@ -2,9 +2,9 @@ name: Go
 
 on:
   push:
-    branches: [ "restructure" ]
+    branches: [ "**" ]
   pull_request:
-    branches: [ "restructure" ]
+    branches: [ "**" ]
 
 jobs:
 
