@@ -6,6 +6,7 @@ import (
 	"icapeg/config"
 	"icapeg/icap"
 	"icapeg/service"
+	"icapeg/service/services-utilities/ContentTypes"
 	"icapeg/utils"
 	"io"
 	"io/ioutil"
@@ -98,9 +99,34 @@ func (i *ICAPRequest) RequestInitialization() error {
 func (i *ICAPRequest) RequestProcessing() {
 	partial := false
 
-	//check if there is a preview header in the ICAP request or not
-	if i.req.Header.Get("Preview") != "" && i.req.EndIndicator != "0; ieof" {
-		partial = true
+	if i.methodName != utils.ICAPModeOptions {
+		file := &bytes.Buffer{}
+		fileLen := 0
+		if i.methodName == utils.ICAPModeResp {
+			io.Copy(file, i.req.Response.Body)
+			fileLen = file.Len()
+			i.req.Response.Header.Set(utils.ContentLength, strconv.Itoa(len(file.Bytes())))
+			i.req.Response.Body = io.NopCloser(bytes.NewBuffer(file.Bytes()))
+		} else {
+			reqContentType := ContentTypes.GetContentType(i.req.Request)
+			// getting the file from request and store it in buf as a type of bytes.Buffer
+			file = reqContentType.GetFileFromRequest()
+			fileLen = file.Len()
+			fileBytes := []byte(reqContentType.BodyAfterScanning(file.Bytes()))
+			i.req.Request.Header.Set(utils.ContentLength, strconv.Itoa(len(fileBytes)))
+			i.req.Request.Body = io.NopCloser(bytes.NewBuffer(fileBytes))
+		}
+		if fileLen == 0 {
+			partial = false
+
+		} else {
+			if i.req.Header.Get("Preview") != "" && i.req.EndIndicator != "0; ieof" {
+				partial = true
+			}
+		}
+		if i.req.Header.Get("Preview") != "" && i.req.EndIndicator != "0; ieof" {
+			partial = true
+		}
 	}
 
 	i.HostHeader()
