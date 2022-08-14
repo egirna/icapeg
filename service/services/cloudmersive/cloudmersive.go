@@ -49,6 +49,16 @@ func (c CloudMersive) Processing(partial bool) (int, interface{}, map[string]str
 		fmt.Println(err)
 		return serviceResp.StatusCode, nil, serviceHeaders
 	}
+	var data map[string]interface{}
+	// msg used to read error messages when status is not 200
+	msg := string(body)
+	if serviceResp.StatusCode == 400 && msg == "Invalid input: Input file was empty." {
+		fmt.Println(msg)
+		errPage := c.generalFunc.GenHtmlPage("service/unprocessable-file.html", msg, c.httpMsg.Request.RequestURI)
+		c.httpMsg.Response = c.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
+		c.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
+		return utils.OkStatusCodeStr, c.httpMsg.Response, serviceHeaders
+	}
 
 }
 
