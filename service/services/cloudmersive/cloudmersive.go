@@ -61,6 +61,38 @@ func (c CloudMersive) Processing(partial bool) (int, interface{}, map[string]str
 		c.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
 		return utils.OkStatusCodeStr, c.httpMsg.Response, serviceHeaders
 	}
+	// check CleanResult, if false detect why
+	var reason string
+	reason = ""
+	if data["CleanResult"].(bool) == false {
+		serviceHeaders["CleanResult"] = "false"
+		if data["ContainsExecutable"].(bool) == true && !c.allowExecutables {
+			reason = "executable files not allowed"
+		} else if data["ContainsScript"].(bool) == true && !c.allowScripts {
+			reason = "scripts not allowed"
+		} else if data["ContainsPasswordProtectedFile"].(bool) == true && !c.allowPasswordProtectedFiles {
+			reason = "password protected files not allowed"
+		} else if data["ContainsMacros"].(bool) == true && !c.allowMacros {
+			reason = "macros not allowed"
+		} else if data["ContainsXmlExternalEntities"].(bool) == true && !c.allowXmlExternalEntities {
+			reason = "xml external entities not allowed"
+		} else if data["ContainsInsecureDeserialization"].(bool) == true && !c.allowInsecureDeserialization {
+			reason = "insecure deserialization not allowed"
+		} else if data["ContainsHtml"].(bool) == true && !c.allowHtml {
+			reason = "html not allowed"
+		} else if data["FoundViuses"] == nil {
+			reason = fmt.Sprintln("file type is not allowed, allowed files are %s", c.restrictFileTypes)
+		}
+		if reason != "" {
+			if c.return400IfFileExtRejected {
+				return utils.BadRequestStatusCodeStr, nil, serviceHeaders
+			}
+			errPage := c.generalFunc.GenHtmlPage("service/unprocessable-file.html", reason, c.httpMsg.Request.RequestURI)
+			c.httpMsg.Response = c.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
+			c.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
+			return utils.OkStatusCodeStr, c.httpMsg.Response, serviceHeaders
+		}
+	}
 
 }
 
