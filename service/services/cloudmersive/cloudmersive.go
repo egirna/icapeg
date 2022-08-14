@@ -103,6 +103,10 @@ func (c CloudMersive) Processing(partial bool) (int, interface{}, map[string]str
 			reason += v
 			serviceHeaders["FoundViruses"] += v
 		}
+		errPage := c.generalFunc.GenHtmlPage("service/unprocessable-file.html", reason, c.httpMsg.Request.RequestURI)
+		c.httpMsg.Response = c.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
+		c.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
+		return utils.OkStatusCodeStr, c.httpMsg.Response, serviceHeaders
 	}
 }
 
