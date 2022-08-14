@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"icapeg/utils"
 	"io"
@@ -50,6 +51,7 @@ func (c CloudMersive) Processing(partial bool) (int, interface{}, map[string]str
 		return serviceResp.StatusCode, nil, serviceHeaders
 	}
 	var data map[string]interface{}
+	json.Unmarshal(body, &data)
 	// msg used to read error messages when status is not 200
 	msg := string(body)
 	if serviceResp.StatusCode == 400 && msg == "Invalid input: Input file was empty." {
