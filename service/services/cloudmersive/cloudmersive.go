@@ -108,6 +108,9 @@ func (c CloudMersive) Processing(partial bool) (int, interface{}, map[string]str
 		c.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
 		return utils.OkStatusCodeStr, c.httpMsg.Response, serviceHeaders
 	}
+	serviceHeaders["CleanResult"] = "true"
+	fmt.Println(serviceHeaders)
+	return serviceResp.StatusCode, nil, serviceHeaders
 }
 
 func (c *CloudMersive) SendFileToAPI(f *bytes.Buffer, filename string) (*http.Response, error) {
