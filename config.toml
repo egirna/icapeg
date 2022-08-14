@@ -131,7 +131,7 @@ allow_macros = false
 allow_xml_external_entities = false
 allow_html = false
 allow_insecure_deserialization = false
-restrict_file_types = ".pdf"
+restrict_file_types = ""
 
 
 

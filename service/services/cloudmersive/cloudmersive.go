@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"fmt"
 	"icapeg/utils"
 	"io"
@@ -22,37 +21,35 @@ func (c CloudMersive) Processing(partial bool) (int, interface{}, map[string]str
 		return utils.Continue, nil, nil
 	}
 
+	// ICAP response headers
+	serviceHeaders := make(map[string]string)
 	//extracting the file from http message
 	file, _, err := c.generalFunc.CopyingFileToTheBuffer(c.methodName)
 	if err != nil {
-		return utils.InternalServerErrStatusCodeStr, nil, nil
+		return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
 	}
-	// comparing file extension with restrictFileTypes list
-
+	// extracting file name
 	filename := c.generalFunc.GetFileName()
-	fmt.Println("filename: ", filename)
-	//TODO add file size check
+	//check if the file size is greater than max file size of the service or 3M size, according to account payment plans ,etc
+	if c.maxFileSize != 0 && c.maxFileSize < file.Len() || file.Len() > 3e6 {
+		errPage := c.generalFunc.GenHtmlPage("service/unprocessable-file.html", "file size exceeded maximum allowed size", c.httpMsg.Request.RequestURI)
+		c.httpMsg.Response = c.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
+		c.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
+		return utils.OkStatusCodeStr, c.httpMsg.Response, serviceHeaders
+	}
+	// sending request to cloudmersive api
 	serviceResp, err := c.SendFileToAPI(file, filename)
 	if err != nil {
-		fmt.Println("error 55555\n", err.Error())
-		return serviceResp.StatusCode, nil, nil
+		fmt.Println("error line 44\n", err.Error())
+		return serviceResp.StatusCode, nil, serviceHeaders
 	}
+	// getting response body
 	body, err := ioutil.ReadAll(serviceResp.Body)
 	if err != nil {
 		fmt.Println(err)
-		return serviceResp.StatusCode, nil, nil
+		return serviceResp.StatusCode, nil, serviceHeaders
 	}
-	fmt.Println(serviceResp.StatusCode)
-	fmt.Println(serviceResp.Header)
-	fmt.Println(string(body))
-	// process file response, compare response json with request headers value
-	var data map[string]interface{}
-	json.Unmarshal(body, &data) // Convert JSON data into interface{} type
-	fmt.Println("data after encoding: \n", data)
-	fmt.Println("----------------------------")
-	fmt.Println(data["CleanResult"])
-	// processing headers
-	return serviceResp.StatusCode, nil, nil
+
 }
 
 func (c *CloudMersive) SendFileToAPI(f *bytes.Buffer, filename string) (*http.Response, error) {

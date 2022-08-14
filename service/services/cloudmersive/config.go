@@ -40,10 +40,10 @@ func InitCloudMersiveConfig(serviceName string) {
 	doOnce.Do(func() {
 		cloudMersiveConfig = &CloudMersive{
 			maxFileSize:                  readValues.ReadValuesInt(serviceName + ".max_filesize"),
-			BaseURL:                      readValues.ReadValuesString(serviceName + ".base_url"),
+			BaseURL:                      "https://api.cloudmersive.com",
 			ScanEndPoint:                 readValues.ReadValuesString(serviceName + ".scan_endpoint"),
 			Timeout:                      readValues.ReadValuesDuration(serviceName + ".timeout"),
-			APIKey:                       readValues.ReadValuesString(serviceName + ".api_key"),
+			APIKey:                       "b4320b34-9c0d-496a-8e42-36422abd2052",
 			FailThreshold:                readValues.ReadValuesInt(serviceName + ".fail_threshold"),
 			policy:                       readValues.ReadValuesString(serviceName + ".policy"),
 			returnOrigIfMaxSizeExc:       readValues.ReadValuesBool(serviceName + ".return_original_if_max_file_size_exceeded"),
