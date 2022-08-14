@@ -93,7 +93,17 @@ func (c CloudMersive) Processing(partial bool) (int, interface{}, map[string]str
 			return utils.OkStatusCodeStr, c.httpMsg.Response, serviceHeaders
 		}
 	}
-
+	// check if viruses found, and return virus information in error page
+	if data["FoundViruses"] != nil {
+		serviceHeaders["FoundViruses"] = ""
+		var v string
+		reason = fmt.Sprintln("File contains virus, viruses found: ")
+		for _, item := range data["FoundViruses"].([]interface{}) {
+			v = fmt.Sprintln("%v ", item.(map[string]interface{})["VirusName"])
+			reason += v
+			serviceHeaders["FoundViruses"] += v
+		}
+	}
 }
 
 func (c *CloudMersive) SendFileToAPI(f *bytes.Buffer, filename string) (*http.Response, error) {
