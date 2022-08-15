@@ -18,11 +18,10 @@ import (
 // error page struct
 type (
 	errorPage struct {
-		Reason                    string `json:"reason"`
-		RequestedURL              string `json:"requested_url"`
-		XAdaptationFileId         string `json:"x-adaptation-file-id"`
-		XSdkEngineVersion         string `json:"x-sdk-engine-version"`
-		XGlasswallCloudApiVersion string `json:"x-glasswall-cloud-api-version"`
+		Reason       string `json:"reason"`
+		ServiceName  string `json:"service_name"`
+		RequestedURL string `json:"requested_url"`
+		IdentifierId string `json:"identifier_id"`
 	}
 )
 
@@ -31,7 +30,7 @@ type GeneralFunc struct {
 	httpMsg *utils.HttpMsg
 }
 
-//NewGeneralFunc is used to create a new instance from the struct
+// NewGeneralFunc is used to create a new instance from the struct
 func NewGeneralFunc(httpMsg *utils.HttpMsg) *GeneralFunc {
 	GeneralFunc := &GeneralFunc{
 		httpMsg: httpMsg,
@@ -39,7 +38,7 @@ func NewGeneralFunc(httpMsg *utils.HttpMsg) *GeneralFunc {
 	return GeneralFunc
 }
 
-//CopyingFileToTheBuffer is a func which used for extracting a file from the body of the http message
+// CopyingFileToTheBuffer is a func which used for extracting a file from the body of the http message
 func (f *GeneralFunc) CopyingFileToTheBuffer(methodName string) (*bytes.Buffer, ContentTypes.ContentType, error) {
 	file := &bytes.Buffer{}
 	var err error
@@ -59,16 +58,16 @@ func (f *GeneralFunc) CopyingFileToTheBuffer(methodName string) (*bytes.Buffer, 
 	return file, reqContentType, nil
 }
 
-//copyingFileToTheBufferResp is a utility function for CopyingFileToTheBuffer func
-//it's used for extracting a file from the body of the http response
+// copyingFileToTheBufferResp is a utility function for CopyingFileToTheBuffer func
+// it's used for extracting a file from the body of the http response
 func (f *GeneralFunc) copyingFileToTheBufferResp() (*bytes.Buffer, error) {
 	file := &bytes.Buffer{}
 	_, err := io.Copy(file, f.httpMsg.Response.Body)
 	return file, err
 }
 
-//copyingFileToTheBufferReq is a utility function for CopyingFileToTheBuffer func
-//it's used for extracting a file from the body of the http request
+// copyingFileToTheBufferReq is a utility function for CopyingFileToTheBuffer func
+// it's used for extracting a file from the body of the http request
 func (f *GeneralFunc) copyingFileToTheBufferReq() (*bytes.Buffer, ContentTypes.ContentType, error) {
 	reqContentType := ContentTypes.GetContentType(f.httpMsg.Request)
 	// getting the file from request and store it in buf as a type of bytes.Buffer
@@ -77,7 +76,7 @@ func (f *GeneralFunc) copyingFileToTheBufferReq() (*bytes.Buffer, ContentTypes.C
 
 }
 
-//inStringSlice is a func which used for checking if a string element exists in a slice or not
+// inStringSlice is a func which used for checking if a string element exists in a slice or not
 func (f *GeneralFunc) inStringSlice(data string, ss []string) bool {
 	for _, s := range ss {
 		if data == s {
@@ -87,7 +86,7 @@ func (f *GeneralFunc) inStringSlice(data string, ss []string) bool {
 	return false
 }
 
-//IfFileExtIsBypass is a func to check if a file extension is bypass extension or not
+// IfFileExtIsBypass is a func to check if a file extension is bypass extension or not
 func (f *GeneralFunc) IfFileExtIsBypass(fileExtension string, bypassExts []string) error {
 	if utils.InStringSlice(fileExtension, bypassExts) {
 		return errors.New("processing not required for file type")
@@ -105,7 +104,7 @@ func (f *GeneralFunc) IfFileExtIsX(fileExtension string, arr []string) bool {
 	return false
 }
 
-//IfFileExtIsReject is a func to check if a file extension is bypass extension or not
+// IfFileExtIsReject is a func to check if a file extension is bypass extension or not
 func (f *GeneralFunc) IfFileExtIsReject(fileExtension string, rejectExts []string) error {
 	if utils.InStringSlice(fileExtension, rejectExts) {
 		return errors.New("processing rejected for file type")
@@ -113,7 +112,7 @@ func (f *GeneralFunc) IfFileExtIsReject(fileExtension string, rejectExts []strin
 	return nil
 }
 
-//IfFileExtIsBypassAndNotProcess is a func to check if a file extension is bypass extension and not a process extension
+// IfFileExtIsBypassAndNotProcess is a func to check if a file extension is bypass extension and not a process extension
 func (f *GeneralFunc) IfFileExtIsBypassAndNotProcess(fileExtension string, bypassExts []string, processExts []string) error {
 	if utils.InStringSlice(utils.Any, bypassExts) && !utils.InStringSlice(fileExtension, processExts) {
 		// if extension does not belong to "All bypassable except the processable ones" group
@@ -122,8 +121,8 @@ func (f *GeneralFunc) IfFileExtIsBypassAndNotProcess(fileExtension string, bypas
 	return nil
 }
 
-//IsBodyGzipCompressed is a func used for checking if the body of
-//the http message is compressed ing Gzip or not
+// IsBodyGzipCompressed is a func used for checking if the body of
+// the http message is compressed ing Gzip or not
 func (f *GeneralFunc) IsBodyGzipCompressed(methodName string) bool {
 	switch methodName {
 	case utils.ICAPModeReq:
@@ -136,7 +135,7 @@ func (f *GeneralFunc) IsBodyGzipCompressed(methodName string) bool {
 	return false
 }
 
-//DecompressGzipBody is a func used for decompress files which compressed in Gzip
+// DecompressGzipBody is a func used for decompress files which compressed in Gzip
 func (f *GeneralFunc) DecompressGzipBody(file *bytes.Buffer) (*bytes.Buffer, error) {
 	reader, err := gzip.NewReader(file)
 	defer reader.Close()
@@ -147,9 +146,9 @@ func (f *GeneralFunc) DecompressGzipBody(file *bytes.Buffer) (*bytes.Buffer, err
 	return bytes.NewBuffer(result), nil
 }
 
-//IfMaxFileSeizeExc is a functions which used for deciding the right http message should be returned
-//if the file size is greater than the max file size of the service
-func (f *GeneralFunc) IfMaxFileSeizeExc(returnOrigIfMaxSizeExc bool, file *bytes.Buffer, maxFileSize int) (int, *bytes.Buffer, interface{}) {
+// IfMaxFileSeizeExc is a functions which used for deciding the right http message should be returned
+// if the file size is greater than the max file size of the service
+func (f *GeneralFunc) IfMaxFileSeizeExc(returnOrigIfMaxSizeExc bool, serviceName string, file *bytes.Buffer, maxFileSize int) (int, *bytes.Buffer, interface{}) {
 	//check if returning the original file option is enabled in this case or not
 	//if yes, return no modification status code
 	//if not, return an error page
@@ -157,7 +156,7 @@ func (f *GeneralFunc) IfMaxFileSeizeExc(returnOrigIfMaxSizeExc bool, file *bytes
 		return utils.NoModificationStatusCodeStr, file, nil
 	} else {
 		htmlErrPage := f.GenHtmlPage("service/unprocessable-file.html",
-			"The Max file size is exceeded", f.httpMsg.Request.RequestURI)
+			"The Max file size is exceeded", serviceName, "NO ID", f.httpMsg.Request.RequestURI)
 		f.httpMsg.Response = f.ErrPageResp(http.StatusForbidden, htmlErrPage.Len())
 		return utils.OkStatusCodeStr, htmlErrPage, f.httpMsg.Response
 	}
@@ -188,8 +187,8 @@ func (f *GeneralFunc) GetFileName() string {
 	return "unnamed_file"
 }
 
-//ExtractFileFromServiceResp is a function which used for extracting file from
-//the response of the API of the service
+// ExtractFileFromServiceResp is a function which used for extracting file from
+// the response of the API of the service
 func (f *GeneralFunc) ExtractFileFromServiceResp(serviceResp *http.Response) ([]byte, error) {
 	defer serviceResp.Body.Close()
 	bodyByte, err := ioutil.ReadAll(serviceResp.Body)
@@ -199,7 +198,7 @@ func (f *GeneralFunc) ExtractFileFromServiceResp(serviceResp *http.Response) ([]
 	return bodyByte, nil
 }
 
-//CompressFileGzip is a func which used for compress files in gzip
+// CompressFileGzip is a func which used for compress files in gzip
 func (f *GeneralFunc) CompressFileGzip(scannedFile []byte) ([]byte, error) {
 	var newBuf bytes.Buffer
 	gz := gzip.NewWriter(&newBuf)
@@ -210,7 +209,7 @@ func (f *GeneralFunc) CompressFileGzip(scannedFile []byte) ([]byte, error) {
 	return newBuf.Bytes(), nil
 }
 
-//ErrPageResp is a func used for creating http response for returning an error page
+// ErrPageResp is a func used for creating http response for returning an error page
 func (f *GeneralFunc) ErrPageResp(status int, pageContentLength int) *http.Response {
 	return &http.Response{
 		StatusCode: status,
@@ -222,19 +221,21 @@ func (f *GeneralFunc) ErrPageResp(status int, pageContentLength int) *http.Respo
 	}
 }
 
-//GenHtmlPage is a func used for generating an error page
-func (f *GeneralFunc) GenHtmlPage(path, reason, reqUrl string) *bytes.Buffer {
+// GenHtmlPage is a func used for generating an error page
+func (f *GeneralFunc) GenHtmlPage(path, reason, serviceName, identifierId, reqUrl string) *bytes.Buffer {
 	htmlTmpl, _ := template.ParseFiles(path)
 	htmlErrPage := &bytes.Buffer{}
 	htmlTmpl.Execute(htmlErrPage, &errorPage{
 		Reason:       reason,
+		ServiceName:  serviceName,
 		RequestedURL: reqUrl,
+		IdentifierId: identifierId,
 	})
 	return htmlErrPage
 }
 
-//PreparingFileAfterScanning is a func used for preparing the http response before returning it
-//preparing means converting the file to the original structure before scanning
+// PreparingFileAfterScanning is a func used for preparing the http response before returning it
+// preparing means converting the file to the original structure before scanning
 func (f *GeneralFunc) PreparingFileAfterScanning(scannedFile []byte, reqContentType ContentTypes.ContentType, methodName string) []byte {
 	switch methodName {
 	case utils.ICAPModeReq:
@@ -303,7 +304,7 @@ func (f *GeneralFunc) IfICAPStatusIs204(methodName string, status int, file *byt
 	return fileAfterPrep, httpMessage
 }
 
-//function to return the suitable http message (http request, http response)
+// function to return the suitable http message (http request, http response)
 func (f *GeneralFunc) returningHttpMessage(methodName string, file []byte) interface{} {
 	switch methodName {
 	case utils.ICAPModeReq:
