@@ -2,16 +2,18 @@ package service
 
 import (
 	"icapeg/service/services/clamav"
+	"icapeg/service/services/cloudmersive"
 	"icapeg/service/services/echo"
 	"icapeg/service/services/virustotal"
 	"icapeg/utils"
 )
 
-//Vendors names
+// Vendors names
 const (
-	VendorEcho       = "echo"
-	VendorClamav     = "clamav"
-	VendorVirustotal = "virustotal"
+	VendorEcho         = "echo"
+	VendorClamav       = "clamav"
+	VendorVirustotal   = "virustotal"
+	VendorCloudMersive = "cloudmersive"
 )
 
 type (
@@ -32,6 +34,8 @@ func GetService(vendor, serviceName, methodName string, httpMsg *utils.HttpMsg) 
 		return virustotal.NewVirustotalService(serviceName, methodName, httpMsg)
 	case VendorClamav:
 		return clamav.NewClamavService(serviceName, methodName, httpMsg)
+	case VendorCloudMersive:
+		return cloudmersive.NewCloudMersiveService(serviceName, methodName, httpMsg)
 
 	}
 	return nil
@@ -45,6 +49,8 @@ func InitServiceConfig(vendor, serviceName string) {
 		clamav.InitClamavConfig(serviceName)
 	case VendorVirustotal:
 		virustotal.InitVirustotalConfig(serviceName)
+	case VendorCloudMersive:
+		cloudmersive.InitCloudMersiveConfig(serviceName)
 
 	}
 }

@@ -36,7 +36,6 @@ func (c *Clamav) Processing(partial bool) (int, interface{}, map[string]string) 
 	}
 	fileExtension := utils.GetMimeExtension(file.Bytes(), contentType[0], fileName)
 
-
 	//check if the file extension is a bypass extension
 	//if yes we will not modify the file, and we will return 204 No modifications
 	for i := 0; i < 3; i++ {
@@ -50,7 +49,7 @@ func (c *Clamav) Processing(partial bool) (int, interface{}, map[string]string) 
 				if c.return400IfFileExtRejected {
 					return utils.BadRequestStatusCodeStr, nil, serviceHeaders
 				}
-				errPage := c.generalFunc.GenHtmlPage("service/unprocessable-file.html", reason, c.httpMsg.Request.RequestURI)
+				errPage := c.generalFunc.GenHtmlPage("service/unprocessable-file.html", reason, c.serviceName, "NO ID", c.httpMsg.Request.RequestURI)
 				c.httpMsg.Response = c.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
 				c.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
 				return utils.OkStatusCodeStr, c.httpMsg.Response, serviceHeaders
@@ -80,7 +79,7 @@ func (c *Clamav) Processing(partial bool) (int, interface{}, map[string]string) 
 	//check if the file size is greater than max file size of the service
 	//if yes we will return 200 ok or 204 no modification, it depends on the configuration of the service
 	if c.maxFileSize != 0 && c.maxFileSize < file.Len() {
-		status, file, httpMsg := c.generalFunc.IfMaxFileSeizeExc(c.returnOrigIfMaxSizeExc, file, c.maxFileSize)
+		status, file, httpMsg := c.generalFunc.IfMaxFileSeizeExc(c.returnOrigIfMaxSizeExc, c.serviceName, file, c.maxFileSize)
 		fileAfterPrep, httpMsg := c.generalFunc.IfStatusIs204WithFile(c.methodName, status, file, isGzip, reqContentType, httpMsg)
 		if fileAfterPrep == nil && httpMsg == nil {
 			return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
@@ -122,7 +121,7 @@ func (c *Clamav) Processing(partial bool) (int, interface{}, map[string]string) 
 
 	if result.Status == ClamavMalStatus {
 		reason := "File is not safe"
-		errPage := c.generalFunc.GenHtmlPage("service/unprocessable-file.html", reason, c.httpMsg.Request.RequestURI)
+		errPage := c.generalFunc.GenHtmlPage("service/unprocessable-file.html", reason, c.serviceName, "CLAMAV ID", c.httpMsg.Request.RequestURI)
 		c.httpMsg.Response = c.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
 		c.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
 		return utils.OkStatusCodeStr, c.httpMsg.Response, serviceHeaders
