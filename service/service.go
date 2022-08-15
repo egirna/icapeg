@@ -4,15 +4,15 @@ import (
 	"icapeg/service/services/clamav"
 	"icapeg/service/services/cloudmersive"
 	"icapeg/service/services/echo"
-	"icapeg/service/services/glasswall"
+	"icapeg/service/services/virustotal"
 	"icapeg/utils"
 )
 
-//Vendors names
+// Vendors names
 const (
-	VendorGlasswall    = "glasswall"
 	VendorEcho         = "echo"
 	VendorClamav       = "clamav"
+	VendorVirustotal   = "virustotal"
 	VendorCloudMersive = "cloudmersive"
 )
 
@@ -20,6 +20,7 @@ type (
 	// Service holds the info to distinguish a service
 	Service interface {
 		Processing(bool) (int, interface{}, map[string]string)
+		ISTagValue() string
 	}
 )
 
@@ -27,25 +28,27 @@ type (
 // change name to vendor and add parameter service name
 func GetService(vendor, serviceName, methodName string, httpMsg *utils.HttpMsg) Service {
 	switch vendor {
-	case VendorGlasswall:
-		return glasswall.NewGlasswallService(serviceName, methodName, httpMsg)
 	case VendorEcho:
 		return echo.NewEchoService(serviceName, methodName, httpMsg)
+	case VendorVirustotal:
+		return virustotal.NewVirustotalService(serviceName, methodName, httpMsg)
 	case VendorClamav:
 		return clamav.NewClamavService(serviceName, methodName, httpMsg)
 	case VendorCloudMersive:
 		return cloudmersive.NewCloudMersiveService(serviceName, methodName, httpMsg)
-	}
 
+	}
 	return nil
 }
 
 func InitServiceConfig(vendor, serviceName string) {
 	switch vendor {
-	case VendorGlasswall:
-		glasswall.InitGlasswallConfig(serviceName)
 	case VendorEcho:
 		echo.InitEchoConfig(serviceName)
+	case VendorClamav:
+		clamav.InitClamavConfig(serviceName)
+	case VendorVirustotal:
+		virustotal.InitVirustotalConfig(serviceName)
 	case VendorCloudMersive:
 		cloudmersive.InitCloudMersiveConfig(serviceName)
 	}

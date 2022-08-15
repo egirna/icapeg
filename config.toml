@@ -25,7 +25,7 @@ title = "ICAP configuration file"
 
 [app]
 log_level = "info" # the log levels for tha app, available values: info-->logging the overall progress of the app, debug --> log everything including errors, error --> log infos and just errors
-write_logs_to_console = true
+write_logs_to_console = false
 log_service_url = "http://logging-transaction-logging-api:8080/upload"
 log_flush_duration = 2
 port = 1344
@@ -35,34 +35,10 @@ preview_bytes = "1024" #byte
 preview_enabled = true# options send preview header or not
 propagate_error = true
 service_caption ="Go-ICAP server - glasswall Rebuild service"
-services= ["echo", "cloudmersive"]
+services= ["echo", "virustotal", "clamav"]
 timeout = 25
 verify_server_cert=false
 debugging_headers=true
-
-[glasswall]
-vendor = "glasswall"
-service_caption= "glasswall service"   #Service
-service_tag = "Glasswall ICAP"  #ISTAG
-req_mode=true # enable support for ICAP request mode
-resp_mode=true # enable support for ICAP response mode
-shadow_service=false
-preview_bytes = "1024" #byte
-preview_enabled = true# options send preview header or not
-bypass_extensions = []
-process_extensions = ["*"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
-base_url = "$_CLOUDAPI_URL" #
-scan_endpoint = "/api/rebuild/file"
-api_key = "$_AUTH_TOKENS"
-timeout  = 300 #seconds , ICAP will return 408 - Request timeout
-fail_threshold = 2
-policy= ""
-#max file size value from 1 to 9223372036854775807, and value of zero means unlimited
-max_filesize = 0 #bytes
-return_original_if_max_file_size_exceeded=false
-return_original_if_unprocessable_file_type=true
-return_original_if_400_response=true # returning the original file to the user if GW engine http response status is 400
-
 
 [echo]
 vendor = "echo"
@@ -73,8 +49,9 @@ resp_mode=true
 shadow_service=false
 preview_bytes = "1024" #byte
 preview_enabled = true# options send preview header or not
-bypass_extensions = []
-process_extensions = ["*"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
+process_extensions = ["pdf", "zip", "com"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
+reject_extensions = ["docx"]
+bypass_extensions = ["*"]
 base_url = "echo" #
 scan_endpoint = "echo"
 api_key = "<api key>"
@@ -83,6 +60,7 @@ fail_threshold = 2
 #max file size value from 1 to 9223372036854775807, and value of zero means unlimited
 max_filesize = 0 #bytes
 return_original_if_max_file_size_exceeded=false
+return_400_if_file_ext_rejected=false
 
 [clamav]
 vendor = "clamav"
@@ -91,15 +69,49 @@ service_tag = "CLAMAV ICAP"  #ISTAG
 req_mode=true
 resp_mode=true
 shadow_service=false
-bypass_extensions = []
-process_extensions = ["*"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
+preview_bytes = "1024" #byte
+preview_enabled = true# options send preview header or not
+process_extensions = ["pdf", "zip", "com"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
+reject_extensions = ["docx"]
+bypass_extensions = ["*"]
 socket_path = "/var/run/clamav/clamd.ctl"
-wait_timeout = 10 #seconds, the time upto which the server will wait for clamav to scan the results
+timeout = 10 #seconds, the time upto which the server will wait for clamav to scan the results
 bad_file_status = ["malicious"]
 ok_file_status = ["ok"]
 #max file size value from 1 to 9223372036854775807, and value of zero means unlimited
 max_filesize = 0 #bytes
 return_original_if_max_file_size_exceeded=false
+return_400_if_file_ext_rejected=false
+
+[virustotal]
+vendor = "virustotal"
+service_caption= "virustotal service"   #Service
+service_tag = "Virustotal ICAP"  #ISTAG
+req_mode=true # enable support for ICAP request mode
+resp_mode=true # enable support for ICAP response mode
+shadow_service=false
+preview_bytes = "1024" #byte
+preview_enabled = true# options send preview header or not
+process_extensions = ["pdf", "zip", "com"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
+reject_extensions = ["docx"]
+bypass_extensions = ["*"]
+scan_url = "https://www.virustotal.com/vtapi/v2/file/scan" #
+report_url = "https://www.virustotal.com/vtapi/v2/file/report" #
+api_key = "$_VIRUSTOTAL_API_KEY"
+timeout  = 1000 #seconds , ICAP will return 408 - Request timeout
+fail_threshold = 2
+policy= ""
+#max file size value from 1 to 9223372036854775807, and value of zero means unlimited
+max_filesize = 0 #bytes
+return_original_if_max_file_size_exceeded=false
+return_400_if_file_ext_rejected=false
+
+
+#ICAP possible codes: 204 (No modifications needed) , 400 (Bad Request) , 403 (Forbidden) , 500 (Server Error) , 502 (Bad Gateway)
+api_response_400 = 400 #Bad Request
+api_response_403 = 403 #Forbidden
+api_response_415 = 204 #Unsupported Media Type
+api_response_422 = 204 #Unprocessable Entity
 
 [cloudmersive]
 vendor = "cloudmersive"
@@ -123,13 +135,13 @@ base_url = "$_CLOUDAPI_URL" #
 scan_endpoint = "/virus/scan/file/advanced"
 policy = ""
 api_key = "$_AUTH_TOKENS"
-allow_executables = false
+allow_executables = true
 allow_invalid_files = false
-allow_scripts = false
+allow_scripts = true
 allow_password_protected_files = false
 allow_macros = false
 allow_xml_external_entities = false
-allow_html = false
+allow_html = true
 allow_insecure_deserialization = false
 restrict_file_types = ""
 
@@ -142,3 +154,4 @@ api_response_400 = 400 #Bad Request
 api_response_403 = 403 #Forbidden
 api_response_415 = 204 #Unsupported Media Type
 api_response_422 = 204 #Unprocessable Entity
+

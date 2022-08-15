@@ -1,4 +1,4 @@
-package echo
+package virustotal
 
 import (
 	"fmt"
@@ -11,12 +11,11 @@ import (
 )
 
 var doOnce sync.Once
-var echoConfig *Echo
+var virustoalConfig *Virustotal
 
-// Echo represents the information regarding the Echo service
-type Echo struct {
+// Virustotal represents the information regarding the Virustotal service
+type Virustotal struct {
 	httpMsg                    *utils.HttpMsg
-	elapsed                    time.Duration
 	serviceName                string
 	methodName                 string
 	maxFileSize                int
@@ -24,35 +23,36 @@ type Echo struct {
 	processExts                []string
 	rejectExts                 []string
 	extArrs                    []config.Extension
-	BaseURL                    string
+	ScanUrl                    string
+	ReportUrl                  string
 	Timeout                    time.Duration
 	APIKey                     string
-	ScanEndpoint               string
 	FailThreshold              int
+	policy                     string
 	returnOrigIfMaxSizeExc     bool
 	return400IfFileExtRejected bool
 	generalFunc                *general_functions.GeneralFunc
 }
 
-func InitEchoConfig(serviceName string) {
+func InitVirustotalConfig(serviceName string) {
 	doOnce.Do(func() {
-		echoConfig = &Echo{
+		virustoalConfig = &Virustotal{
 			maxFileSize:                readValues.ReadValuesInt(serviceName + ".max_filesize"),
 			bypassExts:                 readValues.ReadValuesSlice(serviceName + ".bypass_extensions"),
 			processExts:                readValues.ReadValuesSlice(serviceName + ".process_extensions"),
 			rejectExts:                 readValues.ReadValuesSlice(serviceName + ".reject_extensions"),
-			BaseURL:                    readValues.ReadValuesString(serviceName + ".base_url"),
-			Timeout:                    readValues.ReadValuesDuration(serviceName+".timeout") * time.Second,
+			ScanUrl:                    readValues.ReadValuesString(serviceName + ".scan_url"),
+			ReportUrl:                  readValues.ReadValuesString(serviceName + ".report_url"),
+			Timeout:                    readValues.ReadValuesDuration(serviceName + ".timeout"),
 			APIKey:                     readValues.ReadValuesString(serviceName + ".api_key"),
-			ScanEndpoint:               readValues.ReadValuesString(serviceName + ".scan_endpoint"),
 			FailThreshold:              readValues.ReadValuesInt(serviceName + ".fail_threshold"),
+			policy:                     readValues.ReadValuesString(serviceName + ".policy"),
 			returnOrigIfMaxSizeExc:     readValues.ReadValuesBool(serviceName + ".return_original_if_max_file_size_exceeded"),
 			return400IfFileExtRejected: readValues.ReadValuesBool(serviceName + ".return_400_if_file_ext_rejected"),
 		}
-
-		process := config.Extension{Name: "process", Exts: echoConfig.processExts}
-		reject := config.Extension{Name: "reject", Exts: echoConfig.rejectExts}
-		bypass := config.Extension{Name: "bypass", Exts: echoConfig.bypassExts}
+		process := config.Extension{Name: "process", Exts: virustoalConfig.processExts}
+		reject := config.Extension{Name: "reject", Exts: virustoalConfig.rejectExts}
+		bypass := config.Extension{Name: "bypass", Exts: virustoalConfig.bypassExts}
 		extArrs := make([]config.Extension, 3)
 		ind := 0
 		if len(process.Exts) == 1 && process.Exts[0] == "*" {
@@ -74,28 +74,29 @@ func InitEchoConfig(serviceName string) {
 			ind++
 		}
 		fmt.Println(extArrs)
-		echoConfig.extArrs = extArrs
+		virustoalConfig.extArrs = extArrs
 	})
 }
 
-// NewEchoService returns a new populated instance of the Echo service
-func NewEchoService(serviceName, methodName string, httpMsg *utils.HttpMsg) *Echo {
-	return &Echo{
+// NewVirustotalService returns a new populated instance of the Virustotal service
+func NewVirustotalService(serviceName, methodName string, httpMsg *utils.HttpMsg) *Virustotal {
+	return &Virustotal{
 		httpMsg:                    httpMsg,
 		serviceName:                serviceName,
 		methodName:                 methodName,
+		maxFileSize:                virustoalConfig.maxFileSize,
+		bypassExts:                 virustoalConfig.bypassExts,
+		processExts:                virustoalConfig.processExts,
+		rejectExts:                 virustoalConfig.rejectExts,
+		extArrs:                    virustoalConfig.extArrs,
+		ScanUrl:                    virustoalConfig.ScanUrl,
+		ReportUrl:                  virustoalConfig.ReportUrl,
+		Timeout:                    virustoalConfig.Timeout * time.Second,
+		APIKey:                     virustoalConfig.APIKey,
+		FailThreshold:              virustoalConfig.FailThreshold,
+		policy:                     virustoalConfig.policy,
+		returnOrigIfMaxSizeExc:     virustoalConfig.returnOrigIfMaxSizeExc,
+		return400IfFileExtRejected: virustoalConfig.return400IfFileExtRejected,
 		generalFunc:                general_functions.NewGeneralFunc(httpMsg),
-		maxFileSize:                echoConfig.maxFileSize,
-		bypassExts:                 echoConfig.bypassExts,
-		processExts:                echoConfig.processExts,
-		rejectExts:                 echoConfig.rejectExts,
-		extArrs:                    echoConfig.extArrs,
-		BaseURL:                    echoConfig.BaseURL,
-		Timeout:                    echoConfig.Timeout * time.Second,
-		APIKey:                     echoConfig.APIKey,
-		ScanEndpoint:               echoConfig.ScanEndpoint,
-		FailThreshold:              echoConfig.FailThreshold,
-		returnOrigIfMaxSizeExc:     echoConfig.returnOrigIfMaxSizeExc,
-		return400IfFileExtRejected: echoConfig.return400IfFileExtRejected,
 	}
 }

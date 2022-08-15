@@ -52,25 +52,29 @@ func (i *ICAPRequest) RequestInitialization() error {
 	// if it does not exist, the response will be 404 ICAP Service Not Found
 	i.serviceName = i.req.URL.Path[1:len(i.req.URL.Path)]
 	if !i.isServiceExists() {
-		i.w.WriteHeader(http.StatusNotFound, nil, false)
+		i.w.WriteHeader(utils.ICAPServiceNotFoundCodeStr, nil, false)
 		err := errors.New("service doesn't exist")
 		return err
 	}
 
 	// checking if request method is allowed or not
 	i.methodName = i.req.Method
-	if !i.isMethodAllowed() {
-		i.w.WriteHeader(http.StatusMethodNotAllowed, nil, false)
-		err := errors.New("method is not allowed")
-		return err
+	if i.methodName != "options" {
+		if !i.isMethodAllowed() {
+			i.w.WriteHeader(utils.MethodNotAllowedForServiceCodeStr, nil, false)
+			err := errors.New("method is not allowed")
+			return err
+		}
+		i.methodName = i.req.Method
 	}
-	i.methodName = i.req.Method
 
 	//getting vendor name which depends on the name of the service
 	i.vendor = i.getVendorName()
 
 	//adding important headers to options ICAP response
-	i.addingISTAGServiceHeaders()
+	requiredService := service.GetService(i.vendor, i.serviceName, i.methodName,
+		&utils.HttpMsg{Request: i.req.Request, Response: i.req.Response})
+	i.addingISTAGServiceHeaders(requiredService.ISTagValue())
 
 	i.Is204Allowed = i.is204Allowed()
 
@@ -81,6 +85,10 @@ func (i *ICAPRequest) RequestInitialization() error {
 		i.shadowService()
 		go i.RequestProcessing()
 		return errors.New("shadow service")
+	} else {
+		if i.appCfg.DebuggingHeaders {
+			i.h["X-ICAPeg-Shadow-Service"] = []string{"false"}
+		}
 	}
 
 	return nil
@@ -145,7 +153,7 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 	// adding the headers which the service wants to add them in the ICAP response
 	if serviceHeaders != nil {
 		for key, value := range serviceHeaders {
-			i.w.Header().Set(key, value)
+			i.h[key] = []string{value}
 		}
 	}
 
@@ -172,6 +180,9 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 		}
 		i.RespAndReqMods(false)
 		break
+	case utils.RequestTimeOutStatusCodeStr:
+		i.w.WriteHeader(IcapStatusCode, nil, false)
+		break
 	case utils.NoModificationStatusCodeStr:
 		if i.Is204Allowed {
 			i.w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
@@ -181,6 +192,9 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 		break
 	case utils.OkStatusCodeStr:
 		i.w.WriteHeader(utils.OkStatusCodeStr, httpMsg, true)
+		break
+	case utils.BadRequestStatusCodeStr:
+		i.w.WriteHeader(IcapStatusCode, httpMsg, true)
 		break
 	}
 }
@@ -223,14 +237,13 @@ func (i *ICAPRequest) getMethodName() string {
 
 //isMethodAllowed is a func to check if the method in the ICAP request is allowed in config.go file or not
 func (i *ICAPRequest) isMethodAllowed() bool {
-	isMethodEnabled := false
 	if i.methodName == "RESPMOD" {
-		isMethodEnabled = i.appCfg.ServicesInstances[i.serviceName].RespMode
+		return i.appCfg.ServicesInstances[i.serviceName].RespMode
 	} else if i.methodName == "REQMOD" {
-		isMethodEnabled = i.appCfg.ServicesInstances[i.serviceName].ReqMode
+		return i.appCfg.ServicesInstances[i.serviceName].ReqMode
 
 	}
-	if isMethodEnabled || i.methodName == "OPTIONS" {
+	if i.methodName == "OPTIONS" {
 		return true
 	}
 	return false
@@ -242,8 +255,8 @@ func (i *ICAPRequest) getVendorName() string {
 }
 
 //addingISTAGServiceHeaders is a func to add the important header to ICAP response
-func (i *ICAPRequest) addingISTAGServiceHeaders() {
-	i.h["ISTag"] = []string{i.appCfg.ServicesInstances[i.serviceName].ServiceTag}
+func (i *ICAPRequest) addingISTAGServiceHeaders(ISTgValue string) {
+	i.h["ISTag"] = []string{ISTgValue}
 	i.h["Service"] = []string{i.appCfg.ServicesInstances[i.serviceName].ServiceCaption}
 }
 
@@ -259,6 +272,9 @@ func (i *ICAPRequest) is204Allowed() bool {
 
 //shadowService is a func to apply the shadow service
 func (i *ICAPRequest) shadowService() {
+	if i.appCfg.DebuggingHeaders {
+		i.h["X-ICAPeg-Shadow-Service"] = []string{"true"}
+	}
 	if i.Is204Allowed { // following RFC3507, if the request has Allow: 204 header, it is to be checked and if it doesn't exists, return the request as it is to the ICAP client, https://tools.ietf.org/html/rfc3507#section-4.6
 		i.w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
 	} else {

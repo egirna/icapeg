@@ -12,9 +12,10 @@ import (
 	"mime/multipart"
 	"net/http"
 	"strconv"
+	"time"
 )
 
-func (c CloudMersive) Processing(partial bool) (int, interface{}, map[string]string) {
+func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]string) {
 	//TODO implement me
 
 	// no need to scan part of the file, this service needs all the file at one time
@@ -25,21 +26,78 @@ func (c CloudMersive) Processing(partial bool) (int, interface{}, map[string]str
 	// ICAP response headers
 	serviceHeaders := make(map[string]string)
 	//extracting the file from http message
-	file, _, err := c.generalFunc.CopyingFileToTheBuffer(c.methodName)
+	file, reqContentType, err := c.generalFunc.CopyingFileToTheBuffer(c.methodName)
 	if err != nil {
 		return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
 	}
-	// extracting file name
-	filename := c.generalFunc.GetFileName()
+
+	var contentType []string
+	if len(contentType) == 0 {
+		contentType = append(contentType, "")
+	}
+	var fileName string
+	if c.methodName == utils.ICAPModeReq {
+		contentType = c.httpMsg.Request.Header["Content-Type"]
+		fileName = utils.GetFileName(c.httpMsg.Request)
+	} else {
+		contentType = c.httpMsg.Response.Header["Content-Type"]
+		fileName = utils.GetFileName(c.httpMsg.Response)
+	}
+	if len(contentType) == 0 {
+		contentType = append(contentType, "")
+	}
+	fileExtension := utils.GetMimeExtension(file.Bytes(), contentType[0], fileName)
+	fmt.Println(fileExtension)
+	//check if the file extension is a bypass extension
+	//if yes we will not modify the file, and we will return 204 No modifications
+	fmt.Println(c.extArrs)
+	for i := 0; i < 3; i++ {
+		if c.extArrs[i].Name == "process" {
+			if c.generalFunc.IfFileExtIsX(fileExtension, c.processExts) {
+				break
+			}
+		} else if c.extArrs[i].Name == "reject" {
+			if c.generalFunc.IfFileExtIsX(fileExtension, c.rejectExts) {
+				reason := "File rejected"
+				if c.return400IfFileExtRejected {
+					return utils.BadRequestStatusCodeStr, nil, serviceHeaders
+				}
+				errPage := c.generalFunc.GenHtmlPage("service/unprocessable-file.html", reason, c.serviceName, "NO ID", c.httpMsg.Request.RequestURI)
+				c.httpMsg.Response = c.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
+				c.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
+				return utils.OkStatusCodeStr, c.httpMsg.Response, serviceHeaders
+			}
+		} else if c.extArrs[i].Name == "bypass" {
+			if c.generalFunc.IfFileExtIsX(fileExtension, c.bypassExts) {
+				fileAfterPrep, httpMsg := c.generalFunc.IfICAPStatusIs204(c.methodName, utils.NoModificationStatusCodeStr,
+					file, false, reqContentType, c.httpMsg)
+				if fileAfterPrep == nil && httpMsg == nil {
+					return utils.InternalServerErrStatusCodeStr, nil, nil
+				}
+
+				//returning the http message and the ICAP status code
+				switch msg := httpMsg.(type) {
+				case *http.Request:
+					msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
+					return utils.NoModificationStatusCodeStr, msg, serviceHeaders
+				case *http.Response:
+					msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
+					return utils.NoModificationStatusCodeStr, msg, serviceHeaders
+				}
+				return utils.NoModificationStatusCodeStr, nil, serviceHeaders
+			}
+		}
+	}
+
 	//check if the file size is greater than max file size of the service or 3M size, according to account payment plans ,etc
 	if c.maxFileSize != 0 && c.maxFileSize < file.Len() || file.Len() > 3e6 {
-		errPage := c.generalFunc.GenHtmlPage("service/unprocessable-file.html", "file size exceeded maximum allowed size", c.httpMsg.Request.RequestURI)
+		errPage := c.generalFunc.GenHtmlPage("service/unprocessable-file.html", "file size exceeded maximum allowed size", "NO ID", c.serviceName, c.httpMsg.Request.RequestURI)
 		c.httpMsg.Response = c.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
 		c.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
 		return utils.OkStatusCodeStr, c.httpMsg.Response, serviceHeaders
 	}
 	// sending request to cloudmersive api
-	serviceResp, err := c.SendFileToAPI(file, filename)
+	serviceResp, err := c.SendFileToAPI(file, fileName)
 	if err != nil {
 		fmt.Println("error line 44\n", err.Error())
 		return serviceResp.StatusCode, nil, serviceHeaders
@@ -56,7 +114,7 @@ func (c CloudMersive) Processing(partial bool) (int, interface{}, map[string]str
 	msg := string(body)
 	if serviceResp.StatusCode == 400 && msg == "Invalid input: Input file was empty." {
 		fmt.Println(msg)
-		errPage := c.generalFunc.GenHtmlPage("service/unprocessable-file.html", msg, c.httpMsg.Request.RequestURI)
+		errPage := c.generalFunc.GenHtmlPage("service/unprocessable-file.html", msg, c.serviceName, serviceResp.Header["Request-Context"][0], c.httpMsg.Request.RequestURI)
 		c.httpMsg.Response = c.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
 		c.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
 		return utils.OkStatusCodeStr, c.httpMsg.Response, serviceHeaders
@@ -64,6 +122,7 @@ func (c CloudMersive) Processing(partial bool) (int, interface{}, map[string]str
 	// check CleanResult, if false detect why
 	var reason string
 	reason = ""
+	fmt.Println(serviceResp.Header)
 	if data["CleanResult"].(bool) == false {
 		serviceHeaders["CleanResult"] = "false"
 		if data["ContainsExecutable"].(bool) == true && !c.allowExecutables {
@@ -81,13 +140,14 @@ func (c CloudMersive) Processing(partial bool) (int, interface{}, map[string]str
 		} else if data["ContainsHtml"].(bool) == true && !c.allowHtml {
 			reason = "html not allowed"
 		} else if data["FoundViuses"] == nil {
-			reason = fmt.Sprintln("file type is not allowed, allowed files are %s", c.restrictFileTypes)
+			reason = fmt.Sprintln("File is not safe")
 		}
 		if reason != "" {
 			if c.return400IfFileExtRejected {
 				return utils.BadRequestStatusCodeStr, nil, serviceHeaders
 			}
-			errPage := c.generalFunc.GenHtmlPage("service/unprocessable-file.html", reason, c.httpMsg.Request.RequestURI)
+			fmt.Println(reason)
+			errPage := c.generalFunc.GenHtmlPage("service/unprocessable-file.html", reason, c.serviceName, serviceResp.Header["Request-Context"][0], c.httpMsg.Request.RequestURI)
 			c.httpMsg.Response = c.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
 			c.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
 			return utils.OkStatusCodeStr, c.httpMsg.Response, serviceHeaders
@@ -103,14 +163,14 @@ func (c CloudMersive) Processing(partial bool) (int, interface{}, map[string]str
 			reason += v
 			serviceHeaders["FoundViruses"] += v
 		}
-		errPage := c.generalFunc.GenHtmlPage("service/unprocessable-file.html", reason, c.httpMsg.Request.RequestURI)
+		errPage := c.generalFunc.GenHtmlPage("service/unprocessable-file.html", reason, c.serviceName, serviceResp.Header["Request-Context"][0], c.httpMsg.Request.RequestURI)
 		c.httpMsg.Response = c.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
 		c.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
 		return utils.OkStatusCodeStr, c.httpMsg.Response, serviceHeaders
 	}
 	serviceHeaders["CleanResult"] = "true"
-	fmt.Println(serviceHeaders)
-	return serviceResp.StatusCode, nil, serviceHeaders
+	scannedFile := c.generalFunc.PreparingFileAfterScanning(file.Bytes(), reqContentType, c.methodName)
+	return utils.OkStatusCodeStr, c.generalFunc.ReturningHttpMessageWithFile(c.methodName, scannedFile), serviceHeaders
 }
 
 func (c *CloudMersive) SendFileToAPI(f *bytes.Buffer, filename string) (*http.Response, error) {
@@ -146,7 +206,6 @@ func (c *CloudMersive) SendFileToAPI(f *bytes.Buffer, filename string) (*http.Re
 	req.Header.Add("restrictFileTypes", c.restrictFileTypes)
 	fmt.Println("restrictFileTypes: ", c.restrictFileTypes)
 	req.Header.Add("Content-Type", "multipart/form-data")
-	// TODO how to read environment variable from app.env?
 	req.Header.Add("Apikey", c.APIKey)
 	req.Header.Set("Content-Type", bodyWriter.FormDataContentType())
 
@@ -165,4 +224,9 @@ func (c *CloudMersive) SendFileToAPI(f *bytes.Buffer, filename string) (*http.Re
 		return nil, err
 	}
 	return res, nil
+}
+
+func (c *CloudMersive) ISTagValue() string {
+	epochTime := strconv.FormatInt(time.Now().Unix(), 10)
+	return "epoch-" + epochTime
 }

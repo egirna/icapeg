@@ -2,9 +2,9 @@ name: Go
 
 on:
   push:
-    branches: [ "restructure" ]
+    branches: [ "**" ]
   pull_request:
-    branches: [ "restructure" ]
+    branches: [ "**" ]
 
 jobs:
 
@@ -12,7 +12,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-
+    
+    - name: Setup Python
+      uses: actions/setup-python@v4.1.0
+      
+    - name: setup pip modules
+      run: pip install toml
+      
     - name: Set up Go
       uses: actions/setup-go@v3
       with:
@@ -20,22 +26,14 @@ jobs:
 
     - name: Build
       run: |
-        mv ./testing/config.toml .
         sudo apt-get update
         sudo apt-get install c-icap
         go build .
 
-    - name: Run ICAPeg
-      run: ./icapeg &
 
-
-    - name: Test
-      run: |
-        echo "-------------------------------------------------"
-        echo " ---------- Test max_filesize--------------------"
-        echo "-------------------------------------------------"
-        sudo chmod 777 ./testing/testByHash.sh
-        ./testing/testByHash.sh
+    - name: Test 
+      run: python3 ./testing/test.py
+        
     
     - name: Build and push docker image
       uses: mr-smithers-excellent/docker-build-push@v5

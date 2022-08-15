@@ -95,6 +95,24 @@ func (f *GeneralFunc) IfFileExtIsBypass(fileExtension string, bypassExts []strin
 	return nil
 }
 
+func (f *GeneralFunc) IfFileExtIsX(fileExtension string, arr []string) bool {
+	if len(arr) == 1 && arr[0] == "*" {
+		return true
+	}
+	if utils.InStringSlice(fileExtension, arr) {
+		return true
+	}
+	return false
+}
+
+//IfFileExtIsReject is a func to check if a file extension is bypass extension or not
+func (f *GeneralFunc) IfFileExtIsReject(fileExtension string, rejectExts []string) error {
+	if utils.InStringSlice(fileExtension, rejectExts) {
+		return errors.New("processing rejected for file type")
+	}
+	return nil
+}
+
 //IfFileExtIsBypassAndNotProcess is a func to check if a file extension is bypass extension and not a process extension
 func (f *GeneralFunc) IfFileExtIsBypassAndNotProcess(fileExtension string, bypassExts []string, processExts []string) error {
 	if utils.InStringSlice(utils.Any, bypassExts) && !utils.InStringSlice(fileExtension, processExts) {
@@ -250,6 +268,43 @@ func (f *GeneralFunc) IfStatusIs204WithFile(methodName string, status int, file 
 
 // ReturningHttpMessageWithFile function to return the suitable http message (http request, http response)
 func (f *GeneralFunc) ReturningHttpMessageWithFile(methodName string, file []byte) interface{} {
+	switch methodName {
+	case utils.ICAPModeReq:
+		f.httpMsg.Request.Header.Set(utils.ContentLength, strconv.Itoa(len(string(file))))
+		f.httpMsg.Request.Body = io.NopCloser(bytes.NewBuffer(file))
+		return f.httpMsg.Request
+	case utils.ICAPModeResp:
+		f.httpMsg.Response.Header.Set(utils.ContentLength, strconv.Itoa(len(string(file))))
+		f.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(file))
+		return f.httpMsg.Response
+	}
+	return nil
+}
+
+func (f *GeneralFunc) IfICAPStatusIs204(methodName string, status int, file *bytes.Buffer, isGzip bool, reqContentType ContentTypes.ContentType, httpMessage interface{}) ([]byte,
+	interface{}) {
+	var fileAfterPrep []byte
+	var err error
+	if isGzip {
+		fileAfterPrep, err = f.CompressFileGzip(file.Bytes())
+		if err != nil {
+			return nil, nil
+		}
+	}
+
+	if methodName == utils.ICAPModeReq {
+		fileAfterPrep = f.PreparingFileAfterScanning(file.Bytes(), reqContentType, methodName)
+	} else {
+		fileAfterPrep = file.Bytes()
+	}
+	if status == utils.NoModificationStatusCodeStr {
+		return fileAfterPrep, f.returningHttpMessage(methodName, fileAfterPrep)
+	}
+	return fileAfterPrep, httpMessage
+}
+
+//function to return the suitable http message (http request, http response)
+func (f *GeneralFunc) returningHttpMessage(methodName string, file []byte) interface{} {
 	switch methodName {
 	case utils.ICAPModeReq:
 		f.httpMsg.Request.Header.Set(utils.ContentLength, strconv.Itoa(len(string(file))))

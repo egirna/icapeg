@@ -1,6 +1,8 @@
 package cloudmersive
 
 import (
+	"fmt"
+	"icapeg/config"
 	"icapeg/readValues"
 	general_functions "icapeg/service/services-utilities/general-functions"
 	"icapeg/utils"
@@ -15,6 +17,10 @@ type CloudMersive struct {
 	httpMsg                      *utils.HttpMsg
 	serviceName                  string
 	methodName                   string
+	bypassExts                   []string
+	processExts                  []string
+	rejectExts                   []string
+	extArrs                      []config.Extension
 	allowExecutables             bool
 	allowInvalidFiles            bool
 	allowScripts                 bool
@@ -57,7 +63,35 @@ func InitCloudMersiveConfig(serviceName string) {
 			allowPasswordProtectedFiles:  readValues.ReadValuesBool(serviceName + ".allow_password_protected_files"),
 			allowInsecureDeserialization: readValues.ReadValuesBool(serviceName + ".allow_insecure_deserialization"),
 			allowHtml:                    readValues.ReadValuesBool(serviceName + ".allow_html"),
+			bypassExts:                   readValues.ReadValuesSlice(serviceName + ".bypass_extensions"),
+			processExts:                  readValues.ReadValuesSlice(serviceName + ".process_extensions"),
+			rejectExts:                   readValues.ReadValuesSlice(serviceName + ".reject_extensions"),
 		}
+		process := config.Extension{Name: "process", Exts: cloudMersiveConfig.processExts}
+		reject := config.Extension{Name: "reject", Exts: cloudMersiveConfig.rejectExts}
+		bypass := config.Extension{Name: "bypass", Exts: cloudMersiveConfig.bypassExts}
+		extArrs := make([]config.Extension, 3)
+		ind := 0
+		if len(process.Exts) == 1 && process.Exts[0] == "*" {
+			extArrs[2] = process
+		} else {
+			extArrs[ind] = process
+			ind++
+		}
+		if len(reject.Exts) == 1 && reject.Exts[0] == "*" {
+			extArrs[2] = reject
+		} else {
+			extArrs[ind] = reject
+			ind++
+		}
+		if len(bypass.Exts) == 1 && bypass.Exts[0] == "*" {
+			extArrs[2] = bypass
+		} else {
+			extArrs[ind] = bypass
+			ind++
+		}
+		fmt.Println(extArrs)
+		cloudMersiveConfig.extArrs = extArrs
 	})
 }
 
@@ -83,5 +117,9 @@ func NewCloudMersiveService(serviceName, methodName string, httpMsg *utils.HttpM
 		returnOrigIfMaxSizeExc:      cloudMersiveConfig.returnOrigIfMaxSizeExc,
 		return400IfFileExtRejected:  cloudMersiveConfig.return400IfFileExtRejected,
 		generalFunc:                 general_functions.NewGeneralFunc(httpMsg),
+		bypassExts:                  cloudMersiveConfig.bypassExts,
+		processExts:                 cloudMersiveConfig.processExts,
+		rejectExts:                  cloudMersiveConfig.rejectExts,
+		extArrs:                     cloudMersiveConfig.extArrs,
 	}
 }
