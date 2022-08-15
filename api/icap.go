@@ -16,6 +16,6 @@ func ToICAPEGServe(w icap.ResponseWriter, req *icap.Request) {
 	if err != nil {
 		return
 	}
-	// after initialization we call RequestProcessing func to process the ICAP request with a service
+	// after initialization, we call RequestProcessing func to process the ICAP request with a service
 	ICAPRequest.RequestProcessing()
 }

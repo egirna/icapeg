@@ -1,7 +1,6 @@
 package clamav
 
 import (
-	"fmt"
 	"icapeg/config"
 	"icapeg/readValues"
 	general_functions "icapeg/service/services-utilities/general-functions"
@@ -74,7 +73,6 @@ func InitClamavConfig(serviceName string) {
 			extArrs[ind] = bypass
 			ind++
 		}
-		fmt.Println(extArrs)
 		clamavConfig.extArrs = extArrs
 	})
 }

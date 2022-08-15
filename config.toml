@@ -107,12 +107,6 @@ return_original_if_max_file_size_exceeded=false
 return_400_if_file_ext_rejected=false
 
 
-#ICAP possible codes: 204 (No modifications needed) , 400 (Bad Request) , 403 (Forbidden) , 500 (Server Error) , 502 (Bad Gateway)
-api_response_400 = 400 #Bad Request
-api_response_403 = 403 #Forbidden
-api_response_415 = 204 #Unsupported Media Type
-api_response_422 = 204 #Unprocessable Entity
-
 [cloudmersive]
 vendor = "cloudmersive"
 service_caption= "cloudmersive service"   #Service
@@ -144,6 +138,7 @@ allow_xml_external_entities = false
 allow_html = true
 allow_insecure_deserialization = false
 restrict_file_types = ""
+
 
 
 
