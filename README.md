@@ -4,9 +4,9 @@
 </p>
 
 <p align="center">
-<!--     <a href="https://github.com/egirna/icapeg/actions/workflows/build.yml">
+    <a href="https://github.com/egirna/icapeg/actions/workflows/build.yml">
         <img src="https://github.com/egirna/icapeg/actions/workflows/build.yml/badge.svg"/>
-    </a> -->
+    </a> 
     <a href="https://codecov.io/gh/egirna/icapeg">
         <img src="https://codecov.io/gh/egirna/icapeg/branch/master/graph/badge.svg?token=HRMICTHXBQ)"/>
     </a>	    
