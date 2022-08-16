@@ -159,7 +159,7 @@ func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]st
 		var v string
 		reason = fmt.Sprintln("File contains virus, viruses found: ")
 		for _, item := range data["FoundViruses"].([]interface{}) {
-			v = fmt.Sprintln("%v ", item.(map[string]interface{})["VirusName"])
+			v = fmt.Sprintf("%v \n", item.(map[string]interface{})["VirusName"])
 			reason += v
 			serviceHeaders["FoundViruses"] += v
 		}
