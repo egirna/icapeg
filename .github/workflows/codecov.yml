@@ -1,5 +1,5 @@
 name: codecov
-on: [push]
+on: [push,pull_request]
 jobs:
   codecov:
     name: codecov
