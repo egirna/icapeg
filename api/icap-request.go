@@ -274,6 +274,7 @@ func (i *ICAPRequest) getVendorName() string {
 	return i.appCfg.ServicesInstances[i.serviceName].Vendor
 }
 
+
 // addingISTAGServiceHeaders is a func to add the important header to ICAP response
 func (i *ICAPRequest) addingISTAGServiceHeaders(ISTgValue string) {
 	i.h["ISTag"] = []string{ISTgValue}

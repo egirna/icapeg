@@ -51,6 +51,5 @@ func InitServiceConfig(vendor, serviceName string) {
 		virustotal.InitVirustotalConfig(serviceName)
 	case VendorCloudMersive:
 		cloudmersive.InitCloudMersiveConfig(serviceName)
-
 	}
 }
