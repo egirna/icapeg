@@ -58,7 +58,7 @@ Assume that the name of the vendor is **abc** and the name of the service **xyz*
 
 - ### **Vendor package** (abc package)
 
-  - Add a new package named **abc** in the [service](./service) directory.
+  - Add a new package named **abc** in the [service](./service/services) directory.
 
   - Add file named **config.go** in **abc** package and follow these instructions in this file.
 
