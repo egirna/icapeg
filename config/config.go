@@ -41,10 +41,6 @@ type AppConfig struct {
 	Services                []string
 	ServicesInstances       map[string]*serviceIcapInfo
 }
-type Extension struct {
-	Name string
-	Exts []string
-}
 
 var AppCfg AppConfig
 

@@ -1,9 +1,8 @@
 package cloudmersive
 
 import (
-	"fmt"
-	"icapeg/config"
 	"icapeg/readValues"
+	services_utilities "icapeg/service/services-utilities"
 	general_functions "icapeg/service/services-utilities/general-functions"
 	"icapeg/utils"
 	"sync"
@@ -20,7 +19,7 @@ type CloudMersive struct {
 	bypassExts                   []string
 	processExts                  []string
 	rejectExts                   []string
-	extArrs                      []config.Extension
+	extArrs                      []services_utilities.Extension
 	allowExecutables             bool
 	allowInvalidFiles            bool
 	allowScripts                 bool
@@ -67,31 +66,7 @@ func InitCloudMersiveConfig(serviceName string) {
 			processExts:                  readValues.ReadValuesSlice(serviceName + ".process_extensions"),
 			rejectExts:                   readValues.ReadValuesSlice(serviceName + ".reject_extensions"),
 		}
-		process := config.Extension{Name: "process", Exts: cloudMersiveConfig.processExts}
-		reject := config.Extension{Name: "reject", Exts: cloudMersiveConfig.rejectExts}
-		bypass := config.Extension{Name: "bypass", Exts: cloudMersiveConfig.bypassExts}
-		extArrs := make([]config.Extension, 3)
-		ind := 0
-		if len(process.Exts) == 1 && process.Exts[0] == "*" {
-			extArrs[2] = process
-		} else {
-			extArrs[ind] = process
-			ind++
-		}
-		if len(reject.Exts) == 1 && reject.Exts[0] == "*" {
-			extArrs[2] = reject
-		} else {
-			extArrs[ind] = reject
-			ind++
-		}
-		if len(bypass.Exts) == 1 && bypass.Exts[0] == "*" {
-			extArrs[2] = bypass
-		} else {
-			extArrs[ind] = bypass
-			ind++
-		}
-		fmt.Println(extArrs)
-		cloudMersiveConfig.extArrs = extArrs
+		cloudMersiveConfig.extArrs = services_utilities.InitExtsArr(cloudMersiveConfig.processExts, cloudMersiveConfig.rejectExts, cloudMersiveConfig.bypassExts)
 	})
 }
 
