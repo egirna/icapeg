@@ -23,6 +23,9 @@ Assume that the name of the vendor is **abc** and the name of the service **xyz*
       - **shadow_service**
       - **preview_bytes**
       - **preview_enabled**
+      - **process_extensions**
+      - **reject_extensions**
+      - **bypass_extensions**
 
   - **Optional**
 
@@ -41,6 +44,9 @@ Assume that the name of the vendor is **abc** and the name of the service **xyz*
   shadow_service=false
   preview_bytes = "1024" 
   preview_enabled = true
+  process_extensions = ["pdf", "zip", "com"] 
+  reject_extensions = ["docx"]
+  bypass_extensions = ["*"]
   ## optional variables
   base_url = "http://abc/" #
   scan_endpoint = "xyz.com"

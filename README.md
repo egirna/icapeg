@@ -25,7 +25,7 @@
 
 Open Source multi-vendor ICAP server
 
-Scan files requested via a proxy server using ICAPeg ICAP server, ICAPeg is an ICAP server connecting web proxies with API based scanning services and more soon!. ICAPeg currently supports [VirusTotal](https://www.virustotal.com/gui/home/upload),[VMRAY](https://www.vmray.com/) , & [Clamav](https://www.clamav.net/)  for scanning the files following the ICAP protocol. If you don't know about the ICAP protocol, here is a bit about it:
+Scan files requested via a proxy server using ICAPeg ICAP server, ICAPeg is an ICAP server connecting web proxies with API based scanning services and more soon!. ICAPeg currently supports [**VirusTotal**](https://www.virustotal.com/gui/home/upload), [**Cloudmersive**](https://cloudmersive.com/) & [**Clamav**](https://www.clamav.net/)  for scanning the files following the ICAP protocol. If you don't know about the ICAP protocol, here is a bit about it: 
 
 ## What is ICAP?
 
@@ -82,9 +82,9 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
 
 - ### Mapping a variable of config.toml file with an environment variable
 
-  This feeature is supported for **strings, int, bool, time.duration and string slices** only **(every type used in this project)**.
+  This feature is supported for **strings, int, bool, time.duration and string slices** only **(every type used in this project)**.
 
-  Let's have an example to explain how to map, assume that there is an env variable called LOG_LEVEL and you want to assign LOG_LEVEL value to app.log_level. You should change the value of (log_level= "debug") to (log_level= "$_LOG_LEVEL").
+  Let's have an example to explain how to map, assume that there is an environment variable in your machine called LOG_LEVEL and you want to assign LOG_LEVEL value to app.log_level. You should change the value of (log_level= "debug") to (log_level= "$_LOG_LEVEL").
 
   > **Note**: before you use this feature please make sure that the env variable that you want to use is globally in your machine and not just exported in a local session.
 
@@ -152,14 +152,15 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
         preview_enabled = true# options send preview header or not
         preview_bytes = "1024" #byte
         timeout  = 300 #seconds , ICAP will return 408 - Request timeout
+        process_extensions = ["pdf", "zip", "com"] 
+        # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
+        reject_extensions = ["docx"]
+        bypass_extensions = ["*"]
         fail_threshold = 2
         #max file size value from 1 to 9223372036854775807, and value of zero means unlimited
         max_filesize = 0 #bytes
         return_original_if_max_file_size_exceeded=false
-        bypass_extensions = []
-        process_extensions = ["*"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
         base_url = "$_CLOUDAPI_URL" #
-        scan_endpoint = "/api/rebuild/file"
         api_key = "$_AUTH_TOKENS"
         ```
         
@@ -227,9 +228,65 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
         
             - Any integer value.
         
+          - **process_extensions**
+        
+            It indicates to the file types that should be processed and scanned from the service, possible valuea:
+        
+            - Any string file types.
+        
+          - **reject_extensions**
+        
+            It indicates to the file types that should be rejected by the service, possible values:
+        
+            - Any string file types.
+        
+          - **bypass_extensions**
+        
+            It indicates to the file types that should be bypassed by the service and that means the files with this types will not be processed and will not be rejected. They will just be returned to the client as the were sent to **ICAPeg** from him, possible values:
+        
+            - Any string file types.
+        
+            > **Notes about extensions arrays:**
+            >
+            > - **Asterisk** sign (*****) means every file type except the ones in other arrays. example:
+            >
+            >   process_extensions = ["pdf", "zip", "com"] 
+            >   reject_extensions = ["docx"]
+            >   bypass_extensions = ["*"]
+            >
+            >   this example means that any file type will be bypassed except **docx** type which in **reject_extensions**, **pdf**, **zip**, **com** types which in **process_extensions**.
+            >
+            > - Only one array from (**process_extensions**, **reject_extensions**, **bypass_extensions**)  arrays should has **Asterisk** sign (*****).
+            >
+            >   process_extensions = ["pdf", "zip", "com"] 
+            >   reject_extensions = ["docx", "pdf", "\*"]
+            >   bypass_extensions = ["*"]
+            >
+            >   this configuration is not valid and **ICAPeg** will not run. another example:
+            >
+            >   process_extensions = ["pdf", "zip", "com"] 
+            >   reject_extensions = ["docx"]
+            >   bypass_extensions = ["*"]
+            >
+            >   this configuration is valid and **ICAPeg** will run normally.
+            >
+            > - Two arrays can't have the same file type. example:
+            >
+            >   process_extensions = ["pdf", "zip", "com"] 
+            >   reject_extensions = ["docx", "pdf"]
+            >   bypass_extensions = ["*"]
+            >
+            >   this configuration is not valid and **ICAPeg** will not run. another example:
+            >
+            >   process_extensions = ["pdf", "zip", "com"] 
+            >   reject_extensions = ["docx"]
+            >   bypass_extensions = ["*"]
+            >
+            >   this configuration is valid and **ICAPeg** will run normally.
+        
         - ### **Optional variables** (Variables that depends on the service)
         
-          > **Note:** 
+          > **Notes:** 
           >
           > - You may not use these variables in your service and you may use, It depends on your service and It's up to you.
           > - We will pretend that this service is for file processing and it sends that file to an external api to process it then it gets it back again, So all optional variables depends on that scenario in this service. (It's just a fake scenario service can do any thing not just for processing files).
@@ -274,9 +331,13 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
             The key of the external **API** that service sends the files through a request to it.
         
 
-## Adding a new service ot ICAPeg
+## Adding a new vendor ot ICAPeg
 
 - [How to add a new service for a new vendor](ADDING-NEW-VENDOR.md)
+
+## Testing
+
+- [How to test **ICAPeg**](Testing.md)
 
 ## Things to keep in mind
 
