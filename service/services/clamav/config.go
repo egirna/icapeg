@@ -11,13 +11,14 @@ import (
 
 // the clamav constants
 const (
-	ClamavMalStatus = "FOUND"
+	ClamavMalStatus  = "FOUND"
+	ClamavIdentifier = "CLAMAV ID"
 )
 
 var doOnce sync.Once
 var clamavConfig *Clamav
 
-// Clamav represents the informations regarding the clamav service
+// Clamav represents the information regarding the clamav service
 type Clamav struct {
 	httpMsg                    *utils.HttpMsg
 	elapsed                    time.Duration

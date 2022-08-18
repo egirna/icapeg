@@ -47,46 +47,15 @@ func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]st
 		contentType = append(contentType, "")
 	}
 	fileExtension := utils.GetMimeExtension(file.Bytes(), contentType[0], fileName)
-	fmt.Println(fileExtension)
+	isGzip := false
+
 	//check if the file extension is a bypass extension
 	//if yes we will not modify the file, and we will return 204 No modifications
-	fmt.Println(c.extArrs)
-	for i := 0; i < 3; i++ {
-		if c.extArrs[i].Name == "process" {
-			if c.generalFunc.IfFileExtIsX(fileExtension, c.processExts) {
-				break
-			}
-		} else if c.extArrs[i].Name == "reject" {
-			if c.generalFunc.IfFileExtIsX(fileExtension, c.rejectExts) {
-				reason := "File rejected"
-				if c.return400IfFileExtRejected {
-					return utils.BadRequestStatusCodeStr, nil, serviceHeaders
-				}
-				errPage := c.generalFunc.GenHtmlPage("service/unprocessable-file.html", reason, c.serviceName, "NO ID", c.httpMsg.Request.RequestURI)
-				c.httpMsg.Response = c.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
-				c.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
-				return utils.OkStatusCodeStr, c.httpMsg.Response, serviceHeaders
-			}
-		} else if c.extArrs[i].Name == "bypass" {
-			if c.generalFunc.IfFileExtIsX(fileExtension, c.bypassExts) {
-				fileAfterPrep, httpMsg := c.generalFunc.IfICAPStatusIs204(c.methodName, utils.NoModificationStatusCodeStr,
-					file, false, reqContentType, c.httpMsg)
-				if fileAfterPrep == nil && httpMsg == nil {
-					return utils.InternalServerErrStatusCodeStr, nil, nil
-				}
-
-				//returning the http message and the ICAP status code
-				switch msg := httpMsg.(type) {
-				case *http.Request:
-					msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
-					return utils.NoModificationStatusCodeStr, msg, serviceHeaders
-				case *http.Response:
-					msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
-					return utils.NoModificationStatusCodeStr, msg, serviceHeaders
-				}
-				return utils.NoModificationStatusCodeStr, nil, serviceHeaders
-			}
-		}
+	isProcess, icapStatus, httpMsg := c.generalFunc.CheckTheExtension(fileExtension, c.extArrs,
+		c.processExts, c.rejectExts, c.bypassExts, c.return400IfFileExtRejected, isGzip,
+		c.serviceName, c.methodName, CloudMersiveIdentifier, c.httpMsg.Request.RequestURI, reqContentType, file)
+	if !isProcess {
+		return icapStatus, httpMsg, serviceHeaders
 	}
 
 	//check if the file size is greater than max file size of the service or 3M size, according to account payment plans ,etc

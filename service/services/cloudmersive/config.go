@@ -12,6 +12,8 @@ import (
 var doOnce sync.Once
 var cloudMersiveConfig *CloudMersive
 
+const CloudMersiveIdentifier = "CLOUDMERSIVE ID"
+
 type CloudMersive struct {
 	httpMsg                      *utils.HttpMsg
 	serviceName                  string

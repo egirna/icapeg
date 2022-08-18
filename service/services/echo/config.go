@@ -12,6 +12,8 @@ import (
 var doOnce sync.Once
 var echoConfig *Echo
 
+const EchoIdentifier = "ECHO ID"
+
 // Echo represents the information regarding the Echo service
 type Echo struct {
 	httpMsg                    *utils.HttpMsg

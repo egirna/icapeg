@@ -12,6 +12,8 @@ import (
 var doOnce sync.Once
 var virustoalConfig *Virustotal
 
+const VirustotalIdentifier = "VIRUSTOTAL ID"
+
 // Virustotal represents the information regarding the Virustotal service
 type Virustotal struct {
 	httpMsg                    *utils.HttpMsg

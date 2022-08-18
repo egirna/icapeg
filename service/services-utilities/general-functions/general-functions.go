@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"errors"
 	"html/template"
+	services_utilities "icapeg/service/services-utilities"
 	"icapeg/service/services-utilities/ContentTypes"
 	"icapeg/utils"
 	"io"
@@ -58,6 +59,49 @@ func (f *GeneralFunc) CopyingFileToTheBuffer(methodName string) (*bytes.Buffer, 
 	return file, reqContentType, nil
 }
 
+func (f *GeneralFunc) CheckTheExtension(fileExtension string, extArrs []services_utilities.Extension, processExts,
+	rejectExts, bypassExts []string, return400IfFileExtRejected, isGzip bool, serviceName, methodName, identifier,
+	requestURI string, reqContentType ContentTypes.ContentType, file *bytes.Buffer) (bool, int, interface{}) {
+	for i := 0; i < 3; i++ {
+		if extArrs[i].Name == "process" {
+			if f.IfFileExtIsX(fileExtension, processExts) {
+				break
+			}
+		} else if extArrs[i].Name == "reject" {
+			if f.IfFileExtIsX(fileExtension, rejectExts) {
+				reason := "File rejected"
+				if return400IfFileExtRejected {
+					return false, utils.BadRequestStatusCodeStr, nil
+				}
+				errPage := f.GenHtmlPage("service/unprocessable-file.html", reason, serviceName, identifier, requestURI)
+				f.httpMsg.Response = f.ErrPageResp(http.StatusForbidden, errPage.Len())
+				f.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
+				return false, utils.OkStatusCodeStr, f.httpMsg.Response
+			}
+		} else if extArrs[i].Name == "bypass" {
+			if f.IfFileExtIsX(fileExtension, bypassExts) {
+				fileAfterPrep, httpMsg := f.IfICAPStatusIs204(methodName, utils.NoModificationStatusCodeStr,
+					file, isGzip, reqContentType, f.httpMsg)
+				if fileAfterPrep == nil && httpMsg == nil {
+					return false, utils.InternalServerErrStatusCodeStr, nil
+				}
+
+				//returning the http message and the ICAP status code
+				switch msg := httpMsg.(type) {
+				case *http.Request:
+					msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
+					return false, utils.NoModificationStatusCodeStr, msg
+				case *http.Response:
+					msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
+					return false, utils.NoModificationStatusCodeStr, msg
+				}
+				return false, utils.NoModificationStatusCodeStr, nil
+			}
+		}
+	}
+	return true, 0, nil
+}
+
 // copyingFileToTheBufferResp is a utility function for CopyingFileToTheBuffer func
 // it's used for extracting a file from the body of the http response
 func (f *GeneralFunc) copyingFileToTheBufferResp() (*bytes.Buffer, error) {
@@ -104,7 +148,6 @@ func (f *GeneralFunc) IfFileExtIsX(fileExtension string, arr []string) bool {
 	return false
 }
 
-
 // IfFileExtIsReject is a func to check if a file extension is bypass extension or not
 func (f *GeneralFunc) IfFileExtIsReject(fileExtension string, rejectExts []string) error {
 	if utils.InStringSlice(fileExtension, rejectExts) {
@@ -112,7 +155,6 @@ func (f *GeneralFunc) IfFileExtIsReject(fileExtension string, rejectExts []strin
 	}
 	return nil
 }
-
 
 // IfFileExtIsBypassAndNotProcess is a func to check if a file extension is bypass extension and not a process extension
 func (f *GeneralFunc) IfFileExtIsBypassAndNotProcess(fileExtension string, bypassExts []string, processExts []string) error {
@@ -305,7 +347,6 @@ func (f *GeneralFunc) IfICAPStatusIs204(methodName string, status int, file *byt
 	}
 	return fileAfterPrep, httpMessage
 }
-
 
 // function to return the suitable http message (http request, http response)
 func (f *GeneralFunc) returningHttpMessage(methodName string, file []byte) interface{} {
