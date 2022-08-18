@@ -105,6 +105,30 @@ Assume that the name of the vendor is **abc** and the name of the service **xyz*
 
       It's used to read service's **config.toml** file section **optional** variables  and store them in memory using **abcConfig** instance. 
 
+      ```go
+      func InitEchoConfig(serviceName string) {
+      	doOnce.Do(func() {
+      		echoConfig = &Echo{
+      			maxFileSize:                readValues.ReadValuesInt(serviceName + ".max_filesize"),
+      			bypassExts:                 readValues.ReadValuesSlice(serviceName + ".bypass_extensions"),
+      			processExts:                readValues.ReadValuesSlice(serviceName + ".process_extensions"),
+      			rejectExts:                 readValues.ReadValuesSlice(serviceName + ".reject_extensions"),
+      			BaseURL:                    readValues.ReadValuesString(serviceName + ".base_url"),
+      			Timeout:                    readValues.ReadValuesDuration(serviceName+".timeout") * time.Second,
+      			APIKey:                     readValues.ReadValuesString(serviceName + ".api_key"),
+      			ScanEndpoint:               readValues.ReadValuesString(serviceName + ".scan_endpoint"),
+      			FailThreshold:              readValues.ReadValuesInt(serviceName + ".fail_threshold"),
+      			returnOrigIfMaxSizeExc:     readValues.ReadValuesBool(serviceName + ".return_original_if_max_file_size_exceeded"),
+      			return400IfFileExtRejected: readValues.ReadValuesBool(serviceName + ".return_400_if_file_ext_rejected"),
+      		}
+      		echoConfig.extArrs = services_utilities.InitExtsArr(echoConfig.processExts, echoConfig.rejectExts, echoConfig.bypassExts)
+      	})
+      }
+      
+      ```
+
+      
+
     - Add function named **NewAbcService** which create service from abc vendor.
 
       It extracts service configuration from **abcConfig** variable.
@@ -144,7 +168,7 @@ Assume that the name of the vendor is **abc** and the name of the service **xyz*
 
 - ### [**service.go**](service/service.go)
 
-  - Add a name of the new vendor as a constant variable in [service.go](service/servoce.go) at the start of the file in the constants section.
+  - Add a name of the new vendor as a constant variable in [service.go](service/service.go) at the start of the file in the constants section.
 
 ```go
 //Vendors names
