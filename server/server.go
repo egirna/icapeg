@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"icapeg/utils"
 	"log"
 	"os"
 	"os/signal"
@@ -17,6 +18,9 @@ import (
 // StartServer starts the icap server
 
 func StartServer() error {
+
+	utils.InitializeLogger()
+
 	// any request even the service doesn't exist in toml file, it will go to api.ToICAPEGServe
 	// and there, the request will be filtered to check if the service exists or not
 

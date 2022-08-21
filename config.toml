@@ -24,7 +24,7 @@
 title = "ICAP configuration file"
 
 [app]
-log_level = "info" # the log levels for tha app, available values: info-->logging the overall progress of the app, debug --> log everything including errors, error --> log infos and just errors
+log_level = "debug" # the log levels for tha app, available values: info-->logging the overall progress of the app, debug --> log everything including errors, error --> log infos and just errors
 write_logs_to_console = false
 log_service_url = "http://logging-transaction-logging-api:8080/upload"
 log_flush_duration = 2
