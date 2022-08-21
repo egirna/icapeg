@@ -19,8 +19,6 @@ title = "ICAP configuration file"
 
 [app]
 port = 1344
-propagate_error = true
-service_caption ="Go-ICAP server - ICAPeg"
 services= ["echo", "virustotal", "clamav", "cloudmersive"]
 debugging_headers=true
 

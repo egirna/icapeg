@@ -1,31 +1,91 @@
 
 ## For Linux
 
-Install the clamav and the clamav daemon like this
+Update your package list
 
- ```code
-  $ sudo apt-get install clamav clamav-daemon
+ ```bash
+ $ sudo apt-get update
  ```
 
-This will install the dependencies as well.
+Install ClamAV
 
-Next , start the freshclam service(the database clamav uses to scan files, a must dependency) like this
-
-  ```code
-    $ sudo service clamav-freshclam restart
-    $ sudo service clamav-freshclam status
+  ```bash
+  $ sudo apt-get install clamav clamav-daemon -y
   ```
 
-The status should be **active**
+Stop ClamAV process
 
-Finally, start the clamav daemon like this
-
- ```code
-  $ sudo service clamav-daemon start
-  $ sudo service clamav-daemon status
+ ```bash
+ $ sudo systemctl stop clamav-freshclam
  ```
 
-This creates the socket file needed. Again, the status should be **active**.
+Manually update the ClamAV signature database
+
+```bash
+$ sudo freshclam
+```
+
+Restart the service to update the database in the background
+
+```bash
+$ sudo systemctl start clamav-freshclam
+```
+
+Reconfigure **clamav-deomen** to create clamd(the daemon interface) socket file
+
+```bash
+$ sudo dpkg-reconfigure clamav-daemon
+```
+
+After hitting enter you will be asked a lot of questions, Answer as the following order:
+
+1- Yes
+
+2- UNIX
+
+3- Ok
+
+4- Ok
+
+5- Ok
+
+6- Yes
+
+7- Yes
+
+8- Yes
+
+9- Ok
+
+10- Ok
+
+11- Yes
+
+12- Ok
+
+13- Ok
+
+14- Ok
+
+15- Yes
+
+16- Ok
+
+17- Yes
+
+18- Yes
+
+19- Ok
+
+20- Ok
+
+21- Ok
+
+22- Yes
+
+23- TrustSigned
+
+24- Ok
 
 By default the clamd(the daemon interface) socket file path should be ```/var/run/clamav/clamd.ctl```. This is the path you use in the config.toml file.
 
@@ -35,7 +95,7 @@ Make sure you have homebrew installed.
 
 Install clamav using homebrew like this
 
- ```code
+ ```bash
    $ brew install clamav
  ```
 
@@ -45,14 +105,14 @@ Next, create two configuration files named, **freshclam.conf** & **clamd.conf** 
 
 Put the following in the **freshclam.conf** file:
 
- ```code
+ ```bash
    # /usr/local/etc/clamav/freshclam.conf
    DatabaseMirror database.clamav.net
  ```
 
 Next, put the following in the **clamd.conf** file:
 
-```code
+```bash
   # /usr/local/etc/clamav/clamd.conf
   LocalSocket /usr/local/var/run/clamav/clamd.sock
 ```
@@ -61,13 +121,13 @@ You need to ensure the directory ```/usr/local/var/run/clamav``` exists, create 
 
 Next, start the freshclam service like this
 
- ```code
+ ```bash
    $ freshclam -v
  ```
 
 You should something like this:
 
- ```code
+ ```bash
     Current working dir is /usr/local/Cellar/clamav/0.98.1/share/clamav
     Max retries == 3
     ClamAV update process started at Tue Feb  4 11:31:22 2014
@@ -84,11 +144,11 @@ You should something like this:
     Querying main.55.76.1.0.515B64AD.ping.clamav.net
 ...
 
-```
+ ```
 
 Finally start the clamav daemon, by executing the **clamd** command
 
- ```code
+ ```bash
    $ clamd
  ```
 

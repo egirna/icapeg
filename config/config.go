@@ -28,7 +28,6 @@ type AppConfig struct {
 	ProcessExtensions []string
 	PreviewBytes      string
 	PreviewEnabled    bool
-	PropagateError    bool
 	DebuggingHeaders  bool
 	Services          []string
 	ServicesInstances map[string]*serviceIcapInfo
@@ -48,7 +47,6 @@ func Init() {
 		Port: readValues.ReadValuesInt("app.port"),
 		//LogLevel:                readValues.ReadValuesString("app.log_level"),
 		//WriteLogsToConsole:      readValues.ReadValuesBool("app.write_logs_to_console"),
-		PropagateError:   readValues.ReadValuesBool("app.propagate_error"),
 		DebuggingHeaders: readValues.ReadValuesBool("app.debugging_headers"),
 		Services:         readValues.ReadValuesSlice("app.services"),
 	}
@@ -132,7 +130,6 @@ func Init() {
 		AppCfg.ServicesInstances[serviceName] = &serviceIcapInfo{
 			Vendor:         readValues.ReadValuesString(serviceName + ".vendor"),
 			ServiceTag:     readValues.ReadValuesString(serviceName + ".service_tag"),
-			ServiceCaption: readValues.ReadValuesString(serviceName + ".service_caption"),
 			ReqMode:        readValues.ReadValuesBool(serviceName + ".req_mode"),
 			RespMode:       readValues.ReadValuesBool(serviceName + ".resp_mode"),
 			ShadowService:  readValues.ReadValuesBool(serviceName + ".shadow_service"),

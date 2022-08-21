@@ -84,7 +84,7 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
 
   This feature is supported for **strings, int, bool, time.duration and string slices** only **(every type used in this project)**.
 
-  Let's have an example to explain how to map, assume that there is an environment variable in your machine called LOG_LEVEL and you want to assign LOG_LEVEL value to app.log_level. You should change the value of (log_level= "debug") to (log_level= "$_LOG_LEVEL").
+  Let's have an example to explain how to map, assume that there is an environment variable in your machine called PORT and you want to assign PORT value to appport. You should change the value of (port= 1344) to (port= "$_PORT").
 
   > **Note**: before you use this feature please make sure that the env variable that you want to use is globally in your machine and not just exported in a local session.
 
@@ -97,8 +97,8 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
         ```toml
         [app]
         port = 1344
-        services= ["echo", "clamav"]
-        verify_server_cert=false
+        services= ["echo", "virustotal", "clamav", "cloudmersive"]
+        debugging_headers=true
         ```
         
         - **port**
@@ -106,12 +106,21 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
           The port number that **ICAPeg** runs on. The default port number for any ICAP server is **1344**, possible values:
         
           - Any port number that isn't used in your machine.
-          
+        
         - **services**
         
           The array that contains integrated services names with **ICAPeg**, possible values:
         
           - Integrated services names with **ICAPeg** (ex: ["echo"]).
+        
+        - **debugging_headers**
+        
+          Bool variable which indicates to if debugging headers should be displayed with ICAP headers or not. Debugging headers tell the client that if shadow service is enabled for example. they start with **X-ICAPeg-{{HEADER_NAME}}**. possible values:
+        
+          - **true**: Debugging headers should be displayed with ICAP headers.
+          - **false**: Debugging headers should not be displayed with ICAP headers.
+        
+          - Any port number that isn't used in your machine.
         
       - **[echo] section** 
       
@@ -127,17 +136,13 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
         shadow_service=false
         preview_enabled = true# options send preview header or not
         preview_bytes = "1024" #byte
-        timeout  = 300 #seconds , ICAP will return 408 - Request timeout
         process_extensions = ["pdf", "zip", "com"] 
         # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
         reject_extensions = ["docx"]
         bypass_extensions = ["*"]
-        fail_threshold = 2
         #max file size value from 1 to 9223372036854775807, and value of zero means unlimited
         max_filesize = 0 #bytes
         return_original_if_max_file_size_exceeded=false
-        base_url = "$_CLOUDAPI_URL" #
-        api_key = "$_AUTH_TOKENS"
         ```
         
         - ### **Mandatory variables (Variables that should any service has)**
@@ -282,34 +287,18 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
         
             Get more details about **request mode** from [here](https://datatracker.ietf.org/doc/html/rfc3507#section-3.1).
         
-          - **bypass_extensions**
-        
-            An Array that contains the extensions of that service can't process if the **HTTP** message contains a file.
-        
-            - Any valid file extenstions.
-        
-          - **process_extensions**
-        
-            An Array that contains the extensions of that service canprocess if the **HTTP** message contains a file.
-        
-            - Any valid file extenstions.
-        
-          - **base_url**
-        
-            The external **API URL** that service sends the files through a request to it.
-        
-          - **scan_endpoint**
-        
-            Endoint of the exyernal **API URL** that service sends the files through a request to it..
-        
-          - **api_key**
-        
-            The key of the external **API** that service sends the files through a request to it.
-        
 
 ## Adding a new vendor ot ICAPeg
 
-- [How to add a new service for a new vendor](ADDING-NEW-VENDOR.md)
+- [How to add a new service for a new vendor](ADDING-NEW-VENDOR.md).
+
+- ## How to Setup Services
+
+  - **Echo**: It doesn't need setup, it take the HTTP message and return it as it is. **Echo** is just an example service.
+  - [**Virustotal**](/vendors-markdowns/VIRUSTOTALAPI.md).
+
+  - [**ClamAV**](/vendors-markdowns/CLAMAVSETUP.md).
+  - [**Cloudmersive**](/vendors-markdowns/VIRUSTOTALAPI.md).
 
 ## Testing
 
