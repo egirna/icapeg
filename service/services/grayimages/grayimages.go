@@ -38,3 +38,14 @@ func (g *GrayImages) Processing(partial bool) (int, interface{}, map[string]stri
 	if len(contentType) == 0 {
 		contentType = append(contentType, "")
 	}
+	isGzip = g.generalFunc.IsBodyGzipCompressed(g.methodName)
+	//if it's compressed, we decompress it to send it to Glasswall service
+	if isGzip {
+		log.Println("56, compressed")
+		if file, err = g.generalFunc.DecompressGzipBody(file); err != nil {
+			return utils.InternalServerErrStatusCodeStr, nil, nil
+		}
+	}
+	fileExtension := utils.GetMimeExtension(file.Bytes(), contentType[0], fileName)
+
+}
