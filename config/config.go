@@ -90,7 +90,8 @@ func Init() {
 			fmt.Println("max_filesize value in config.toml file is not valid")
 			os.Exit(1)
 		}
-
+		//checking if extensions arrays are valid in every service
+		//arrays are valid if there is only one array has asterisk and no two arrays has same file type
 		utils.Logger.Debug("checking if extensions arrays are valid in every service")
 		ext := make(map[string]bool)
 		asterisks := 0
@@ -175,23 +176,6 @@ func Init() {
 			PreviewBytes:   readValues.ReadValuesString(serviceName + ".preview_bytes"),
 			PreviewEnabled: readValues.ReadValuesBool(serviceName + ".preview_enabled"),
 		}
-	}
-}
-
-// InitTestConfig initializes the app with the test config file (for integration test)
-func InitTestConfig() {
-	AppCfg = AppConfig{
-		Port:                 readValues.ReadValuesInt("app.port"),
-		LogLevel:             readValues.ReadValuesString("app.log_level"),
-		LoggingServerURL:     readValues.ReadValuesString("app.log_service_url"),
-		LoggingFlushDuration: float64(readValues.ReadValuesInt("app.log_flush_duration")),
-		//RespScannerVendor:       strings.ToLower(readValues.ReadValuesString("app.resp_scanner_vendor")),
-		//ReqScannerVendor:        strings.ToLower(readValues.ReadValuesString("app.req_scanner_vendor")),
-		RespScannerVendorShadow: strings.ToLower(readValues.ReadValuesString("app.resp_scanner_vendor_shadow")),
-		ReqScannerVendorShadow:  strings.ToLower(readValues.ReadValuesString("app.req_scanner_vendor_shadow")),
-		PreviewBytes:            readValues.ReadValuesString("app.preview_bytes"),
-		PropagateError:          readValues.ReadValuesBool("app.propagate_error"),
-		DebuggingHeaders:        readValues.ReadValuesBool("app.debugging_headers"),
 	}
 }
 
