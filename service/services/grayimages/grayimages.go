@@ -6,7 +6,6 @@ import (
 )
 
 func (g *GrayImages) Processing(partial bool) (int, interface{}, map[string]string) {
-	log.Println("processing")
 	serviceHeaders := make(map[string]string)
 	// no need to scan part of the file, this service needs all the file at ine time
 	if partial {
@@ -23,29 +22,20 @@ func (g *GrayImages) Processing(partial bool) (int, interface{}, map[string]stri
 	}
 
 	//getting the extension of the file
-	var contentType []string
-	if len(contentType) == 0 {
-		contentType = append(contentType, "")
-	}
+	contentType := g.httpMsg.Response.Header["Content-Type"]
 	var fileName string
 	if g.methodName == utils.ICAPModeReq {
-		contentType = g.httpMsg.Request.Header["Content-Type"]
 		fileName = utils.GetFileName(g.httpMsg.Request)
 	} else {
-		contentType = g.httpMsg.Response.Header["Content-Type"]
 		fileName = utils.GetFileName(g.httpMsg.Response)
 	}
-	if len(contentType) == 0 {
-		contentType = append(contentType, "")
-	}
-	isGzip = g.generalFunc.IsBodyGzipCompressed(g.methodName)
-	//if it's compressed, we decompress it to send it to Glasswall service
-	if isGzip {
-		log.Println("56, compressed")
-		if file, err = g.generalFunc.DecompressGzipBody(file); err != nil {
-			return utils.InternalServerErrStatusCodeStr, nil, nil
-		}
-	}
 	fileExtension := utils.GetMimeExtension(file.Bytes(), contentType[0], fileName)
+
+	isProcess, icapStatus, httpMsg := g.generalFunc.CheckTheExtension(fileExtension, g.extArrs,
+		g.processExts, g.rejectExts, g.bypassExts, g.return400IfFileExtRejected, isGzip,
+		g.serviceName, g.methodName, VirustotalIdentifier, g.httpMsg.Request.RequestURI, reqContentType, file)
+	if !isProcess {
+		return icapStatus, httpMsg, serviceHeaders
+	}
 
 }
