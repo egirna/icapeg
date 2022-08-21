@@ -1,0 +1,16 @@
+Features:
+- ICAP request mode
+- ICAP response mode
+- Shadow service
+- Preview bytes
+- Supports multiple services (ClamAV, Cloudmersive and Virustotal)
+- Responses with blick page incase of unsafe file
+- Supports adding specific extensions to be processed
+- Supports adding specific extensions to be bypassed
+- Supports adding specific extensions to be rejected
+- Supports setting maximum size to the body of the HTTP message 
+
+Known issues: 
+- Logs
+- Block page in request mode
+- Sending file with zero bytes while preview bytes is greater than zero

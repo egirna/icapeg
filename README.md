@@ -300,10 +300,10 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
 ## How to Setup Existed Services
 
 - **Echo**: It doesn't need setup, it take the HTTP message and return it as it is. **Echo** is just an example service.
-- [**Virustotal**](/vendors-markdowns/VIRUSTOTALAPI.md).
+- [**Virustotal**](/vendors-markdowns/virustotal/VIRUSTOTALAPI.md).
 
-- [**ClamAV**](/vendors-markdowns/CLAMAVSETUP.md).
-- [**Cloudmersive**](/vendors-markdowns/VIRUSTOTALAPI.md).
+- [**ClamAV**](/vendors-markdowns/clamav/CLAMAVSETUP.md).
+- [**Cloudmersive**](/vendors-markdowns/cloudmersive/CLOUDMERSIVEAPI.md).
 
 ## Testing
 
