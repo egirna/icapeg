@@ -32,12 +32,20 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 	}
 
 	//getting the extension of the file
-	contentType := v.httpMsg.Response.Header["Content-Type"]
+	var contentType []string
+	if len(contentType) == 0 {
+		contentType = append(contentType, "")
+	}
 	var fileName string
 	if v.methodName == utils.ICAPModeReq {
+		contentType = v.httpMsg.Request.Header["Content-Type"]
 		fileName = utils.GetFileName(v.httpMsg.Request)
 	} else {
+		contentType = v.httpMsg.Response.Header["Content-Type"]
 		fileName = utils.GetFileName(v.httpMsg.Response)
+	}
+	if len(contentType) == 0 {
+		contentType = append(contentType, "")
 	}
 	fileExtension := utils.GetMimeExtension(file.Bytes(), contentType[0], fileName)
 

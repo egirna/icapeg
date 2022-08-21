@@ -31,6 +31,7 @@ func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]st
 		return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
 	}
 
+	//getting the extension of the file
 	var contentType []string
 	if len(contentType) == 0 {
 		contentType = append(contentType, "")
@@ -47,6 +48,7 @@ func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]st
 		contentType = append(contentType, "")
 	}
 	fileExtension := utils.GetMimeExtension(file.Bytes(), contentType[0], fileName)
+
 	isGzip := false
 
 	//check if the file extension is a bypass extension
@@ -68,13 +70,11 @@ func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]st
 	// sending request to cloudmersive api
 	serviceResp, err := c.SendFileToAPI(file, fileName)
 	if err != nil {
-		fmt.Println("error line 44\n", err.Error())
 		return serviceResp.StatusCode, nil, serviceHeaders
 	}
 	// getting response body
 	body, err := ioutil.ReadAll(serviceResp.Body)
 	if err != nil {
-		fmt.Println(err)
 		return serviceResp.StatusCode, nil, serviceHeaders
 	}
 	var data map[string]interface{}
@@ -82,7 +82,6 @@ func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]st
 	// msg used to read error messages when status is not 200
 	msg := string(body)
 	if serviceResp.StatusCode == 400 && msg == "Invalid input: Input file was empty." {
-		fmt.Println(msg)
 		errPage := c.generalFunc.GenHtmlPage(utils.BlockPagePath, msg, c.serviceName, serviceResp.Header["Request-Context"][0], c.httpMsg.Request.RequestURI)
 		c.httpMsg.Response = c.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
 		c.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
@@ -91,7 +90,6 @@ func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]st
 	// check CleanResult, if false detect why
 	var reason string
 	reason = ""
-	fmt.Println(serviceResp.Header)
 	if data["CleanResult"].(bool) == false {
 		serviceHeaders["CleanResult"] = "false"
 		if data["ContainsExecutable"].(bool) == true && !c.allowExecutables {
@@ -115,7 +113,6 @@ func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]st
 			if c.return400IfFileExtRejected {
 				return utils.BadRequestStatusCodeStr, nil, serviceHeaders
 			}
-			fmt.Println(reason)
 			errPage := c.generalFunc.GenHtmlPage(utils.BlockPagePath, reason, c.serviceName, serviceResp.Header["Request-Context"][0], c.httpMsg.Request.RequestURI)
 			c.httpMsg.Response = c.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
 			c.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
@@ -148,9 +145,6 @@ func (c *CloudMersive) SendFileToAPI(f *bytes.Buffer, filename string) (*http.Re
 
 	bodyWriter := multipart.NewWriter(bodyBuf)
 
-	// adding policy in the request
-	bodyWriter.WriteField("contentManagementFlagJson", c.policy)
-
 	part, err := bodyWriter.CreateFormFile("file", filename)
 	if err != nil {
 		return nil, err
@@ -172,8 +166,6 @@ func (c *CloudMersive) SendFileToAPI(f *bytes.Buffer, filename string) (*http.Re
 	req.Header.Add("allowXmlExternalEntities", strconv.FormatBool(c.allowXmlExternalEntities))
 	req.Header.Add("allowHtml", strconv.FormatBool(c.allowHtml))
 	req.Header.Add("allowInsecureDeserialization", strconv.FormatBool(c.allowInsecureDeserialization))
-	req.Header.Add("restrictFileTypes", c.restrictFileTypes)
-	fmt.Println("restrictFileTypes: ", c.restrictFileTypes)
 	req.Header.Add("Content-Type", "multipart/form-data")
 	req.Header.Add("Apikey", c.APIKey)
 	req.Header.Set("Content-Type", bodyWriter.FormDataContentType())
@@ -189,7 +181,6 @@ func (c *CloudMersive) SendFileToAPI(f *bytes.Buffer, filename string) (*http.Re
 
 	res, err := client.Do(req)
 	if err != nil {
-		fmt.Println(err)
 		return nil, err
 	}
 	return res, nil

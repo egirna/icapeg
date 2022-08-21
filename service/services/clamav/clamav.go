@@ -27,12 +27,20 @@ func (c *Clamav) Processing(partial bool) (int, interface{}, map[string]string) 
 	}
 
 	//getting the extension of the file
-	contentType := c.httpMsg.Response.Header["Content-Type"]
+	var contentType []string
+	if len(contentType) == 0 {
+		contentType = append(contentType, "")
+	}
 	var fileName string
 	if c.methodName == utils.ICAPModeReq {
+		contentType = c.httpMsg.Request.Header["Content-Type"]
 		fileName = utils.GetFileName(c.httpMsg.Request)
 	} else {
+		contentType = c.httpMsg.Response.Header["Content-Type"]
 		fileName = utils.GetFileName(c.httpMsg.Response)
+	}
+	if len(contentType) == 0 {
+		contentType = append(contentType, "")
 	}
 	fileExtension := utils.GetMimeExtension(file.Bytes(), contentType[0], fileName)
 
