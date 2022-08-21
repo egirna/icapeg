@@ -1,8 +1,8 @@
 package echo
 
 import (
-	"icapeg/config"
 	"icapeg/readValues"
+	services_utilities "icapeg/service/services-utilities"
 	general_functions "icapeg/service/services-utilities/general-functions"
 	"icapeg/utils"
 	"sync"
@@ -11,6 +11,8 @@ import (
 
 var doOnce sync.Once
 var echoConfig *Echo
+
+const EchoIdentifier = "ECHO ID"
 
 // Echo represents the information regarding the Echo service
 type Echo struct {
@@ -22,7 +24,7 @@ type Echo struct {
 	bypassExts                 []string
 	processExts                []string
 	rejectExts                 []string
-	extArrs                    []config.Extension
+	extArrs                    []services_utilities.Extension
 	BaseURL                    string
 	Timeout                    time.Duration
 	APIKey                     string
@@ -48,31 +50,7 @@ func InitEchoConfig(serviceName string) {
 			returnOrigIfMaxSizeExc:     readValues.ReadValuesBool(serviceName + ".return_original_if_max_file_size_exceeded"),
 			return400IfFileExtRejected: readValues.ReadValuesBool(serviceName + ".return_400_if_file_ext_rejected"),
 		}
-
-		process := config.Extension{Name: "process", Exts: echoConfig.processExts}
-		reject := config.Extension{Name: "reject", Exts: echoConfig.rejectExts}
-		bypass := config.Extension{Name: "bypass", Exts: echoConfig.bypassExts}
-		extArrs := make([]config.Extension, 3)
-		ind := 0
-		if len(process.Exts) == 1 && process.Exts[0] == "*" {
-			extArrs[2] = process
-		} else {
-			extArrs[ind] = process
-			ind++
-		}
-		if len(reject.Exts) == 1 && reject.Exts[0] == "*" {
-			extArrs[2] = reject
-		} else {
-			extArrs[ind] = reject
-			ind++
-		}
-		if len(bypass.Exts) == 1 && bypass.Exts[0] == "*" {
-			extArrs[2] = bypass
-		} else {
-			extArrs[ind] = bypass
-			ind++
-		}
-		echoConfig.extArrs = extArrs
+		echoConfig.extArrs = services_utilities.InitExtsArr(echoConfig.processExts, echoConfig.rejectExts, echoConfig.bypassExts)
 	})
 }
 

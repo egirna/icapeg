@@ -40,42 +40,12 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 		fileName = utils.GetFileName(v.httpMsg.Response)
 	}
 	fileExtension := utils.GetMimeExtension(file.Bytes(), contentType[0], fileName)
-	for i := 0; i < 3; i++ {
-		if v.extArrs[i].Name == "process" {
-			if v.generalFunc.IfFileExtIsX(fileExtension, v.processExts) {
-				break
-			}
-		} else if v.extArrs[i].Name == "reject" {
-			if v.generalFunc.IfFileExtIsX(fileExtension, v.rejectExts) {
-				reason := "File rejected"
-				if v.return400IfFileExtRejected {
-					return utils.BadRequestStatusCodeStr, nil, serviceHeaders
-				}
-				errPage := v.generalFunc.GenHtmlPage("service/unprocessable-file.html", reason, v.serviceName, "NO ID", v.httpMsg.Request.RequestURI)
-				v.httpMsg.Response = v.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
-				v.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
-				return utils.OkStatusCodeStr, v.httpMsg.Response, serviceHeaders
-			}
-		} else if v.extArrs[i].Name == "bypass" {
-			if v.generalFunc.IfFileExtIsX(fileExtension, v.bypassExts) {
-				fileAfterPrep, httpMsg := v.generalFunc.IfICAPStatusIs204(v.methodName, utils.NoModificationStatusCodeStr,
-					file, false, reqContentType, v.httpMsg)
-				if fileAfterPrep == nil && httpMsg == nil {
-					return utils.InternalServerErrStatusCodeStr, nil, nil
-				}
 
-				//returning the http message and the ICAP status code
-				switch msg := httpMsg.(type) {
-				case *http.Request:
-					msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
-					return utils.NoModificationStatusCodeStr, msg, serviceHeaders
-				case *http.Response:
-					msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
-					return utils.NoModificationStatusCodeStr, msg, serviceHeaders
-				}
-				return utils.NoModificationStatusCodeStr, nil, serviceHeaders
-			}
-		}
+	isProcess, icapStatus, httpMsg := v.generalFunc.CheckTheExtension(fileExtension, v.extArrs,
+		v.processExts, v.rejectExts, v.bypassExts, v.return400IfFileExtRejected, isGzip,
+		v.serviceName, v.methodName, VirustotalIdentifier, v.httpMsg.Request.RequestURI, reqContentType, file)
+	if !isProcess {
+		return icapStatus, httpMsg, serviceHeaders
 	}
 
 	//check if the file size is greater than max file size of the service

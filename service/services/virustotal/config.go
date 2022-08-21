@@ -1,8 +1,8 @@
 package virustotal
 
 import (
-	"icapeg/config"
 	"icapeg/readValues"
+	services_utilities "icapeg/service/services-utilities"
 	general_functions "icapeg/service/services-utilities/general-functions"
 	"icapeg/utils"
 	"sync"
@@ -11,6 +11,8 @@ import (
 
 var doOnce sync.Once
 var virustoalConfig *Virustotal
+
+const VirustotalIdentifier = "VIRUSTOTAL ID"
 
 // Virustotal represents the information regarding the Virustotal service
 type Virustotal struct {
@@ -21,7 +23,7 @@ type Virustotal struct {
 	bypassExts                 []string
 	processExts                []string
 	rejectExts                 []string
-	extArrs                    []config.Extension
+	extArrs                    []services_utilities.Extension
 	ScanUrl                    string
 	ReportUrl                  string
 	Timeout                    time.Duration
@@ -49,30 +51,7 @@ func InitVirustotalConfig(serviceName string) {
 			returnOrigIfMaxSizeExc:     readValues.ReadValuesBool(serviceName + ".return_original_if_max_file_size_exceeded"),
 			return400IfFileExtRejected: readValues.ReadValuesBool(serviceName + ".return_400_if_file_ext_rejected"),
 		}
-		process := config.Extension{Name: "process", Exts: virustoalConfig.processExts}
-		reject := config.Extension{Name: "reject", Exts: virustoalConfig.rejectExts}
-		bypass := config.Extension{Name: "bypass", Exts: virustoalConfig.bypassExts}
-		extArrs := make([]config.Extension, 3)
-		ind := 0
-		if len(process.Exts) == 1 && process.Exts[0] == "*" {
-			extArrs[2] = process
-		} else {
-			extArrs[ind] = process
-			ind++
-		}
-		if len(reject.Exts) == 1 && reject.Exts[0] == "*" {
-			extArrs[2] = reject
-		} else {
-			extArrs[ind] = reject
-			ind++
-		}
-		if len(bypass.Exts) == 1 && bypass.Exts[0] == "*" {
-			extArrs[2] = bypass
-		} else {
-			extArrs[ind] = bypass
-			ind++
-		}
-		virustoalConfig.extArrs = extArrs
+		virustoalConfig.extArrs = services_utilities.InitExtsArr(virustoalConfig.processExts, virustoalConfig.rejectExts, virustoalConfig.bypassExts)
 	})
 }
 
