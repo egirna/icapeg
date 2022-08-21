@@ -23,7 +23,6 @@ func StartServer() error {
 	// and there, the request will be filtered to check if the service exists or not
 
 	config.Init()
-	utils.InitializeLogger()
 
 	icap.HandleFunc("/", api.ToICAPEGServe)
 	//http.HandleFunc("/", api.ErrorPageHanlder)

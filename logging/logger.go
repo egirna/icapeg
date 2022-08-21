@@ -3,20 +3,18 @@ package utils
 import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"icapeg/readValues"
 	"os"
 )
 
 var Logger *zap.Logger
 
-func InitializeLogger() {
+func InitializeLogger(logLevel string, writeLogsToConsole bool) {
 	config := zap.NewProductionEncoderConfig()
 	config.EncodeTime = zapcore.ISO8601TimeEncoder
 	fileEncoder := zapcore.NewJSONEncoder(config)
 	logFile, _ := os.OpenFile("log.json", os.O_CREATE|os.O_WRONLY, 0644)
 	writer := zapcore.AddSync(logFile)
-	defaultLogLevel, _ := zapcore.ParseLevel(readValues.ReadValuesString("app.log_level"))
-	writeLogsToConsole := readValues.ReadValuesBool("app.write_logs_to_console")
+	defaultLogLevel, _ := zapcore.ParseLevel(logLevel)
 	var core zapcore.Core
 	if writeLogsToConsole {
 		consoleEncoder := zapcore.NewConsoleEncoder(config)
