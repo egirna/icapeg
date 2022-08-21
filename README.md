@@ -34,6 +34,17 @@ to download or whatever, needs **adaptation**(some kind of modification or analy
 
 To know more about the ICAP protocol, [check this out](https://tools.ietf.org/html/rfc3507).
 
+## Table of Contents
+
+- [Prerequisites](#prerequisites)
+- [Configuration](#configuration)
+- [Adding a new vendor to ICAPeg](#adding-a-new-vendor-to-ICAPeg)
+- [How to Setup Existed Services](how-to-setup-existed-services)
+- [Things to keep in mind](things-to-keep-in-mind)
+- [More on ICAPeg](#more-on-icapeg)
+- [Contributing](#contributing)
+- [License](#license)
+
 ## Prerequisites
 
 Before starting to play with ICAPeg, make sure you have the following things in your machine:
@@ -203,12 +214,6 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
         
             - Any string numeric value
         
-          - **timeout**
-        
-            It indicates to How many seconds that **ICAP will return 408 - Request timeout** after, possible value:
-        
-            - Any integer value.
-        
           - **process_extensions**
         
             It indicates to the file types that should be processed and scanned from the service, possible valuea:
@@ -264,7 +269,7 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
             >   bypass_extensions = ["*"]
             >
             >   this configuration is valid and **ICAPeg** will run normally.
-        
+          
         - ### **Optional variables** (Variables that depends on the service)
         
           > **Notes:** 
@@ -288,17 +293,17 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
             Get more details about **request mode** from [here](https://datatracker.ietf.org/doc/html/rfc3507#section-3.1).
         
 
-## Adding a new vendor ot ICAPeg
+## Adding a new vendor to ICAPeg
 
 - [How to add a new service for a new vendor](ADDING-NEW-VENDOR.md).
 
-- ## How to Setup Services
+## How to Setup Existed Services
 
-  - **Echo**: It doesn't need setup, it take the HTTP message and return it as it is. **Echo** is just an example service.
-  - [**Virustotal**](/vendors-markdowns/VIRUSTOTALAPI.md).
+- **Echo**: It doesn't need setup, it take the HTTP message and return it as it is. **Echo** is just an example service.
+- [**Virustotal**](/vendors-markdowns/VIRUSTOTALAPI.md).
 
-  - [**ClamAV**](/vendors-markdowns/CLAMAVSETUP.md).
-  - [**Cloudmersive**](/vendors-markdowns/VIRUSTOTALAPI.md).
+- [**ClamAV**](/vendors-markdowns/CLAMAVSETUP.md).
+- [**Cloudmersive**](/vendors-markdowns/VIRUSTOTALAPI.md).
 
 ## Testing
 
@@ -319,10 +324,10 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
 2. [Logging](LOGS.md)
 
 
-### Contributing
+## Contributing
 
 This project is still a WIP. So you can contribute as well. See the contributions guide [here](CONTRIBUTING.md).
 
-### License
+## License
 
 ICAPeg is licensed under the [Apache License 2.0](LICENSE).
