@@ -81,7 +81,7 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 	scoreInt, err := strconv.Atoi(score)
 	if scoreInt > 0 {
 		reason := "File is not safe"
-		errPage := v.generalFunc.GenHtmlPage("service/unprocessable-file.html", reason, v.serviceName, resource, v.httpMsg.Request.RequestURI)
+		errPage := v.generalFunc.GenHtmlPage(utils.BlockPagePath, reason, v.serviceName, resource, v.httpMsg.Request.RequestURI)
 		v.httpMsg.Response = v.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
 		v.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
 		return utils.OkStatusCodeStr, v.httpMsg.Response, serviceHeaders

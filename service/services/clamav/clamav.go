@@ -90,7 +90,7 @@ func (c *Clamav) Processing(partial bool) (int, interface{}, map[string]string) 
 
 	if result.Status == ClamavMalStatus {
 		reason := "File is not safe"
-		errPage := c.generalFunc.GenHtmlPage("service/unprocessable-file.html", reason, c.serviceName, "CLAMAV ID", c.httpMsg.Request.RequestURI)
+		errPage := c.generalFunc.GenHtmlPage(utils.BlockPagePath, reason, c.serviceName, "CLAMAV ID", c.httpMsg.Request.RequestURI)
 		c.httpMsg.Response = c.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
 		c.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
 		return utils.OkStatusCodeStr, c.httpMsg.Response, serviceHeaders

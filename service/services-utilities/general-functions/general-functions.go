@@ -63,22 +63,22 @@ func (f *GeneralFunc) CheckTheExtension(fileExtension string, extArrs []services
 	rejectExts, bypassExts []string, return400IfFileExtRejected, isGzip bool, serviceName, methodName, identifier,
 	requestURI string, reqContentType ContentTypes.ContentType, file *bytes.Buffer) (bool, int, interface{}) {
 	for i := 0; i < 3; i++ {
-		if extArrs[i].Name == "process" {
+		if extArrs[i].Name == utils.ProcessExts {
 			if f.IfFileExtIsX(fileExtension, processExts) {
 				break
 			}
-		} else if extArrs[i].Name == "reject" {
+		} else if extArrs[i].Name == utils.RejectExts {
 			if f.IfFileExtIsX(fileExtension, rejectExts) {
 				reason := "File rejected"
 				if return400IfFileExtRejected {
 					return false, utils.BadRequestStatusCodeStr, nil
 				}
-				errPage := f.GenHtmlPage("service/unprocessable-file.html", reason, serviceName, identifier, requestURI)
+				errPage := f.GenHtmlPage(utils.BlockPagePath, reason, serviceName, identifier, requestURI)
 				f.httpMsg.Response = f.ErrPageResp(http.StatusForbidden, errPage.Len())
 				f.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
 				return false, utils.OkStatusCodeStr, f.httpMsg.Response
 			}
-		} else if extArrs[i].Name == "bypass" {
+		} else if extArrs[i].Name == utils.BypassExts {
 			if f.IfFileExtIsX(fileExtension, bypassExts) {
 				fileAfterPrep, httpMsg := f.IfICAPStatusIs204(methodName, utils.NoModificationStatusCodeStr,
 					file, isGzip, reqContentType, f.httpMsg)
@@ -199,7 +199,7 @@ func (f *GeneralFunc) IfMaxFileSeizeExc(returnOrigIfMaxSizeExc bool, serviceName
 	if returnOrigIfMaxSizeExc {
 		return utils.NoModificationStatusCodeStr, file, nil
 	} else {
-		htmlErrPage := f.GenHtmlPage("service/unprocessable-file.html",
+		htmlErrPage := f.GenHtmlPage(utils.BlockPagePath,
 			"The Max file size is exceeded", serviceName, "NO ID", f.httpMsg.Request.RequestURI)
 		f.httpMsg.Response = f.ErrPageResp(http.StatusForbidden, htmlErrPage.Len())
 		return utils.OkStatusCodeStr, htmlErrPage, f.httpMsg.Response
