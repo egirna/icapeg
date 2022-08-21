@@ -96,51 +96,27 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
 
         ```toml
         [app]
-        log_level = "debug" # the log levels for tha app, available values: info-->logging the overall progress of the app, debug --> log everything including errors, error --> log infos and just errors
-        write_logs_to_console= false
-        log_flush_duration = 2
         port = 1344
         services= ["echo", "clamav"]
         verify_server_cert=false
         ```
-
-        - **log_level**
-
-          The log levels for the app, possible values:
-
-          - **info**: Logging the overall progress of the app.
-          - **debug**: Log everything including errors.
-          - **error**: Log info and just errors.
-
-        - **write_logs_to_console**
-
-          It's used to enable writing logs to **ICAPeg** console window or not, possible values:
-
-          - **true**: Writing logs to **ICAPeg** console window and **log.txt** file.
-          - **false**: Writing logs to **ICAPeg** **log.txt** file only.
-
-        - **log_flush_duration**
-
-          Deleting logs that were written in **ICAPeg** log.txt from **n** hours (2 hours for example), possible values:
-
-          - Any integer value.
-
+        
         - **port**
-
+        
           The port number that **ICAPeg** runs on. The default port number for any ICAP server is **1344**, possible values:
-
+        
           - Any port number that isn't used in your machine.
-
+          
         - **services**
-
+        
           The array that contains integrated services names with **ICAPeg**, possible values:
-
+        
           - Integrated services names with **ICAPeg** (ex: ["echo"]).
-
+        
       - **[echo] section** 
-
+      
         >  **Note**: Variables explained in **echo** service are mandatory with any service integrated with **ICAPeg**.
-
+      
         ```toml
         [echo]
         vendor = "echo"

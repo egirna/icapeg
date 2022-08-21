@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"strings"
 
-	"icapeg/config"
 	"icapeg/readValues"
 
 	"github.com/h2non/filetype"
@@ -188,8 +187,8 @@ func CopyBuffer(buf *bytes.Buffer) *bytes.Buffer {
 }
 
 // InitSecure set insecure flag based on user input
-func InitSecure() bool {
-	if !config.App().VerifyServerCert {
+func InitSecure(VerifyServerCert bool) bool {
+	if !VerifyServerCert {
 		return true
 	}
 	return false

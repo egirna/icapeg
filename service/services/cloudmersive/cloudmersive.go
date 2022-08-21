@@ -16,8 +16,6 @@ import (
 )
 
 func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]string) {
-	//TODO implement me
-
 	// no need to scan part of the file, this service needs all the file at one time
 	if partial {
 		return utils.Continue, nil, nil
@@ -171,7 +169,7 @@ func (c *CloudMersive) SendFileToAPI(f *bytes.Buffer, filename string) (*http.Re
 	req.Header.Set("Content-Type", bodyWriter.FormDataContentType())
 
 	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: utils.InitSecure()},
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: utils.InitSecure(c.verifyServerCert)},
 	}
 	client := &http.Client{Transport: tr}
 	ctx, _ := context.WithTimeout(context.Background(), c.Timeout)

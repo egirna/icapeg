@@ -22,7 +22,6 @@ port = 1344
 propagate_error = true
 service_caption ="Go-ICAP server - ICAPeg"
 services= ["echo", "virustotal", "clamav", "cloudmersive"]
-verify_server_cert=false
 debugging_headers=true
 
 [echo]
@@ -100,6 +99,7 @@ return_400_if_file_ext_rejected=false
 bypass_extensions = ["*"]
 process_extensions = ["pdf"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
 reject_extensions = []
+verify_server_cert=false
 base_url = "$_CLOUDMERSIVE_BASE_URL" #
 scan_endpoint = "/virus/scan/file/advanced"
 api_key = "$_CLOUDMERSIVE_API_KEY"

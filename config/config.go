@@ -29,7 +29,6 @@ type AppConfig struct {
 	PreviewBytes      string
 	PreviewEnabled    bool
 	PropagateError    bool
-	VerifyServerCert  bool
 	DebuggingHeaders  bool
 	Services          []string
 	ServicesInstances map[string]*serviceIcapInfo
@@ -50,7 +49,6 @@ func Init() {
 		//LogLevel:                readValues.ReadValuesString("app.log_level"),
 		//WriteLogsToConsole:      readValues.ReadValuesBool("app.write_logs_to_console"),
 		PropagateError:   readValues.ReadValuesBool("app.propagate_error"),
-		VerifyServerCert: readValues.ReadValuesBool("app.verify_server_cert"),
 		DebuggingHeaders: readValues.ReadValuesBool("app.debugging_headers"),
 		Services:         readValues.ReadValuesSlice("app.services"),
 	}

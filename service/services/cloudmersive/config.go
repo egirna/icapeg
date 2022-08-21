@@ -22,6 +22,7 @@ type CloudMersive struct {
 	processExts                  []string
 	rejectExts                   []string
 	extArrs                      []services_utilities.Extension
+	verifyServerCert             bool
 	allowExecutables             bool
 	allowInvalidFiles            bool
 	allowScripts                 bool
@@ -47,6 +48,7 @@ func InitCloudMersiveConfig(serviceName string) {
 			BaseURL:                      readValues.ReadValuesString(serviceName + ".base_url"),
 			ScanEndPoint:                 readValues.ReadValuesString(serviceName + ".scan_endpoint"),
 			Timeout:                      readValues.ReadValuesDuration(serviceName + ".timeout"),
+			verifyServerCert:             readValues.ReadValuesBool(serviceName + ".verify_server_cert"),
 			APIKey:                       readValues.ReadValuesString(serviceName + ".api_key"),
 			returnOrigIfMaxSizeExc:       readValues.ReadValuesBool(serviceName + ".return_original_if_max_file_size_exceeded"),
 			return400IfFileExtRejected:   readValues.ReadValuesBool(serviceName + ".return_400_if_file_ext_rejected"),
@@ -81,6 +83,7 @@ func NewCloudMersiveService(serviceName, methodName string, httpMsg *utils.HttpM
 		BaseURL:                     cloudMersiveConfig.BaseURL,
 		ScanEndPoint:                cloudMersiveConfig.ScanEndPoint,
 		Timeout:                     cloudMersiveConfig.Timeout * time.Second,
+		verifyServerCert:            cloudMersiveConfig.verifyServerCert,
 		APIKey:                      cloudMersiveConfig.APIKey,
 		returnOrigIfMaxSizeExc:      cloudMersiveConfig.returnOrigIfMaxSizeExc,
 		return400IfFileExtRejected:  cloudMersiveConfig.return400IfFileExtRejected,
