@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"github.com/spf13/viper"
-	"icapeg/logging"
 	"icapeg/readValues"
 	"os"
 	"strings"
@@ -154,7 +153,6 @@ func Init() {
 			PreviewEnabled: readValues.ReadValuesBool(serviceName + ".preview_enabled"),
 		}
 	}
-	logging.InitLogger()
 }
 
 // InitTestConfig initializes the app with the test config file (for integration test)

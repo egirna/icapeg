@@ -2,10 +2,11 @@ package server
 
 import (
 	"fmt"
-	"icapeg/utils"
+	"icapeg/logging"
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -14,22 +15,20 @@ import (
 	"icapeg/icap"
 )
 
-// https://github.com/k8-proxy/k8-rebuild-rest-api
 // StartServer starts the icap server
 
 func StartServer() error {
-
-	utils.InitializeLogger()
 
 	// any request even the service doesn't exist in toml file, it will go to api.ToICAPEGServe
 	// and there, the request will be filtered to check if the service exists or not
 
 	config.Init()
+	utils.InitializeLogger()
 
 	icap.HandleFunc("/", api.ToICAPEGServe)
 	//http.HandleFunc("/", api.ErrorPageHanlder)
 
-	log.Println("starting the ICAP server")
+	utils.Logger.Info("starting the ICAP server")
 
 	stop := make(chan os.Signal, 1)
 
@@ -52,13 +51,12 @@ func StartServer() error {
 	}()
 
 	time.Sleep(5 * time.Millisecond)
-
-	log.Printf("ICAP server is running on localhost: %d", config.App().Port)
+	utils.Logger.Info("ICAP server is running on localhost: " + strconv.Itoa(config.App().Port))
 
 	<-stop
 	ticker.Stop()
 
-	log.Printf("ICAP server gracefully shut down")
+	utils.Logger.Info("ICAP server gracefully shut down")
 
 	return nil
 }
