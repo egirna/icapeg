@@ -3,7 +3,11 @@ package grayimages
 import (
 	"icapeg/utils"
 	"log"
+	"strconv"
+	"time"
 )
+
+const GrayImagesIdentifier = "GRAYIMAGES ID"
 
 func (g *GrayImages) Processing(partial bool) (int, interface{}, map[string]string) {
 	serviceHeaders := make(map[string]string)
@@ -41,9 +45,14 @@ func (g *GrayImages) Processing(partial bool) (int, interface{}, map[string]stri
 
 	isProcess, icapStatus, httpMsg := g.generalFunc.CheckTheExtension(fileExtension, g.extArrs,
 		g.processExts, g.rejectExts, g.bypassExts, g.return400IfFileExtRejected, isGzip,
-		g.serviceName, g.methodName, VirustotalIdentifier, g.httpMsg.Request.RequestURI, reqContentType, file)
+		g.serviceName, g.methodName, GrayImagesIdentifier, g.httpMsg.Request.RequestURI, reqContentType, file)
 	if !isProcess {
 		return icapStatus, httpMsg, serviceHeaders
 	}
 
+}
+
+func (g *GrayImages) ISTagValue() string {
+	epochTime := strconv.FormatInt(time.Now().Unix(), 10)
+	return "epoch-" + epochTime
 }
