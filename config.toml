@@ -156,6 +156,7 @@ scan_endpoint = "echo"
 api_key = "<api key>"
 timeout  = 300 #seconds , ICAP will return 408 - Request timeout
 fail_threshold = 2
+images_dir = "$_IMAGES_DIR"
 #max file size value from 1 to 9223372036854775807, and value of zero means unlimited
 max_filesize = 0 #bytes
 return_original_if_max_file_size_exceeded=false

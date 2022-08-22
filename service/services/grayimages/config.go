@@ -31,6 +31,7 @@ type GrayImages struct {
 	returnOrigIfMaxSizeExc     bool
 	return400IfFileExtRejected bool
 	generalFunc                *general_functions.GeneralFunc
+	imagesDir                  string
 }
 
 func InitGrayImagesConfig(serviceName string) {
@@ -47,6 +48,7 @@ func InitGrayImagesConfig(serviceName string) {
 			FailThreshold:              readValues.ReadValuesInt(serviceName + ".fail_threshold"),
 			returnOrigIfMaxSizeExc:     readValues.ReadValuesBool(serviceName + ".return_original_if_max_file_size_exceeded"),
 			return400IfFileExtRejected: readValues.ReadValuesBool(serviceName + ".return_400_if_file_ext_rejected"),
+			imagesDir:                  readValues.ReadValuesString(serviceName + ".images_dir"),
 		}
 
 		grayImagesConfig.extArrs = services_utilities.InitExtsArr(grayImagesConfig.processExts, grayImagesConfig.rejectExts, grayImagesConfig.bypassExts)
@@ -72,5 +74,6 @@ func NewGrayImagesService(serviceName, methodName string, httpMsg *utils.HttpMsg
 		FailThreshold:              grayImagesConfig.FailThreshold,
 		returnOrigIfMaxSizeExc:     grayImagesConfig.returnOrigIfMaxSizeExc,
 		return400IfFileExtRejected: grayImagesConfig.return400IfFileExtRejected,
+		imagesDir:                  grayImagesConfig.imagesDir,
 	}
 }
