@@ -139,14 +139,25 @@ allow_html = true
 allow_insecure_deserialization = false
 restrict_file_types = ""
 
-
-
-
-
-
-#ICAP possible codes: 204 (No modifications needed) , 400 (Bad Request) , 403 (Forbidden) , 500 (Server Error) , 502 (Bad Gateway)
-api_response_400 = 400 #Bad Request
-api_response_403 = 403 #Forbidden
-api_response_415 = 204 #Unsupported Media Type
-api_response_422 = 204 #Unprocessable Entity
+[grayimages]
+vendor = "grayimages"
+service_caption= "grayimages service"   #Service
+service_tag = "GRAYIMAGES ICAP"  #ISTAG
+req_mode=true
+resp_mode=true
+shadow_service=false
+preview_bytes = "1024" #byte
+preview_enabled = true# options send preview header or not
+bypass_extensions = [""]
+process_extensions = ["*"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
+reject_extensions = [".pdf"]
+base_url = "echo" #
+scan_endpoint = "echo"
+api_key = "<api key>"
+timeout  = 300 #seconds , ICAP will return 408 - Request timeout
+fail_threshold = 2
+#max file size value from 1 to 9223372036854775807, and value of zero means unlimited
+max_filesize = 0 #bytes
+return_original_if_max_file_size_exceeded=false
+return_400_if_file_ext_rejected=false
 
