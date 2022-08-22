@@ -21,11 +21,11 @@ sudo apt-get update
 sudo apt-get install libwebp-dev
 ```
 
-## 3. Specify a directory path in config.toml for gray images
+## 3. Specify a directory path in [config.toml](https://github.com/egirna/icapeg/blob/develop/config.toml) for gray images besides the rest of variables
 This path is used to temporarily save gray images. After sending the image back in a response, file is deleted.
+![example cofig](img/grayImgs.jpeg)
 
-
-## 4. Build ICAP
+## 4. Build the ICAP
 Build **ICAPeg** binary
 
 ```bash
