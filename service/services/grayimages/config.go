@@ -1,8 +1,8 @@
 package grayimages
 
 import (
-	"icapeg/config"
 	"icapeg/readValues"
+	services_utilities "icapeg/service/services-utilities"
 	general_functions "icapeg/service/services-utilities/general-functions"
 	"icapeg/utils"
 	"sync"
@@ -10,7 +10,7 @@ import (
 )
 
 var doOnce sync.Once
-var grayimagesConfig *GrayImages
+var grayImagesConfig *GrayImages
 
 // Echo represents the information regarding the Echo service
 type GrayImages struct {
@@ -22,7 +22,7 @@ type GrayImages struct {
 	bypassExts                 []string
 	processExts                []string
 	rejectExts                 []string
-	extArrs                    []config.Extension
+	extArrs                    []services_utilities.Extension
 	BaseURL                    string
 	Timeout                    time.Duration
 	APIKey                     string
@@ -35,7 +35,7 @@ type GrayImages struct {
 
 func InitGrayImagesConfig(serviceName string) {
 	doOnce.Do(func() {
-		grayimagesConfig = &GrayImages{
+		grayImagesConfig = &GrayImages{
 			maxFileSize:                readValues.ReadValuesInt(serviceName + ".max_filesize"),
 			bypassExts:                 readValues.ReadValuesSlice(serviceName + ".bypass_extensions"),
 			processExts:                readValues.ReadValuesSlice(serviceName + ".process_extensions"),
@@ -49,51 +49,28 @@ func InitGrayImagesConfig(serviceName string) {
 			return400IfFileExtRejected: readValues.ReadValuesBool(serviceName + ".return_400_if_file_ext_rejected"),
 		}
 
-		process := config.Extension{Name: "process", Exts: grayimagesConfig.processExts}
-		reject := config.Extension{Name: "reject", Exts: grayimagesConfig.rejectExts}
-		bypass := config.Extension{Name: "bypass", Exts: grayimagesConfig.bypassExts}
-		extArrs := make([]config.Extension, 3)
-		ind := 0
-		if len(process.Exts) == 1 && process.Exts[0] == "*" {
-			extArrs[2] = process
-		} else {
-			extArrs[ind] = process
-			ind++
-		}
-		if len(reject.Exts) == 1 && reject.Exts[0] == "*" {
-			extArrs[2] = reject
-		} else {
-			extArrs[ind] = reject
-			ind++
-		}
-		if len(bypass.Exts) == 1 && bypass.Exts[0] == "*" {
-			extArrs[2] = bypass
-		} else {
-			extArrs[ind] = bypass
-			ind++
-		}
-		grayimagesConfig.extArrs = extArrs
+		grayImagesConfig.extArrs = services_utilities.InitExtsArr(grayImagesConfig.processExts, grayImagesConfig.rejectExts, grayImagesConfig.bypassExts)
 	})
 }
 
 // NewEchoService returns a new populated instance of the Echo service
-func NewEchoService(serviceName, methodName string, httpMsg *utils.HttpMsg) *GrayImages {
+func NewGrayImagesService(serviceName, methodName string, httpMsg *utils.HttpMsg) *GrayImages {
 	return &GrayImages{
 		httpMsg:                    httpMsg,
 		serviceName:                serviceName,
 		methodName:                 methodName,
 		generalFunc:                general_functions.NewGeneralFunc(httpMsg),
-		maxFileSize:                grayimagesConfig.maxFileSize,
-		bypassExts:                 grayimagesConfig.bypassExts,
-		processExts:                grayimagesConfig.processExts,
-		rejectExts:                 grayimagesConfig.rejectExts,
-		extArrs:                    grayimagesConfig.extArrs,
-		BaseURL:                    grayimagesConfig.BaseURL,
-		Timeout:                    grayimagesConfig.Timeout * time.Second,
-		APIKey:                     grayimagesConfig.APIKey,
-		ScanEndpoint:               grayimagesConfig.ScanEndpoint,
-		FailThreshold:              grayimagesConfig.FailThreshold,
-		returnOrigIfMaxSizeExc:     grayimagesConfig.returnOrigIfMaxSizeExc,
-		return400IfFileExtRejected: grayimagesConfig.return400IfFileExtRejected,
+		maxFileSize:                grayImagesConfig.maxFileSize,
+		bypassExts:                 grayImagesConfig.bypassExts,
+		processExts:                grayImagesConfig.processExts,
+		rejectExts:                 grayImagesConfig.rejectExts,
+		extArrs:                    grayImagesConfig.extArrs,
+		BaseURL:                    grayImagesConfig.BaseURL,
+		Timeout:                    grayImagesConfig.Timeout * time.Second,
+		APIKey:                     grayImagesConfig.APIKey,
+		ScanEndpoint:               grayImagesConfig.ScanEndpoint,
+		FailThreshold:              grayImagesConfig.FailThreshold,
+		returnOrigIfMaxSizeExc:     grayImagesConfig.returnOrigIfMaxSizeExc,
+		return400IfFileExtRejected: grayImagesConfig.return400IfFileExtRejected,
 	}
 }
