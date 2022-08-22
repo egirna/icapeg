@@ -102,18 +102,19 @@ func (g *GrayImages) ConvertImgToGrayScale(imgExtension string, file *bytes.Buff
 	var grayImg *os.File
 	var err error
 	if imgExtension == "webp" {
-		grayImg, err = g.webpImagehandler(file)
+		grayImg, err = g.webpImageHandler(file)
 	} else if imgExtension == "png" {
-		grayImg, err = g.pngImagehandler(file)
+		grayImg, err = g.pngImageHandler(file)
 	} else if imgExtension == "jpeg" || imgExtension == "jpg" {
-		grayImg, err = g.pngImagehandler(file)
+		grayImg, err = g.jpegImageHandler(imgExtension, file)
 	} else {
 		return nil, errors.New("file is not a supported image")
 	}
 	return grayImg, err
 }
 
-func (g *GrayImages) webpImagehandler(file *bytes.Buffer) (*os.File, error) {
+// webpImageHandler convert webp images to gray images
+func (g *GrayImages) webpImageHandler(file *bytes.Buffer) (*os.File, error) {
 	// create temporarily file jpg file, used to convert original img data to gray
 	tmpJpeg, err := os.CreateTemp(g.imagesDir, "*.jpg")
 	if err != nil {
@@ -158,7 +159,8 @@ func (g *GrayImages) webpImagehandler(file *bytes.Buffer) (*os.File, error) {
 	return grayWebp, nil
 }
 
-func (g *GrayImages) pngImagehandler(file *bytes.Buffer) (*os.File, error) {
+// pngImageHandler convert png images to gray images
+func (g *GrayImages) pngImageHandler(file *bytes.Buffer) (*os.File, error) {
 	// convert HTTP file to image object
 	img, err := g.generalFunc.GetDecodedImage(file)
 	if err != nil {
@@ -187,6 +189,7 @@ func (g *GrayImages) pngImagehandler(file *bytes.Buffer) (*os.File, error) {
 
 }
 
+// jpegImageHandler convert jpeg/jpg images to gray images
 func (g *GrayImages) jpegImageHandler(imgExtension string, file *bytes.Buffer) (*os.File, error) {
 	// convert HTTP file to image object
 	img, err := g.generalFunc.GetDecodedImage(file)
