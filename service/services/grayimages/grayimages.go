@@ -58,6 +58,21 @@ func (g *GrayImages) Processing(partial bool) (int, interface{}, map[string]stri
 	if !isProcess {
 		return icapStatus, httpMsg, serviceHeaders
 	}
+	// convert the HTTP img to grayscale
+	scale, err := g.ConvertImgToGrayScale(fileExtension, file)
+	scannedFile := file.Bytes()
+	if err != nil {
+		if isGzip {
+			// compress file again if it's decompressed
+			scannedFile, err = g.generalFunc.CompressFileGzip(scannedFile)
+			if err != nil {
+				return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
+			}
+		}
+		// return the same file if it isn't compressed
+		scannedFile = g.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, g.methodName)
+		return utils.OkStatusCodeStr, g.generalFunc.ReturningHttpMessageWithFile(g.methodName, scannedFile), serviceHeaders
+	}
 
 }
 
