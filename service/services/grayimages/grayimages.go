@@ -69,10 +69,27 @@ func (g *GrayImages) Processing(partial bool) (int, interface{}, map[string]stri
 				return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
 			}
 		}
-		// return the same file if it isn't compressed
+		// return the same file if it can't be gray
 		scannedFile = g.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, g.methodName)
-		return utils.OkStatusCodeStr, g.generalFunc.ReturningHttpMessageWithFile(g.methodName, scannedFile), serviceHeaders
+		return utils.NoModificationStatusCodeStr, g.generalFunc.ReturningHttpMessageWithFile(g.methodName, scannedFile), serviceHeaders
 	}
+	// convert grayImg into bytes
+	scannedFile, err = os.ReadFile(scale.Name()) // just pass the file name
+	// clean temp file on desk
+	defer os.Remove(scale.Name())
+	if err != nil {
+		return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
+	}
+	// compress file again if it's decompressed
+	if isGzip {
+		scannedFile, err = g.generalFunc.CompressFileGzip(scannedFile)
+		if err != nil {
+			return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
+		}
+	}
+	// return the gray image
+	scannedFile = g.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, g.methodName)
+	return utils.OkStatusCodeStr, g.generalFunc.ReturningHttpMessageWithFile(g.methodName, scannedFile), serviceHeaders
 
 }
 
