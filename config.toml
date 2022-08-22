@@ -150,9 +150,9 @@ preview_bytes = "1024" #byte
 preview_enabled = true# options send preview header or not
 bypass_extensions = [""]
 process_extensions = ["*"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
-reject_extensions = [".pdf"]
-base_url = "echo" #
-scan_endpoint = "echo"
+reject_extensions = [".svg"]
+base_url = "<grayimages>" #
+scan_endpoint = "<grayimages>"
 api_key = "<api key>"
 timeout  = 300 #seconds , ICAP will return 408 - Request timeout
 fail_threshold = 2
