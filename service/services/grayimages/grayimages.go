@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/kolesa-team/go-webp/decoder"
+	"github.com/kolesa-team/go-webp/webp"
 	"icapeg/utils"
 	"image"
 	"image/jpeg"
@@ -110,4 +112,49 @@ func (g *GrayImages) ConvertImgToGrayScale(imgExtension string, file *bytes.Buff
 		// if file isn't png or jpeg/jpg, return error
 		return nil, errors.New("file is not a supported image")
 	}
+}
+
+func (g *GrayImages) webpImagehandler(file *bytes.Buffer) (*os.File, error) {
+	// create temporarily file jpg file, used to convert original img data to gray
+	tmpJpeg, err := os.CreateTemp(g.imagesDir, "*.jpg")
+	if err != nil {
+		return nil, err
+	}
+	// read webp image data
+	webpDecode, err := webp.Decode(file, &decoder.Options{})
+	if err != nil {
+		return nil, err
+	}
+	// encode webp image data to a jpg file
+	if err = jpeg.Encode(tmpJpeg, webpDecode, &jpeg.Options{Quality: 80}); err != nil {
+		return nil, err
+	}
+	// read image bytes
+	jpegBytes, err := os.ReadFile(tmpJpeg.Name())
+	// clean the file on desk
+	defer os.Remove(tmpJpeg.Name())
+	// put files to buffer
+	jpegBuffer := bytes.NewBuffer(jpegBytes)
+	// get image object from jpeg data
+	jpegImg, err := g.generalFunc.GetDecodedImage(jpegBuffer)
+	if err != nil {
+		return nil, err
+	}
+	// convert image to gray
+	grayImg := image.NewGray(jpegImg.Bounds())
+	for y := jpegImg.Bounds().Min.Y; y < jpegImg.Bounds().Max.Y; y++ {
+		for x := jpegImg.Bounds().Min.X; x < jpegImg.Bounds().Max.X; x++ {
+			grayImg.Set(x, y, jpegImg.At(x, y))
+		}
+	}
+	// create temporarily file for the gray image
+	grayWebp, err := os.CreateTemp(g.imagesDir, "*.jpg")
+	if err != nil {
+		return nil, err
+	}
+	// encode gray image data into the file
+	if err = jpeg.Encode(grayWebp, grayImg, nil); err != nil {
+		return nil, err
+	}
+	return grayWebp, nil
 }
