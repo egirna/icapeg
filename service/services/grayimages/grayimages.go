@@ -1,8 +1,15 @@
 package grayimages
 
 import (
+	"bytes"
+	"errors"
+	"fmt"
 	"icapeg/utils"
+	"image"
+	"image/jpeg"
+	"image/png"
 	"log"
+	"os"
 	"strconv"
 	"time"
 )
@@ -55,4 +62,52 @@ func (g *GrayImages) Processing(partial bool) (int, interface{}, map[string]stri
 func (g *GrayImages) ISTagValue() string {
 	epochTime := strconv.FormatInt(time.Now().Unix(), 10)
 	return "epoch-" + epochTime
+}
+
+func (g *GrayImages) ConvertImgToGrayScale(imgExtension string, file *bytes.Buffer) (*os.File, error) {
+	log.Println(imgExtension)
+	log.Println(g.methodName)
+	// convert HTTP file to image object
+	img, err := g.generalFunc.GetDecodedImage(file)
+	if err != nil {
+		return nil, err
+	}
+	// convert the image to grayscale
+	grayImg := image.NewGray(img.Bounds())
+	for y := img.Bounds().Min.Y; y < img.Bounds().Max.Y; y++ {
+		for x := img.Bounds().Min.X; x < img.Bounds().Max.X; x++ {
+			grayImg.Set(x, y, img.At(x, y))
+		}
+	}
+	// Working with grayscale image, convert to png
+	if imgExtension == "png" {
+		// create new temporarily png file
+		newImg, err := os.CreateTemp(g.imagesDir, "*.png")
+		log.Println(newImg.Name())
+		if err != nil {
+			return nil, err
+		}
+		// encode gray image data and save it into the created png file
+		if err = png.Encode(newImg, grayImg); err != nil {
+			return nil, err
+		}
+		// return the png file after converting it to gray image
+		return newImg, nil
+	} else if imgExtension == "jpeg" || imgExtension == "jpg" {
+		// Working with grayscale image, convert to png
+		pattern := fmt.Sprintf("*.%s", imgExtension)
+		// create new temporarily (jpeg or jpg) file
+		newImg, err := os.CreateTemp(g.imagesDir, pattern)
+		if err != nil {
+			return nil, err
+		}
+		// encode gray image data and save it into the created jpeg/jpg file
+		if err = jpeg.Encode(newImg, grayImg, nil); err != nil {
+			return nil, err
+		}
+		return newImg, nil
+	} else {
+		// if file isn't png or jpeg/jpg, return error
+		return nil, errors.New("file is not a supported image")
+	}
 }
