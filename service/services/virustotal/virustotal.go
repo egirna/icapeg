@@ -32,12 +32,20 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 	}
 
 	//getting the extension of the file
-	contentType := v.httpMsg.Response.Header["Content-Type"]
+	var contentType []string
+	if len(contentType) == 0 {
+		contentType = append(contentType, "")
+	}
 	var fileName string
 	if v.methodName == utils.ICAPModeReq {
+		contentType = v.httpMsg.Request.Header["Content-Type"]
 		fileName = utils.GetFileName(v.httpMsg.Request)
 	} else {
+		contentType = v.httpMsg.Response.Header["Content-Type"]
 		fileName = utils.GetFileName(v.httpMsg.Response)
+	}
+	if len(contentType) == 0 {
+		contentType = append(contentType, "")
 	}
 	fileExtension := utils.GetMimeExtension(file.Bytes(), contentType[0], fileName)
 
@@ -51,7 +59,7 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 	//check if the file size is greater than max file size of the service
 	//if yes we will return 200 ok or 204 no modification, it depends on the configuration of the service
 	if v.maxFileSize != 0 && v.maxFileSize < file.Len() {
-		status, file, httpMsg := v.generalFunc.IfMaxFileSeizeExc(v.returnOrigIfMaxSizeExc, v.serviceName, file, v.maxFileSize)
+		status, file, httpMsg := v.generalFunc.IfMaxFileSizeExc(v.returnOrigIfMaxSizeExc, v.serviceName, file)
 		fileAfterPrep, httpMsg := v.generalFunc.IfStatusIs204WithFile(v.methodName, status, file, isGzip, reqContentType, httpMsg)
 		if fileAfterPrep == nil && httpMsg == nil {
 			return utils.InternalServerErrStatusCodeStr, nil, nil
@@ -81,7 +89,7 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 	scoreInt, err := strconv.Atoi(score)
 	if scoreInt > 0 {
 		reason := "File is not safe"
-		errPage := v.generalFunc.GenHtmlPage("service/unprocessable-file.html", reason, v.serviceName, resource, v.httpMsg.Request.RequestURI)
+		errPage := v.generalFunc.GenHtmlPage(utils.BlockPagePath, reason, v.serviceName, resource, v.httpMsg.Request.RequestURI)
 		v.httpMsg.Response = v.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
 		v.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
 		return utils.OkStatusCodeStr, v.httpMsg.Response, serviceHeaders

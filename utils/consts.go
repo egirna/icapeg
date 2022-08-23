@@ -31,4 +31,8 @@ const (
 	ContentLength                     = "Content-Length"
 	ContentType                       = "Content-Type"
 	HTMLContentType                   = "text/html"
+	ProcessExts                       = "process"
+	RejectExts                        = "reject"
+	BypassExts                        = "bypass"
+	BlockPagePath                     = "service/unprocessable-file.html"
 )

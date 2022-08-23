@@ -34,6 +34,17 @@ to download or whatever, needs **adaptation**(some kind of modification or analy
 
 To know more about the ICAP protocol, [check this out](https://tools.ietf.org/html/rfc3507).
 
+## Table of Contents
+
+- [Prerequisites](#prerequisites)
+- [Configuration](#configuration)
+- [Adding a new vendor to ICAPeg](#adding-a-new-vendor-to-ICAPeg)
+- [How to Setup Existed Services](how-to-setup-existed-services)
+- [Things to keep in mind](things-to-keep-in-mind)
+- [More on ICAPeg](#more-on-icapeg)
+- [Contributing](#contributing)
+- [License](#license)
+
 ## Prerequisites
 
 Before starting to play with ICAPeg, make sure you have the following things in your machine:
@@ -84,7 +95,7 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
 
   This feature is supported for **strings, int, bool, time.duration and string slices** only **(every type used in this project)**.
 
-  Let's have an example to explain how to map, assume that there is an environment variable in your machine called LOG_LEVEL and you want to assign LOG_LEVEL value to app.log_level. You should change the value of (log_level= "debug") to (log_level= "$_LOG_LEVEL").
+  Let's have an example to explain how to map, assume that there is an environment variable in your machine called PORT and you want to assign PORT value to appport. You should change the value of (port= 1344) to (port= "$_PORT").
 
   > **Note**: before you use this feature please make sure that the env variable that you want to use is globally in your machine and not just exported in a local session.
 
@@ -96,51 +107,36 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
 
         ```toml
         [app]
-        log_level = "debug" # the log levels for tha app, available values: info-->logging the overall progress of the app, debug --> log everything including errors, error --> log infos and just errors
-        write_logs_to_console= false
-        log_flush_duration = 2
         port = 1344
-        services= ["echo", "clamav"]
-        verify_server_cert=false
+        services= ["echo", "virustotal", "clamav", "cloudmersive"]
+        debugging_headers=true
         ```
-
-        - **log_level**
-
-          The log levels for the app, possible values:
-
-          - **info**: Logging the overall progress of the app.
-          - **debug**: Log everything including errors.
-          - **error**: Log info and just errors.
-
-        - **write_logs_to_console**
-
-          It's used to enable writing logs to **ICAPeg** console window or not, possible values:
-
-          - **true**: Writing logs to **ICAPeg** console window and **log.txt** file.
-          - **false**: Writing logs to **ICAPeg** **log.txt** file only.
-
-        - **log_flush_duration**
-
-          Deleting logs that were written in **ICAPeg** log.txt from **n** hours (2 hours for example), possible values:
-
-          - Any integer value.
-
+        
         - **port**
-
+        
           The port number that **ICAPeg** runs on. The default port number for any ICAP server is **1344**, possible values:
-
+        
           - Any port number that isn't used in your machine.
-
+        
         - **services**
-
+        
           The array that contains integrated services names with **ICAPeg**, possible values:
-
+        
           - Integrated services names with **ICAPeg** (ex: ["echo"]).
-
+        
+        - **debugging_headers**
+        
+          Bool variable which indicates to if debugging headers should be displayed with ICAP headers or not. Debugging headers tell the client that if shadow service is enabled for example. they start with **X-ICAPeg-{{HEADER_NAME}}**. possible values:
+        
+          - **true**: Debugging headers should be displayed with ICAP headers.
+          - **false**: Debugging headers should not be displayed with ICAP headers.
+        
+          - Any port number that isn't used in your machine.
+        
       - **[echo] section** 
-
+      
         >  **Note**: Variables explained in **echo** service are mandatory with any service integrated with **ICAPeg**.
-
+      
         ```toml
         [echo]
         vendor = "echo"
@@ -151,17 +147,13 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
         shadow_service=false
         preview_enabled = true# options send preview header or not
         preview_bytes = "1024" #byte
-        timeout  = 300 #seconds , ICAP will return 408 - Request timeout
         process_extensions = ["pdf", "zip", "com"] 
         # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
         reject_extensions = ["docx"]
         bypass_extensions = ["*"]
-        fail_threshold = 2
         #max file size value from 1 to 9223372036854775807, and value of zero means unlimited
         max_filesize = 0 #bytes
         return_original_if_max_file_size_exceeded=false
-        base_url = "$_CLOUDAPI_URL" #
-        api_key = "$_AUTH_TOKENS"
         ```
         
         - ### **Mandatory variables (Variables that should any service has)**
@@ -222,12 +214,6 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
         
             - Any string numeric value
         
-          - **timeout**
-        
-            It indicates to How many seconds that **ICAP will return 408 - Request timeout** after, possible value:
-        
-            - Any integer value.
-        
           - **process_extensions**
         
             It indicates to the file types that should be processed and scanned from the service, possible valuea:
@@ -283,7 +269,7 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
             >   bypass_extensions = ["*"]
             >
             >   this configuration is valid and **ICAPeg** will run normally.
-        
+          
         - ### **Optional variables** (Variables that depends on the service)
         
           > **Notes:** 
@@ -306,34 +292,18 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
         
             Get more details about **request mode** from [here](https://datatracker.ietf.org/doc/html/rfc3507#section-3.1).
         
-          - **bypass_extensions**
-        
-            An Array that contains the extensions of that service can't process if the **HTTP** message contains a file.
-        
-            - Any valid file extenstions.
-        
-          - **process_extensions**
-        
-            An Array that contains the extensions of that service canprocess if the **HTTP** message contains a file.
-        
-            - Any valid file extenstions.
-        
-          - **base_url**
-        
-            The external **API URL** that service sends the files through a request to it.
-        
-          - **scan_endpoint**
-        
-            Endoint of the exyernal **API URL** that service sends the files through a request to it..
-        
-          - **api_key**
-        
-            The key of the external **API** that service sends the files through a request to it.
-        
 
-## Adding a new vendor ot ICAPeg
+## Adding a new vendor to ICAPeg
 
-- [How to add a new service for a new vendor](ADDING-NEW-VENDOR.md)
+- [How to add a new service for a new vendor](ADDING-NEW-VENDOR.md).
+
+## How to Setup Existed Services
+
+- **Echo**: It doesn't need setup, it take the HTTP message and return it as it is. **Echo** is just an example service.
+- [**Virustotal**](/vendors-markdowns/virustotal/VIRUSTOTALAPI.md).
+
+- [**ClamAV**](/vendors-markdowns/clamav/CLAMAVSETUP.md).
+- [**Cloudmersive**](/vendors-markdowns/cloudmersive/CLOUDMERSIVEAPI.md).
 
 ## Testing
 
@@ -354,10 +324,10 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
 2. [Logging](LOGS.md)
 
 
-### Contributing
+## Contributing
 
 This project is still a WIP. So you can contribute as well. See the contributions guide [here](CONTRIBUTING.md).
 
-### License
+## License
 
 ICAPeg is licensed under the [Apache License 2.0](LICENSE).

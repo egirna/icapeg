@@ -3,10 +3,8 @@ package config
 import (
 	"fmt"
 	"github.com/spf13/viper"
-	"icapeg/logging"
 	"icapeg/readValues"
 	"os"
-	"strings"
 )
 
 type serviceIcapInfo struct {
@@ -22,24 +20,17 @@ type serviceIcapInfo struct {
 
 // AppConfig represents the app configuration
 type AppConfig struct {
-	Port                 int
-	LogLevel             string
-	LoggingServerURL     string
-	LoggingFlushDuration float64
-	WriteLogsToConsole   bool
-	//RespScannerVendor       string
-	//ReqScannerVendor        string
-	RespScannerVendorShadow string
-	ReqScannerVendorShadow  string
-	BypassExtensions        []string
-	ProcessExtensions       []string
-	PreviewBytes            string
-	PreviewEnabled          bool
-	PropagateError          bool
-	VerifyServerCert        bool
-	DebuggingHeaders        bool
-	Services                []string
-	ServicesInstances       map[string]*serviceIcapInfo
+	Port int
+	//LogLevel             string
+	//LoggingFlushDuration float64
+	//WriteLogsToConsole   bool
+	BypassExtensions  []string
+	ProcessExtensions []string
+	PreviewBytes      string
+	PreviewEnabled    bool
+	DebuggingHeaders  bool
+	Services          []string
+	ServicesInstances map[string]*serviceIcapInfo
 }
 
 var AppCfg AppConfig
@@ -53,18 +44,11 @@ func Init() {
 		fmt.Println("app section doesn't exist in config file")
 	}
 	AppCfg = AppConfig{
-		Port:                    readValues.ReadValuesInt("app.port"),
-		LogLevel:                readValues.ReadValuesString("app.log_level"),
-		LoggingServerURL:        readValues.ReadValuesString("app.log_service_url"),
-		WriteLogsToConsole:      readValues.ReadValuesBool("app.write_logs_to_console"),
-		RespScannerVendorShadow: strings.ToLower(readValues.ReadValuesString("app.resp_scanner_vendor_shadow")),
-		ReqScannerVendorShadow:  strings.ToLower(readValues.ReadValuesString("app.req_scanner_vendor_shadow")),
-		PreviewBytes:            readValues.ReadValuesString("app.preview_bytes"),
-		PreviewEnabled:          readValues.ReadValuesBool("app.preview_enabled"),
-		PropagateError:          readValues.ReadValuesBool("app.propagate_error"),
-		VerifyServerCert:        readValues.ReadValuesBool("app.verify_server_cert"),
-		DebuggingHeaders:        readValues.ReadValuesBool("app.debugging_headers"),
-		Services:                readValues.ReadValuesSlice("app.services"),
+		Port: readValues.ReadValuesInt("app.port"),
+		//LogLevel:                readValues.ReadValuesString("app.log_level"),
+		//WriteLogsToConsole:      readValues.ReadValuesBool("app.write_logs_to_console"),
+		DebuggingHeaders: readValues.ReadValuesBool("app.debugging_headers"),
+		Services:         readValues.ReadValuesSlice("app.services"),
 	}
 
 	//this loop to make sure that all services in the array of services has sections in the config file and from request mode and response mode
@@ -146,7 +130,6 @@ func Init() {
 		AppCfg.ServicesInstances[serviceName] = &serviceIcapInfo{
 			Vendor:         readValues.ReadValuesString(serviceName + ".vendor"),
 			ServiceTag:     readValues.ReadValuesString(serviceName + ".service_tag"),
-			ServiceCaption: readValues.ReadValuesString(serviceName + ".service_caption"),
 			ReqMode:        readValues.ReadValuesBool(serviceName + ".req_mode"),
 			RespMode:       readValues.ReadValuesBool(serviceName + ".resp_mode"),
 			ShadowService:  readValues.ReadValuesBool(serviceName + ".shadow_service"),
@@ -154,27 +137,9 @@ func Init() {
 			PreviewEnabled: readValues.ReadValuesBool(serviceName + ".preview_enabled"),
 		}
 	}
-	logging.InitLogger()
 }
 
-// InitTestConfig initializes the app with the test config file (for integration test)
-func InitTestConfig() {
-	AppCfg = AppConfig{
-		Port:                 readValues.ReadValuesInt("app.port"),
-		LogLevel:             readValues.ReadValuesString("app.log_level"),
-		LoggingServerURL:     readValues.ReadValuesString("app.log_service_url"),
-		LoggingFlushDuration: float64(readValues.ReadValuesInt("app.log_flush_duration")),
-		//RespScannerVendor:       strings.ToLower(readValues.ReadValuesString("app.resp_scanner_vendor")),
-		//ReqScannerVendor:        strings.ToLower(readValues.ReadValuesString("app.req_scanner_vendor")),
-		RespScannerVendorShadow: strings.ToLower(readValues.ReadValuesString("app.resp_scanner_vendor_shadow")),
-		ReqScannerVendorShadow:  strings.ToLower(readValues.ReadValuesString("app.req_scanner_vendor_shadow")),
-		PreviewBytes:            readValues.ReadValuesString("app.preview_bytes"),
-		PropagateError:          readValues.ReadValuesBool("app.propagate_error"),
-		DebuggingHeaders:        readValues.ReadValuesBool("app.debugging_headers"),
-	}
-}
-
-// App returns the the app configuration instance
+// App returns the app configuration instance
 func App() *AppConfig {
 	return &AppCfg
 }

@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"strings"
 
-	"icapeg/config"
 	"icapeg/readValues"
 
 	"github.com/h2non/filetype"
@@ -142,15 +141,6 @@ func GetScannerVendorSpecificCfg(mode, cfgField string) string {
 	return absoluteCfgField
 }
 
-// IfPropagateError returns one of the given parameter depending on the propagate error configuration
-func IfPropagateError(thenStatus, elseStatus int) int {
-	if readValues.ReadValuesBool("app.propagate_error") {
-		return thenStatus
-	}
-
-	return elseStatus
-}
-
 // GetHTTPResponseCopy creates a new http.Response for the given one, including the body
 func GetHTTPResponseCopy(resp *http.Response) http.Response {
 	b, _ := ioutil.ReadAll(resp.Body)
@@ -188,8 +178,8 @@ func CopyBuffer(buf *bytes.Buffer) *bytes.Buffer {
 }
 
 // InitSecure set insecure flag based on user input
-func InitSecure() bool {
-	if !config.App().VerifyServerCert {
+func InitSecure(VerifyServerCert bool) bool {
+	if !VerifyServerCert {
 		return true
 	}
 	return false
