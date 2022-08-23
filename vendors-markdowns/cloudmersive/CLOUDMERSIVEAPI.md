@@ -1,4 +1,4 @@
-# Steps to get a public **CloudMersive** api key
+# Steps to get a public **CloudMersive** API key
 
 1. Sign up with **Cloudmersive** from [here](https://account.cloudmersive.com/signup)
 
@@ -6,7 +6,7 @@
 
 1. You may need to sign in to your **Cloudmersive** account with the newly signed up credentials.
 
-1. Click at **view and manage keys**.
+1. Click on **view and manage keys**.
 
    ![](./cloudmersive1.png)
 

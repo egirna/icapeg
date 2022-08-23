@@ -152,13 +152,13 @@ Finally start the clamav daemon, by executing the **clamd** command
    $ clamd
  ```
 
- And thats it.
+ And that's it.
 
 
 
 ## For Windows
 
-Couldn't find a better way than whats in the [official documentation](https://www.clamav.net/documents/installing-clamav-on-windows)
+Couldn't find a better way than what in the [official documentation](https://www.clamav.net/documents/installing-clamav-on-windows)
 
 
-The setups mentioned here is enough to get the clamav service up and running and ready to be used by ICAPeg, but if you want to have more control over clamav, you need to modify the clamd.conf files more, [You can find it here somewhere](https://www.clamav.net/documents/clam-antivirus-user-manual)
+The setups mentioned here are enough to get the clamav service up and running and ready to be used by ICAPeg, but if you want to have more control over clamav, you need to modify the clamd.conf files more, [You can find it here somewhere](https://www.clamav.net/documents/clam-antivirus-user-manual)
