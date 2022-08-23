@@ -39,6 +39,7 @@ To know more about the ICAP protocol, [check this out](https://tools.ietf.org/ht
 - [Prerequisites](#prerequisites)
 - [Configuration](#configuration)
 - [Adding a new vendor to ICAPeg](#adding-a-new-vendor-to-ICAPeg)
+- [Developer Guide](#developer-guide)
 - [How to Setup Existed Services](how-to-setup-existed-services)
 - [Things to keep in mind](things-to-keep-in-mind)
 - [More on ICAPeg](#more-on-icapeg)
@@ -126,7 +127,7 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
         
         - **debugging_headers**
         
-          Bool variable which indicates if debugging headers should be displayed with ICAP headers or not. Debugging headers tell the client shadow service is enabled for example. they start with **X-ICAPeg-{{HEADER_NAME}}**. possible values:
+          A boolean variable which indicates if debugging headers should be displayed with ICAP headers or not. Debugging headers tell the client shadow service is enabled for example. they start with **X-ICAPeg-{{HEADER_NAME}}**. possible values:
         
           - **true**: Debugging headers should be displayed with ICAP headers.
           - **false**: Debugging headers should not be displayed with ICAP headers.
@@ -297,6 +298,14 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
 
 - [How to add a new service for a new vendor](ADDING-NEW-VENDOR.md).
 
+  After reading the above markdown, read the next section because it may help you while implementing your new service.
+
+## Developer Guide
+
+- [Developer Guide](developer-guide.md).
+
+  This is a developer guide which includes a lot of functions to help the developer while implementing his new service.
+
 ## How to Setup Existed Services
 
 - **Echo**: It doesn't need setup, it takes the HTTP message and returns it as it is. **Echo** is just an example service.
@@ -331,3 +340,4 @@ This project is still a WIP. So you can contribute as well. See the contribution
 ## License
 
 ICAPeg is licensed under the [Apache License 2.0](LICENSE).
+
