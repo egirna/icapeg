@@ -77,10 +77,13 @@ Assume that the name of the vendor is **abc** and the name of the service **xyz*
       	httpMsg                *utils.HttpMsg
       	serviceName            string
       	methodName             string
+          bypassExts                 []string
+      	processExts                []string
+      	rejectExts                 []string
+      	extArrs                    []services_utilities.Extension
+      
           //optional, it's up to you and to optional vaiables hav been added in service's section in config.toml file (you should map them with these struct fields)
           generalFunc            *general_functions.GeneralFunc     //optional helper field
-          bypass_extensions = []
-          process_extensions = ["*"] 
           base_url = "echo" 
           scan_endpoint = "echo"
           api_key = "<api key>"
@@ -140,11 +143,13 @@ Assume that the name of the vendor is **abc** and the name of the service **xyz*
       		httpMsg:                httpMsg,
       		serviceName:            serviceName,
       		methodName:             methodName,
+              bypassExts:                 echoConfig.bypassExts,
+      		processExts:                echoConfig.processExts,
+      		rejectExts:                 echoConfig.rejectExts,
               	//optional
       		generalFunc:            general_functions.NewGeneralFunc(httpMsg),  //optional helper 
       		maxFileSize:            abcConfig.maxFileSize,
-      		bypassExts:             abcConfig.bypassExts,
-      		processExts:            abcConfig.processExts,
+      		extArrs:                    echoConfig.extArrs,
       		BaseURL:                abcConfig.BaseURL,
       		Timeout:                abcConfig.Timeout * time.Second,
       		APIKey:                 abcConfig.APIKey,
