@@ -60,7 +60,7 @@
 
 ## Introduction
 
-[**GeneralFunc**](./service/services-utilities/general-functions/general-functions.go) is a struct used to help developer who implement a new service of a new vendor. It has a lot of function that developer may need, they help him to do some tasks. These tasks are explained in that file.
+[**GeneralFunc**](./service/services-utilities/general-functions/general-functions.go) is a struct used to help developer who implement a new service of a new vendor. It has a lot of functions that the developer may need, they help him to do some tasks. These tasks are explained in that file.
 
 ```go
 type GeneralFunc struct {
@@ -96,7 +96,7 @@ type HttpMsg struct {
 }
 ```
 
-[**HttpMsg**](./utils/httpMessage.go) is a struct which contains two fields. The first field is **HTTP reauest** and the second is **HTTP response**. It's used to encapsulate the HTTP request and response with each others because there are two modes in **ICAP**, **REQMOD** and **RESPMOD**.
+[**HttpMsg**](./utils/httpMessage.go) is a struct which contains two fields. The first field is **HTTP reauest** and the second is **HTTP response**. It's used to encapsulate the HTTP request and response with each other because there are two modes in **ICAP**, **REQMOD** and **RESPMOD**.
 
 [**HttpMsg**](./utils/httpMessage.go) field in [**GeneralFunc**](./service/services-utilities/general-functions/general-functions.go) struct facilitates [**GeneralFunc**](./service/services-utilities/general-functions/general-functions.go) dealing with HTTP request and response.
 
@@ -115,14 +115,14 @@ type HttpMsg struct {
   - **Return Values**
 
      - Pointer from **bytes.Buffer** type which points to the body of the **HTTP message**.
-     - Instance from [**ContentType**](service/services-utilities/ContentTypes/contentType.go) type which is used as indicator to the content type of the body in case of **REQMOD**, but in case of **RESPMOD** it will be nil. This value is important when we prepare the **HTTP request** to return it again to the client.
+     - Instance from [**ContentType**](service/services-utilities/ContentTypes/contentType.go) type which is used as indicator to the content type of the body in case of **REQMOD**, but in case of **RESPMOD** it will be nil. This value is important when we prepare the **HTTP request** to return it to the client.
      - Instance from **error** type to indicate if there is an error or not, the value will be nil if there is no error.
 
 - ### **CheckTheExtension**
 
   - #### **Description**
 
-    It extracts the body of the **HTTP message** and get the content type of the body if it exists.
+    It extracts the body of the **HTTP message** and gets the content type of the body if it exists.
 
   - #### **Parameters**
 
@@ -131,19 +131,19 @@ type HttpMsg struct {
     - **processExts** ([]string): Array of extensions which wanted to be processed.
     - **rejectExts** ([]string): Array of extensions which wanted to be rejected.
     - **bypassExts** ([]string): Array of extensions which wanted to be bypassed.
-    - **return400IfFileExtRejected** (bool): Bool variable indicates to if the service configuration aims to return **400** as an ICAP response status in case the current file extension is rejected.
+    - **return400IfFileExtRejected** (bool): Bool variable indicates if the service configuration aims to return **400** as an ICAP response status in case the current file extension is rejected.
     - **isGzip** (bool): Boolean variable indicates to if the **HTTP message** body was compressed in the **HTTP message** before starting processing.
     - **serviceName** (string): The name of the service which you implement.
     - **methodName** (string): possible values are (**REQMOD** and **RESPMOD**).
     - **identifier** (string): The identifier of the service (service API identifier for example).
-    - **requestURI** (string): The requested URL that may cause getting a block page incase the file extension is rejected.
+    - **requestURI** (string): The requested URL that may cause getting a block page in case the file extension is rejected.
     - **reqContentType** ([ContentType](service/services-utilities/ContentTypes/contentType.go)): the content type of the **HTTP message** body before processing (multipart for example).
     - **file** (*bytes.Buffer): The body of **HTTP message**.
 
   - #### **Return Values**
 
      - **Bool** variable, possible values are **true** if the file extension exists in process extension.
-     - Integer variable which is **ICAP** status should be returned from [**Processing**](service/service.go) function. It equals zero if the file extension exists in process extension.
+     - Integer variable which is **ICAP** status should be returned from [**Processing**](service/service.go) function. It equals zero if the file extension exists in the process extensions array.
      - Instance from **error** type to indicate if there is an error or not, the value will be nil if there is no error.
 
 - ### **IsBodyGzipCompressed**
@@ -164,7 +164,7 @@ type HttpMsg struct {
 
   - #### **Description**
 
-    It decompress the file which compressed in **Gzip**.
+    It decompresses the file is compressed in **Gzip**.
 
   - #### **Parameters**
 
@@ -183,7 +183,7 @@ type HttpMsg struct {
 
   - #### **Parameters**
 
-    - **returnOrigIfMaxSizeExc** (bool): Bool variable indicates to if the service configuration aims to return the Original file in case the **HTTP message** body exceeds the max file size.
+    - **returnOrigIfMaxSizeExc** (bool): The bool variable indicates if the service configuration aims to return the Original file in case the **HTTP message** body exceeds the max file size.
     - **serviceName** (string): The name of the service which you implement.
     - **file** (*bytes.Buffer): The body of **HTTP message**.
 
@@ -201,7 +201,7 @@ type HttpMsg struct {
 
   - #### **Parameters**
 
-    No paramaters.
+    No parameters.
 
   - #### **Return Values**
 
@@ -215,18 +215,18 @@ type HttpMsg struct {
 
   - #### **Parameters**
 
-    - **scannedFile** ([]byte): Array of bytes which contains the file which you want to compressed.
+    - **scannedFile** ([]byte): Array of bytes which contains the file which you want to compress.
 
   - #### **Return Values**
 
     - **[]byte** array of bytes contains the body of **HTTP message** after compression.
-    - Instance from **error** type to indicate wether there is an error or not, the value will be nil if there is no error.
+    - Instance from **error** type to indicate whether there is an error or not, the value will be nil if there is no error.
 
 - ### **ErrPageResp**
 
   - #### **Description**
 
-    It prepares headers and status code of **HTTP response** which will includes a block page as **HTML** file.
+    It prepares headers and status code of **HTTP response** which will include a block page as **HTML** file.
 
   - #### **Parameters**
 
@@ -246,7 +246,7 @@ type HttpMsg struct {
   - #### **Parameters**
 
     - **path** (string): [The path of the block page](service/unprocessable-file.html).
-    - **reason** (string): The reason of getting a block page.
+    - **reason** (string): The reason for getting a block page.
     - **serviceName** (string): The name of the service which you implement.
     - **identifierId** (string): The identifier of the service (service API identifier for example).
     - **reqUrl** (string): The requested URL that causes getting a block page.
@@ -259,7 +259,7 @@ type HttpMsg struct {
 
   - #### **Description**
 
-    It's used for preparing the http response before returning it. It's used for **REQMOD** only.
+    It's used for preparing the HTTP response before returning it. It's used for **REQMOD** only.
 
   - #### **Parameters**
 
