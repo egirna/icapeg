@@ -41,6 +41,12 @@ To know more about the ICAP protocol, [check this out](https://tools.ietf.org/ht
 - [Adding a new vendor to ICAPeg](#adding-a-new-vendor-to-ICAPeg)
 - [Developer Guide](#developer-guide)
 - [How to Setup Existed Services](how-to-setup-existed-services)
+  - [Echo](#echo)
+  - [Virustotal](#virustotal)
+  - [ClamAV](#clamav)
+  - [Cloudmersive](#cloudmersive)
+  - [Gray Images](#grayimages)
+
 - [Things to keep in mind](things-to-keep-in-mind)
 - [More on ICAPeg](#more-on-icapeg)
 - [Contributing](#contributing)
@@ -308,11 +314,15 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
 
 ## How to Setup Existed Services
 
-- **Echo**: It doesn't need setup, it takes the HTTP message and returns it as it is. **Echo** is just an example service.
-- [**Virustotal**](/vendors-markdowns/virustotal/VIRUSTOTALAPI.md).
+- #### **Echo**: It doesn't need setup, it takes the HTTP message and returns it as it is. **Echo** is just an example service.
 
-- [**ClamAV**](/vendors-markdowns/clamav/CLAMAVSETUP.md).
-- [**Cloudmersive**](/vendors-markdowns/cloudmersive/CLOUDMERSIVEAPI.md).
+- #### [**Virustotal**](/vendors-markdowns/virustotal/VIRUSTOTALAPI.md).
+
+- #### [**ClamAV**](/vendors-markdowns/clamav/CLAMAVSETUP.md).
+
+- #### [**Cloudmersive**](/vendors-markdowns/cloudmersive/CLOUDMERSIVEAPI.md).
+
+- #### [**Gray Images**](/vendors-markdowns/greyimages/GRAYIMAGESSETUP.md).
 
 ## Testing
 

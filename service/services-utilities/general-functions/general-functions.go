@@ -7,6 +7,7 @@ import (
 	services_utilities "icapeg/service/services-utilities"
 	"icapeg/service/services-utilities/ContentTypes"
 	"icapeg/utils"
+	"image"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -326,4 +327,10 @@ func (f *GeneralFunc) returningHttpMessage(methodName string, file []byte) inter
 		return f.httpMsg.Response
 	}
 	return nil
+}
+
+// GetDecodedImage takes the HTTP file and converts it to an image object
+func (f *GeneralFunc) GetDecodedImage(file *bytes.Buffer) (image.Image, error) {
+	img, _, err := image.Decode(file)
+	return img, err
 }
