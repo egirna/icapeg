@@ -10,7 +10,9 @@ import (
 	"image"
 	"image/jpeg"
 	"image/png"
+	"io"
 	"log"
+	"net/http"
 	"os"
 	"strconv"
 	"time"
@@ -68,6 +70,26 @@ func (g *GrayImages) Processing(partial bool) (int, interface{}, map[string]stri
 	if !isProcess {
 		return icapStatus, httpMsg, serviceHeaders
 	}
+
+	//check if the file size is greater than max file size of the service
+	//if yes we will return 200 ok or 204 no modification, it depends on the configuration of the service
+	if g.maxFileSize != 0 && g.maxFileSize < file.Len() {
+		status, file, httpMsg := g.generalFunc.IfMaxFileSizeExc(g.returnOrigIfMaxSizeExc, g.serviceName, file)
+		fileAfterPrep, httpMsg := g.generalFunc.IfStatusIs204WithFile(g.methodName, status, file, isGzip, reqContentType, httpMsg)
+		if fileAfterPrep == nil && httpMsg == nil {
+			return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
+		}
+		switch msg := httpMsg.(type) {
+		case *http.Request:
+			msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
+			return status, msg, nil
+		case *http.Response:
+			msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
+			return status, msg, nil
+		}
+		return status, nil, nil
+	}
+
 	// convert the HTTP img to grayscale
 	scale, err := g.ConvertImgToGrayScale(fileExtension, file)
 	scannedFile := file.Bytes()
