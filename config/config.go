@@ -130,6 +130,7 @@ func Init() {
 		AppCfg.ServicesInstances[serviceName] = &serviceIcapInfo{
 			Vendor:         readValues.ReadValuesString(serviceName + ".vendor"),
 			ServiceTag:     readValues.ReadValuesString(serviceName + ".service_tag"),
+			ServiceCaption: readValues.ReadValuesString(serviceName + ".service_caption"),
 			ReqMode:        readValues.ReadValuesBool(serviceName + ".req_mode"),
 			RespMode:       readValues.ReadValuesBool(serviceName + ".resp_mode"),
 			ShadowService:  readValues.ReadValuesBool(serviceName + ".shadow_service"),
