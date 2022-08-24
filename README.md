@@ -45,7 +45,6 @@ To know more about the ICAP protocol, [check this out](https://tools.ietf.org/ht
   - [Virustotal](#virustotal)
   - [ClamAV](#clamav)
   - [Cloudmersive](#cloudmersive)
-  - [Gray Images](#grayimages)
 
 - [Things to keep in mind](things-to-keep-in-mind)
 - [More on ICAPeg](#more-on-icapeg)
@@ -321,8 +320,6 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
 - #### [**ClamAV**](/vendors-markdowns/clamav/CLAMAVSETUP.md).
 
 - #### [**Cloudmersive**](/vendors-markdowns/cloudmersive/CLOUDMERSIVEAPI.md).
-
-- #### [**Gray Images**](/vendors-markdowns/greyimages/GRAYIMAGESSETUP.md).
 
 ## Testing
 
