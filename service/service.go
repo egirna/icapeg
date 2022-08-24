@@ -44,6 +44,7 @@ func GetService(vendor, serviceName, methodName string, httpMsg *utils.HttpMsg) 
 	return nil
 }
 
+// InitServiceConfig is used to load the services configuration
 func InitServiceConfig(vendor, serviceName string) {
 	switch vendor {
 	case VendorEcho:

@@ -133,6 +133,7 @@ func (i *ICAPRequest) RequestProcessing() {
 
 	// check the method name
 	switch i.methodName {
+	// for options mode
 	case utils.ICAPModeOptions:
 		i.optionsMode(i.serviceName)
 		break
@@ -148,10 +149,7 @@ func (i *ICAPRequest) HostHeader() {
 
 	if i.methodName == "REQMOD" {
 		i.req.Request.Header.Set("Host", i.req.Request.Host)
-	} // else if i.methodName == "RESPMOD" {
-	//	fmt.Println(i.req.Request.Host)
-	//	i.req.Response.Header.Set("Host", i.req.Request.Host)
-	//}
+	}
 }
 
 func (i *ICAPRequest) RespAndReqMods(partial bool) {
@@ -191,6 +189,8 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 		i.w.WriteHeader(IcapStatusCode, nil, false)
 		break
 	case utils.Continue:
+		//in case the service returned 100 continue
+		//we will get the rest of the body from the client
 		httpMsgBody := i.preview()
 		i.methodName = i.req.Method
 		if i.req.Method == utils.ICAPModeReq {
@@ -274,7 +274,6 @@ func (i *ICAPRequest) getVendorName() string {
 	return i.appCfg.ServicesInstances[i.serviceName].Vendor
 }
 
-
 // addingISTAGServiceHeaders is a func to add the important header to ICAP response
 func (i *ICAPRequest) addingISTAGServiceHeaders(ISTgValue string) {
 	i.h["ISTag"] = []string{ISTgValue}
@@ -349,6 +348,8 @@ func (i *ICAPRequest) optionsMode(serviceName string) {
 	i.w.WriteHeader(http.StatusOK, nil, false)
 }
 
+// preview function is used to get the rest of the http message from the client after sending
+// a preview about the body first
 func (i *ICAPRequest) preview() *bytes.Buffer {
 	r := icap.GetTheRest()
 	c := io.NopCloser(r)
