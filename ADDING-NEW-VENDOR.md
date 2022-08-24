@@ -65,7 +65,7 @@ Assume that the name of the vendor is **abc** and the name of the service **xyz*
     - Create a struct named **Abc** with the required attributes of any service to this vendor.
 
       - **Mandatory fields**:
-        - **httpMsg**: It's an instance from [**HttpMsg**](utils/httpMessage.go) struct which groups two field (**HTTP request** and **HTTP response**). The developer can process the **HTTP message(request or response)** through this instance.
+        - **httpMsg**: It's an instance from [**HttpMsg**](http-message/httpMessage.go) struct which groups two field (**HTTP request** and **HTTP response**). The developer can process the **HTTP message(request or response)** through this instance.
         - **serviceName**: It's the service name value.
         - **methodName**: It's method name value.
       - **Optional fields**:

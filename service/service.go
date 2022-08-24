@@ -1,11 +1,11 @@
 package service
 
 import (
+	"icapeg/http-message"
 	"icapeg/service/services/clamav"
 	"icapeg/service/services/cloudmersive"
 	"icapeg/service/services/echo"
 	"icapeg/service/services/virustotal"
-	"icapeg/utils"
 )
 
 // Vendors names
@@ -26,7 +26,7 @@ type (
 
 // GetService returns a service based on the service name
 // change name to vendor and add parameter service name
-func GetService(vendor, serviceName, methodName string, httpMsg *utils.HttpMsg) Service {
+func GetService(vendor, serviceName, methodName string, httpMsg *http_message.HttpMsg) Service {
 	switch vendor {
 	case VendorEcho:
 		return echo.NewEchoService(serviceName, methodName, httpMsg)

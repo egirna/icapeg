@@ -64,7 +64,7 @@
 
 ```go
 type GeneralFunc struct {
-	httpMsg *utils.HttpMsg
+	httpMsg *http_message.HttpMsg
 }
 ```
 
@@ -72,7 +72,7 @@ So the developer can add [**GeneralFunc**](./service/services-utilities/general-
 
 ```go
 type Echo struct {
-	httpMsg                    *utils.HttpMsg
+	httpMsg                    *http_message.HttpMsg
 	elapsed                    time.Duration
 	serviceName                string
 	methodName                 string
@@ -87,7 +87,7 @@ type Echo struct {
 }
 ```
 
-First, let's discuss about the only field in [**GeneralFunc**](./service/services-utilities/general-functions/general-functions.go) which is an instance from type [**HttpMsg**](./utils/httpMessage.go).
+First, let's discuss about the only field in [**GeneralFunc**](./service/services-utilities/general-functions/general-functions.go) which is an instance from type [**HttpMsg**](http-message/httpMessage.go).
 
 ```go
 type HttpMsg struct {
@@ -96,9 +96,9 @@ type HttpMsg struct {
 }
 ```
 
-[**HttpMsg**](./utils/httpMessage.go) is a struct which contains two fields. The first field is **HTTP reauest** and the second is **HTTP response**. It's used to encapsulate the HTTP request and response with each other because there are two modes in **ICAP**, **REQMOD** and **RESPMOD**.
+[**HttpMsg**](consts/httpMessage.go) is a struct which contains two fields. The first field is **HTTP reauest** and the second is **HTTP response**. It's used to encapsulate the HTTP request and response with each other because there are two modes in **ICAP**, **REQMOD** and **RESPMOD**.
 
-[**HttpMsg**](./utils/httpMessage.go) field in [**GeneralFunc**](./service/services-utilities/general-functions/general-functions.go) struct facilitates [**GeneralFunc**](./service/services-utilities/general-functions/general-functions.go) dealing with HTTP request and response.
+[**HttpMsg**](consts/httpMessage.go) field in [**GeneralFunc**](./service/services-utilities/general-functions/general-functions.go) struct facilitates [**GeneralFunc**](./service/services-utilities/general-functions/general-functions.go) dealing with HTTP request and response.
 
 ## Functions
 

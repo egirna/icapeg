@@ -3,7 +3,7 @@ package clamav
 import (
 	"bytes"
 	"github.com/dutchcoders/go-clamd"
-	"icapeg/utils"
+	"icapeg/consts"
 	"io"
 	"log"
 	"net/http"
@@ -34,15 +34,15 @@ func (c *Clamav) Processing(partial bool) (int, interface{}, map[string]string) 
 	var fileName string
 	if c.methodName == utils.ICAPModeReq {
 		contentType = c.httpMsg.Request.Header["Content-Type"]
-		fileName = utils.GetFileName(c.httpMsg.Request)
+		fileName = c.generalFunc.GetFileName()
 	} else {
 		contentType = c.httpMsg.Response.Header["Content-Type"]
-		fileName = utils.GetFileName(c.httpMsg.Response)
+		fileName = c.generalFunc.GetFileName()
 	}
 	if len(contentType) == 0 {
 		contentType = append(contentType, "")
 	}
-	fileExtension := utils.GetMimeExtension(file.Bytes(), contentType[0], fileName)
+	fileExtension := c.generalFunc.GetMimeExtension(file.Bytes(), contentType[0], fileName)
 
 	//check if the file extension is a bypass extension
 	//if yes we will not modify the file, and we will return 204 No modifications

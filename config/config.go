@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"github.com/spf13/viper"
+	"icapeg/consts"
 	"icapeg/readValues"
 	"os"
 )
@@ -74,11 +75,11 @@ func Init() {
 		//bypass
 		bypass := readValues.ReadValuesSlice(serviceName + ".bypass_extensions")
 		for i := 0; i < len(bypass); i++ {
-			if bypass[i] == "*" && len(bypass) != 1 {
+			if bypass[i] == utils.Any && len(bypass) != 1 {
 				fmt.Println("bypass_extensions array has one asterisk \"*\" and other extensions but asterisk should be the only element in the array otherwise add extensions as you want")
 				os.Exit(1)
 			}
-			if bypass[i] == "*" {
+			if bypass[i] == utils.Any {
 				asterisks++
 			}
 			if ext[bypass[i]] == false {
@@ -91,11 +92,11 @@ func Init() {
 		//process
 		process := readValues.ReadValuesSlice(serviceName + ".process_extensions")
 		for i := 0; i < len(process); i++ {
-			if process[i] == "*" && len(process) != 1 {
+			if process[i] == utils.Any && len(process) != 1 {
 				fmt.Println("process_extensions array has one asterisk \"*\" and other extensions but asterisk should be the only element in the array otherwise add extensions as you want")
 				os.Exit(1)
 			}
-			if process[i] == "*" {
+			if process[i] == utils.Any {
 				asterisks++
 			}
 			if ext[process[i]] == false {
@@ -108,11 +109,11 @@ func Init() {
 		//reject
 		reject := readValues.ReadValuesSlice(serviceName + ".reject_extensions")
 		for i := 0; i < len(reject); i++ {
-			if reject[i] == "*" && len(reject) != 1 {
+			if reject[i] == utils.Any && len(reject) != 1 {
 				fmt.Println("reject_extensions array has one asterisk \"*\" and other extensions but asterisk should be the only element in the array otherwise add extensions as you want")
 				os.Exit(1)
 			}
-			if reject[i] == "*" {
+			if reject[i] == utils.Any {
 				asterisks++
 			}
 			if ext[reject[i]] == false {

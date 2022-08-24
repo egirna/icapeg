@@ -1,10 +1,10 @@
 package virustotal
 
 import (
+	"icapeg/http-message"
 	"icapeg/readValues"
 	services_utilities "icapeg/service/services-utilities"
 	general_functions "icapeg/service/services-utilities/general-functions"
-	"icapeg/utils"
 	"sync"
 	"time"
 )
@@ -16,7 +16,7 @@ const VirustotalIdentifier = "VIRUSTOTAL ID"
 
 // Virustotal represents the information regarding the Virustotal service
 type Virustotal struct {
-	httpMsg                    *utils.HttpMsg
+	httpMsg                    *http_message.HttpMsg
 	serviceName                string
 	methodName                 string
 	maxFileSize                int
@@ -52,7 +52,7 @@ func InitVirustotalConfig(serviceName string) {
 }
 
 // NewVirustotalService returns a new populated instance of the Virustotal service
-func NewVirustotalService(serviceName, methodName string, httpMsg *utils.HttpMsg) *Virustotal {
+func NewVirustotalService(serviceName, methodName string, httpMsg *http_message.HttpMsg) *Virustotal {
 	return &Virustotal{
 		httpMsg:                    httpMsg,
 		serviceName:                serviceName,

@@ -5,7 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"icapeg/utils"
+	"icapeg/consts"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -39,15 +39,15 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 	var fileName string
 	if v.methodName == utils.ICAPModeReq {
 		contentType = v.httpMsg.Request.Header["Content-Type"]
-		fileName = utils.GetFileName(v.httpMsg.Request)
+		fileName = v.generalFunc.GetFileName()
 	} else {
 		contentType = v.httpMsg.Response.Header["Content-Type"]
-		fileName = utils.GetFileName(v.httpMsg.Response)
+		fileName = v.generalFunc.GetFileName()
 	}
 	if len(contentType) == 0 {
 		contentType = append(contentType, "")
 	}
-	fileExtension := utils.GetMimeExtension(file.Bytes(), contentType[0], fileName)
+	fileExtension := v.generalFunc.GetMimeExtension(file.Bytes(), contentType[0], fileName)
 
 	isProcess, icapStatus, httpMsg := v.generalFunc.CheckTheExtension(fileExtension, v.extArrs,
 		v.processExts, v.rejectExts, v.bypassExts, v.return400IfFileExtRejected, isGzip,

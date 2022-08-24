@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"errors"
 	"icapeg/config"
+	"icapeg/consts"
+	"icapeg/http-message"
 	"icapeg/icap"
 	"icapeg/service"
 	"icapeg/service/services-utilities/ContentTypes"
-	"icapeg/utils"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -74,7 +75,7 @@ func (i *ICAPRequest) RequestInitialization() error {
 
 	//adding important headers to options ICAP response
 	requiredService := service.GetService(i.vendor, i.serviceName, i.methodName,
-		&utils.HttpMsg{Request: i.req.Request, Response: i.req.Response})
+		&http_message.HttpMsg{Request: i.req.Request, Response: i.req.Response})
 	i.addingISTAGServiceHeaders(requiredService.ISTagValue())
 
 	i.Is204Allowed = i.is204Allowed()
@@ -163,7 +164,7 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 	}
 	//initialize the service by creating instance from the required service
 	requiredService := service.GetService(i.vendor, i.serviceName, i.methodName,
-		&utils.HttpMsg{Request: i.req.Request, Response: i.req.Response})
+		&http_message.HttpMsg{Request: i.req.Request, Response: i.req.Response})
 
 	//calling Processing func to process the http message which encapsulated inside the ICAP request
 	IcapStatusCode, httpMsg, serviceHeaders := requiredService.Processing(partial)

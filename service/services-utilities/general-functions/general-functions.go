@@ -3,10 +3,12 @@ package general_functions
 import (
 	"bytes"
 	"compress/gzip"
+	"github.com/h2non/filetype"
 	"html/template"
+	"icapeg/consts"
+	"icapeg/http-message"
 	services_utilities "icapeg/service/services-utilities"
 	"icapeg/service/services-utilities/ContentTypes"
-	"icapeg/utils"
 	"image"
 	"io"
 	"io/ioutil"
@@ -28,11 +30,11 @@ type (
 
 // GeneralFunc is a struct used for applying general functionalities that any service can apply
 type GeneralFunc struct {
-	httpMsg *utils.HttpMsg
+	httpMsg *http_message.HttpMsg
 }
 
 // NewGeneralFunc is used to create a new instance from the struct
-func NewGeneralFunc(httpMsg *utils.HttpMsg) *GeneralFunc {
+func NewGeneralFunc(httpMsg *http_message.HttpMsg) *GeneralFunc {
 	GeneralFunc := &GeneralFunc{
 		httpMsg: httpMsg,
 	}
@@ -120,7 +122,7 @@ func (f *GeneralFunc) copyingFileToTheBufferReq() (*bytes.Buffer, ContentTypes.C
 
 }
 
-// inStringSlice is a func which used for checking if a string element exists in a slice or not
+// InStringSlice determines whether a string slices contains the data
 func (f *GeneralFunc) inStringSlice(data string, ss []string) bool {
 	for _, s := range ss {
 		if data == s {
@@ -131,10 +133,10 @@ func (f *GeneralFunc) inStringSlice(data string, ss []string) bool {
 }
 
 func (f *GeneralFunc) ifFileExtIsX(fileExtension string, arr []string) bool {
-	if len(arr) == 1 && arr[0] == "*" {
+	if len(arr) == 1 && arr[0] == utils.Any {
 		return true
 	}
-	if utils.InStringSlice(fileExtension, arr) {
+	if f.inStringSlice(fileExtension, arr) {
 		return true
 	}
 	return false
@@ -333,4 +335,35 @@ func (f *GeneralFunc) returningHttpMessage(methodName string, file []byte) inter
 func (f *GeneralFunc) GetDecodedImage(file *bytes.Buffer) (image.Image, error) {
 	img, _, err := image.Decode(file)
 	return img, err
+}
+
+// InitSecure set insecure flag based on user input
+func (f *GeneralFunc) InitSecure(VerifyServerCert bool) bool {
+	if !VerifyServerCert {
+		return true
+	}
+	return false
+}
+
+// GetMimeExtension returns the mime type extension of the data
+func (f *GeneralFunc) GetMimeExtension(data []byte, contentType string, filename string) string {
+	kind, _ := filetype.Match(data)
+	exts := map[string]string{"application/xml": "xml", "application/html": "html", "text/html": "html", "text/json": "html", "application/json": "json", "text/plain": "txt"}
+	contentType = strings.Split(contentType, ";")[0]
+	if kind == filetype.Unknown {
+		if _, ok := exts[contentType]; ok {
+			return exts[contentType]
+		}
+	}
+	if kind == filetype.Unknown {
+		filenameArr := strings.Split(filename, ".")
+		if len(filenameArr) > 1 {
+			return filenameArr[len(filenameArr)-1]
+		}
+	}
+	if kind == filetype.Unknown {
+		return utils.Unknown
+	}
+	return kind.Extension
+
 }
