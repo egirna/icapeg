@@ -2,8 +2,6 @@ package grayimages
 
 import (
 	"bytes"
-	"context"
-	"crypto/tls"
 	"icapeg/utils"
 	"io"
 	"io/ioutil"
@@ -17,6 +15,7 @@ import (
 const GrayImagesIdentifier = "GRAYIMAGES ID"
 
 func (g *GrayImages) Processing(partial bool) (int, interface{}, map[string]string) {
+	log.Println("processing")
 	serviceHeaders := make(map[string]string)
 	// no need to scan part of the file, this service needs all the file at ine time
 	if partial {
@@ -31,57 +30,81 @@ func (g *GrayImages) Processing(partial bool) (int, interface{}, map[string]stri
 		log.Println("30")
 		return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
 	}
-
 	// check if file is compressed
 	isGzip = g.generalFunc.IsBodyGzipCompressed(g.methodName)
-	//if it's compressed, we decompress it to send it to Glasswall service
 	if isGzip {
 		if file, err = g.generalFunc.DecompressGzipBody(file); err != nil {
 			return utils.InternalServerErrStatusCodeStr, nil, nil
 		}
 	}
 	//getting the extension of the file
-	contentType := g.httpMsg.Response.Header["Content-Type"]
+	var contentType []string
+	if len(contentType) == 0 {
+		contentType = append(contentType, "")
+	}
+	// getting file extension
 	var fileName string
 	if g.methodName == utils.ICAPModeReq {
+		contentType = g.httpMsg.Request.Header["Content-Type"]
 		fileName = utils.GetFileName(g.httpMsg.Request)
 	} else {
+		contentType = g.httpMsg.Response.Header["Content-Type"]
 		fileName = utils.GetFileName(g.httpMsg.Response)
+	}
+	if len(contentType) == 0 {
+		contentType = append(contentType, "")
 	}
 	fileExtension := utils.GetMimeExtension(file.Bytes(), contentType[0], fileName)
 
-	isProcess, icapStatus, httpMsg := g.generalFunc.CheckTheExtension(fileExtension, g.extArrs,
+	/*isProcess, icapStatus, httpMsg := g.generalFunc.CheckTheExtension(fileExtension, g.extArrs,
 		g.processExts, g.rejectExts, g.bypassExts, g.return400IfFileExtRejected, isGzip,
 		g.serviceName, g.methodName, GrayImagesIdentifier, g.httpMsg.Request.RequestURI, reqContentType, file)
 	if !isProcess {
 		return icapStatus, httpMsg, serviceHeaders
-	}
+	}*/
 
-	// sending request to cloudmersive api
-	serviceResp, err := g.SendFileToAPI(file, fileExtension, fileName)
-	if err != nil {
-		return serviceResp.StatusCode, nil, serviceHeaders
-	}
-	// getting response body
-	scannedFile, err := ioutil.ReadAll(serviceResp.Body)
-	if err != nil {
-		return serviceResp.StatusCode, nil, serviceHeaders
-	}
-	// convert the HTTP img to grayscale
-	if err != nil {
+	if fileExtension != "png" && fileExtension != "jpeg" && fileExtension != "jpg" && fileExtension != "webp" {
+		originalFile := file.Bytes()
 		if isGzip {
-			// compress file again if it's decompressed
+			originalFile, err = g.generalFunc.CompressFileGzip(originalFile)
+			if err != nil {
+				return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
+			}
+		}
+		originalFile = g.generalFunc.PreparingFileAfterScanning(originalFile, reqContentType, g.methodName)
+		return utils.NoModificationStatusCodeStr, g.generalFunc.ReturningHttpMessageWithFile(g.methodName, originalFile), serviceHeaders
+	}
+	// sending request to gray images api
+	scannedFile := file.Bytes()
+	serviceResp, err := g.SendFileToAPI(file, fileExtension, fileName)
+	if err != nil || serviceResp.StatusCode != 200 {
+		if serviceResp != nil {
+			log.Println(serviceResp.StatusCode)
+			log.Println(serviceResp.Body)
+		}
+		// if file recompress the file if it was compressed
+		if isGzip {
 			scannedFile, err = g.generalFunc.CompressFileGzip(scannedFile)
 			if err != nil {
 				return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
 			}
 		}
-		// return the same file if it can't be gray
+		// send file with no modification code
 		scannedFile = g.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, g.methodName)
 		return utils.NoModificationStatusCodeStr, g.generalFunc.ReturningHttpMessageWithFile(g.methodName, scannedFile), serviceHeaders
 	}
-	// convert grayImg into bytes
-
+	// get the byte array from response body
+	scannedFile, err = ioutil.ReadAll(serviceResp.Body)
+	if err != nil {
+		if isGzip {
+			scannedFile, err = g.generalFunc.CompressFileGzip(scannedFile)
+			if err != nil {
+				return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
+			}
+		}
+		scannedFile = g.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, g.methodName)
+		return utils.NoModificationStatusCodeStr, g.generalFunc.ReturningHttpMessageWithFile(g.methodName, scannedFile), serviceHeaders
+	}
 	// compress file again if it's decompressed
 	if isGzip {
 		scannedFile, err = g.generalFunc.CompressFileGzip(scannedFile)
@@ -89,42 +112,51 @@ func (g *GrayImages) Processing(partial bool) (int, interface{}, map[string]stri
 			return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
 		}
 	}
-	// return the gray image
+	// send the image after gray scale
 	scannedFile = g.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, g.methodName)
 	return utils.OkStatusCodeStr, g.generalFunc.ReturningHttpMessageWithFile(g.methodName, scannedFile), serviceHeaders
 }
 
 func (g *GrayImages) SendFileToAPI(f *bytes.Buffer, fileType string, fileName string) (*http.Response, error) {
-	url := g.BaseURL + fileType
-	bodyBuf := &bytes.Buffer{}
+	var url string
+	switch fileType {
+	case "png":
+		url = g.BaseURL + "/png"
+	case "webp":
+		url = g.BaseURL + "/webp"
+	case "jpeg":
+		url = g.BaseURL + "/jpeg"
+	case "jpg":
+		url = g.BaseURL + "/jpeg"
+	}
+	log.Println("113, url: ", url)
+	method := "POST"
 
-	bodyWriter := multipart.NewWriter(bodyBuf)
-
-	part, err := bodyWriter.CreateFormFile("img", fileName)
+	payload := &bytes.Buffer{}
+	writer := multipart.NewWriter(payload)
+	part1,
+		errFile1 := writer.CreateFormFile("img", fileName)
+	_, errFile1 = io.Copy(part1, bytes.NewReader(f.Bytes()))
+	if errFile1 != nil {
+		return nil, errFile1
+	}
+	err := writer.Close()
 	if err != nil {
 		return nil, err
 	}
-
-	io.Copy(part, bytes.NewReader(f.Bytes()))
-	if err := bodyWriter.Close(); err != nil {
-		return nil, err
-	}
-	req, err := http.NewRequest(http.MethodPost, url, bodyBuf)
+	client := &http.Client{}
+	req, err := http.NewRequest(method, url, payload)
 	if err != nil {
 		return nil, err
 	}
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: utils.InitSecure()},
-	}
-	client := &http.Client{Transport: tr}
-	ctx, _ := context.WithTimeout(context.Background(), g.Timeout)
-
-	// defer cancel() commit cancel must be on goroutine
-	req = req.WithContext(ctx)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
 	res, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
+	//defer res.Body.Close()
+	//body, err := ioutil.ReadAll(res.Body)
+	//log.Println(string(body))
 	return res, nil
 }
 

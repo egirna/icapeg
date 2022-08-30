@@ -35,7 +35,7 @@ preview_bytes = "1024" #byte
 preview_enabled = true# options send preview header or not
 propagate_error = true
 service_caption ="Go-ICAP server - glasswall Rebuild service"
-services= ["echo", "virustotal", "clamav"]
+services= ["echo", "virustotal", "clamav", "grayimages"]
 timeout = 25
 verify_server_cert=false
 debugging_headers=true
@@ -148,15 +148,16 @@ resp_mode=true
 shadow_service=false
 preview_bytes = "1024" #byte
 preview_enabled = true# options send preview header or not
-bypass_extensions = [""]
-process_extensions = ["*"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
-reject_extensions = [".svg"]
-base_url = "<grayimages>" #
+bypass_extensions = ["*"]
+process_extensions = ["png","jpg","jpeg",] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
+reject_extensions = ["webp"]
+base_url = "" #
 scan_endpoint = "<grayimages>"
 api_key = "<api key>"
 timeout  = 300 #seconds , ICAP will return 408 - Request timeout
 fail_threshold = 2
 images_dir = "$_IMAGES_DIR"
+verify_server_cert=true
 #max file size value from 1 to 9223372036854775807, and value of zero means unlimited
 max_filesize = 0 #bytes
 return_original_if_max_file_size_exceeded=false
