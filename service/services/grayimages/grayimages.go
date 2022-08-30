@@ -6,10 +6,10 @@ import (
 	"crypto/tls"
 	"icapeg/utils"
 	"io"
+	"io/ioutil"
 	"log"
 	"mime/multipart"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 )
@@ -56,9 +56,18 @@ func (g *GrayImages) Processing(partial bool) (int, interface{}, map[string]stri
 	if !isProcess {
 		return icapStatus, httpMsg, serviceHeaders
 	}
+
+	// sending request to cloudmersive api
+	serviceResp, err := g.SendFileToAPI(file, fileExtension, fileName)
+	if err != nil {
+		return serviceResp.StatusCode, nil, serviceHeaders
+	}
+	// getting response body
+	scannedFile, err := ioutil.ReadAll(serviceResp.Body)
+	if err != nil {
+		return serviceResp.StatusCode, nil, serviceHeaders
+	}
 	// convert the HTTP img to grayscale
-	scale, err := g.ConvertImgToGrayScale(fileExtension, file)
-	scannedFile := file.Bytes()
 	if err != nil {
 		if isGzip {
 			// compress file again if it's decompressed
@@ -72,12 +81,7 @@ func (g *GrayImages) Processing(partial bool) (int, interface{}, map[string]stri
 		return utils.NoModificationStatusCodeStr, g.generalFunc.ReturningHttpMessageWithFile(g.methodName, scannedFile), serviceHeaders
 	}
 	// convert grayImg into bytes
-	scannedFile, err = os.ReadFile(scale.Name()) // just pass the file name
-	// clean temp file on desk
-	defer os.Remove(scale.Name())
-	if err != nil {
-		return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
-	}
+
 	// compress file again if it's decompressed
 	if isGzip {
 		scannedFile, err = g.generalFunc.CompressFileGzip(scannedFile)
@@ -88,7 +92,6 @@ func (g *GrayImages) Processing(partial bool) (int, interface{}, map[string]stri
 	// return the gray image
 	scannedFile = g.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, g.methodName)
 	return utils.OkStatusCodeStr, g.generalFunc.ReturningHttpMessageWithFile(g.methodName, scannedFile), serviceHeaders
-
 }
 
 func (g *GrayImages) SendFileToAPI(f *bytes.Buffer, fileType string, fileName string) (*http.Response, error) {
@@ -111,7 +114,7 @@ func (g *GrayImages) SendFileToAPI(f *bytes.Buffer, fileType string, fileName st
 		return nil, err
 	}
 	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: utils.InitSecure(g.verifyServerCert)},
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: utils.InitSecure()},
 	}
 	client := &http.Client{Transport: tr}
 	ctx, _ := context.WithTimeout(context.Background(), g.Timeout)
