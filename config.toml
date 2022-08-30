@@ -161,4 +161,3 @@ images_dir = "$_IMAGES_DIR"
 max_filesize = 0 #bytes
 return_original_if_max_file_size_exceeded=false
 return_400_if_file_ext_rejected=false
-

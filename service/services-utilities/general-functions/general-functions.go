@@ -364,7 +364,7 @@ func (f *GeneralFunc) returningHttpMessage(methodName string, file []byte) inter
 	return nil
 }
 
-// GetDecodedImage takes the HTTP file and cobverts it to an image object
+// GetDecodedImage takes the HTTP file and converts it to an image object
 func (f *GeneralFunc) GetDecodedImage(file *bytes.Buffer) (image.Image, error) {
 	img, _, err := image.Decode(file)
 	return img, err

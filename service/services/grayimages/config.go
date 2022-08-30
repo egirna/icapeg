@@ -25,6 +25,7 @@ type GrayImages struct {
 	extArrs                    []services_utilities.Extension
 	BaseURL                    string
 	Timeout                    time.Duration
+	verifyServerCert           bool
 	APIKey                     string
 	ScanEndpoint               string
 	FailThreshold              int
@@ -43,6 +44,7 @@ func InitGrayImagesConfig(serviceName string) {
 			rejectExts:                 readValues.ReadValuesSlice(serviceName + ".reject_extensions"),
 			BaseURL:                    readValues.ReadValuesString(serviceName + ".base_url"),
 			Timeout:                    readValues.ReadValuesDuration(serviceName+".timeout") * time.Second,
+			verifyServerCert:           readValues.ReadValuesBool(serviceName + ".verify_server_cert"),
 			APIKey:                     readValues.ReadValuesString(serviceName + ".api_key"),
 			ScanEndpoint:               readValues.ReadValuesString(serviceName + ".scan_endpoint"),
 			FailThreshold:              readValues.ReadValuesInt(serviceName + ".fail_threshold"),
@@ -69,6 +71,7 @@ func NewGrayImagesService(serviceName, methodName string, httpMsg *utils.HttpMsg
 		extArrs:                    grayImagesConfig.extArrs,
 		BaseURL:                    grayImagesConfig.BaseURL,
 		Timeout:                    grayImagesConfig.Timeout * time.Second,
+		verifyServerCert:           grayImagesConfig.verifyServerCert,
 		APIKey:                     grayImagesConfig.APIKey,
 		ScanEndpoint:               grayImagesConfig.ScanEndpoint,
 		FailThreshold:              grayImagesConfig.FailThreshold,
