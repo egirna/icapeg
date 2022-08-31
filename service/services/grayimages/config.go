@@ -24,6 +24,7 @@ type Grayimages struct {
 	bypassExts                 []string
 	processExts                []string
 	rejectExts                 []string
+	BaseURL                    string
 	extArrs                    []services_utilities.Extension
 	returnOrigIfMaxSizeExc     bool
 	return400IfFileExtRejected bool
@@ -33,6 +34,7 @@ type Grayimages struct {
 func InitGrayimagesConfig(serviceName string) {
 	doOnce.Do(func() {
 		grayimagesConfig = &Grayimages{
+			BaseURL:                    readValues.ReadValuesString(serviceName + ".base_url"),
 			maxFileSize:                readValues.ReadValuesInt(serviceName + ".max_filesize"),
 			bypassExts:                 readValues.ReadValuesSlice(serviceName + ".bypass_extensions"),
 			processExts:                readValues.ReadValuesSlice(serviceName + ".process_extensions"),
@@ -51,6 +53,7 @@ func NewGrayimagesService(serviceName, methodName string, httpMsg *http_message.
 		serviceName:                serviceName,
 		methodName:                 methodName,
 		generalFunc:                general_functions.NewGeneralFunc(httpMsg),
+		BaseURL:                    grayimagesConfig.BaseURL,
 		maxFileSize:                grayimagesConfig.maxFileSize,
 		bypassExts:                 grayimagesConfig.bypassExts,
 		processExts:                grayimagesConfig.processExts,
