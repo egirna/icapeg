@@ -11,9 +11,9 @@ import (
 var doOnce sync.Once
 var grayimagesConfig *Grayimages
 
-const GrayimagesIdentifier = "ECHO ID"
+const EchoIdentifier = "ECHO ID"
 
-// Echo represents the information regarding the Echo service
+// Grayimages represents the information regarding the grayimages service
 type Grayimages struct {
 	httpMsg                    *http_message.HttpMsg
 	elapsed                    time.Duration
