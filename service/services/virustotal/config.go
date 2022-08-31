@@ -1,10 +1,10 @@
 package virustotal
 
 import (
+	"icapeg/http-message"
 	"icapeg/readValues"
 	services_utilities "icapeg/service/services-utilities"
 	general_functions "icapeg/service/services-utilities/general-functions"
-	"icapeg/utils"
 	"sync"
 	"time"
 )
@@ -16,7 +16,7 @@ const VirustotalIdentifier = "VIRUSTOTAL ID"
 
 // Virustotal represents the information regarding the Virustotal service
 type Virustotal struct {
-	httpMsg                    *utils.HttpMsg
+	httpMsg                    *http_message.HttpMsg
 	serviceName                string
 	methodName                 string
 	maxFileSize                int
@@ -28,8 +28,6 @@ type Virustotal struct {
 	ReportUrl                  string
 	Timeout                    time.Duration
 	APIKey                     string
-	FailThreshold              int
-	policy                     string
 	returnOrigIfMaxSizeExc     bool
 	return400IfFileExtRejected bool
 	generalFunc                *general_functions.GeneralFunc
@@ -46,8 +44,6 @@ func InitVirustotalConfig(serviceName string) {
 			ReportUrl:                  readValues.ReadValuesString(serviceName + ".report_url"),
 			Timeout:                    readValues.ReadValuesDuration(serviceName + ".timeout"),
 			APIKey:                     readValues.ReadValuesString(serviceName + ".api_key"),
-			FailThreshold:              readValues.ReadValuesInt(serviceName + ".fail_threshold"),
-			policy:                     readValues.ReadValuesString(serviceName + ".policy"),
 			returnOrigIfMaxSizeExc:     readValues.ReadValuesBool(serviceName + ".return_original_if_max_file_size_exceeded"),
 			return400IfFileExtRejected: readValues.ReadValuesBool(serviceName + ".return_400_if_file_ext_rejected"),
 		}
@@ -56,7 +52,7 @@ func InitVirustotalConfig(serviceName string) {
 }
 
 // NewVirustotalService returns a new populated instance of the Virustotal service
-func NewVirustotalService(serviceName, methodName string, httpMsg *utils.HttpMsg) *Virustotal {
+func NewVirustotalService(serviceName, methodName string, httpMsg *http_message.HttpMsg) *Virustotal {
 	return &Virustotal{
 		httpMsg:                    httpMsg,
 		serviceName:                serviceName,
@@ -70,8 +66,6 @@ func NewVirustotalService(serviceName, methodName string, httpMsg *utils.HttpMsg
 		ReportUrl:                  virustoalConfig.ReportUrl,
 		Timeout:                    virustoalConfig.Timeout * time.Second,
 		APIKey:                     virustoalConfig.APIKey,
-		FailThreshold:              virustoalConfig.FailThreshold,
-		policy:                     virustoalConfig.policy,
 		returnOrigIfMaxSizeExc:     virustoalConfig.returnOrigIfMaxSizeExc,
 		return400IfFileExtRejected: virustoalConfig.return400IfFileExtRejected,
 		generalFunc:                general_functions.NewGeneralFunc(httpMsg),

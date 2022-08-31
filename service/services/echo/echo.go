@@ -2,7 +2,7 @@ package echo
 
 import (
 	"bytes"
-	"icapeg/utils"
+	"icapeg/consts"
 	"io"
 	"net/http"
 	"strconv"
@@ -32,15 +32,15 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 	var fileName string
 	if e.methodName == utils.ICAPModeReq {
 		contentType = e.httpMsg.Request.Header["Content-Type"]
-		fileName = utils.GetFileName(e.httpMsg.Request)
+		fileName = e.generalFunc.GetFileName()
 	} else {
 		contentType = e.httpMsg.Response.Header["Content-Type"]
-		fileName = utils.GetFileName(e.httpMsg.Response)
+		fileName = e.generalFunc.GetFileName()
 	}
 	if len(contentType) == 0 {
 		contentType = append(contentType, "")
 	}
-	fileExtension := utils.GetMimeExtension(file.Bytes(), contentType[0], fileName)
+	fileExtension := e.generalFunc.GetMimeExtension(file.Bytes(), contentType[0], fileName)
 
 	//check if the file extension is a bypass extension
 	//if yes we will not modify the file, and we will return 204 No modifications
@@ -54,7 +54,7 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 	//check if the file size is greater than max file size of the service
 	//if yes we will return 200 ok or 204 no modification, it depends on the configuration of the service
 	if e.maxFileSize != 0 && e.maxFileSize < file.Len() {
-		status, file, httpMsg := e.generalFunc.IfMaxFileSeizeExc(e.returnOrigIfMaxSizeExc, e.serviceName, file, e.maxFileSize)
+		status, file, httpMsg := e.generalFunc.IfMaxFileSizeExc(e.returnOrigIfMaxSizeExc, e.serviceName, file)
 		fileAfterPrep, httpMsg := e.generalFunc.IfStatusIs204WithFile(e.methodName, status, file, isGzip, reqContentType, httpMsg)
 		if fileAfterPrep == nil && httpMsg == nil {
 			return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders

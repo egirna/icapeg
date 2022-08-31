@@ -10,7 +10,7 @@ require (
 	github.com/rs/zerolog v1.26.1
 	github.com/spf13/viper v1.9.0
 	github.com/xhit/go-str2duration/v2 v2.0.0
-	go.uber.org/atomic v1.9.0 // indirect
+	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
-	go.uber.org/zap v1.21.0 // indirect
+	go.uber.org/zap v1.22.0 // indirect
 )

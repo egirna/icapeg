@@ -31,7 +31,7 @@ Assume that the name of the vendor is **abc** and the name of the service **xyz*
 
     > The **optional** variable is the variable which the service (eg: **xyz**) use for processing **HTTP** message, adding **optional** variables is up to the developer.
 
-  For example if the name of the service is **xyz** and its vendor is **abc**, so the section will be like the following section:
+  For example, if the name of the service is **xyz** and its vendor is **abc**, the section will be like the following section:
 
   ```toml
   [xyz]
@@ -65,8 +65,8 @@ Assume that the name of the vendor is **abc** and the name of the service **xyz*
     - Create a struct named **Abc** with the required attributes of any service to this vendor.
 
       - **Mandatory fields**:
-        - **httpMsg**: It's an instance from [**HttpMsg**](utils/httpMessage.go) struct which groups two field (**HTTP request** and **HTTP response**). Developer can process the **HTTP message(request or response)** through this instance.
-        - **serviceName**: It's service name value.
+        - **httpMsg**: It's an instance from [**HttpMsg**](http-message/httpMessage.go) struct which groups two field (**HTTP request** and **HTTP response**). The developer can process the **HTTP message(request or response)** through this instance.
+        - **serviceName**: It's the service name value.
         - **methodName**: It's method name value.
       - **Optional fields**:
         - **generalFunc**: It's an instance from [**GeneralFunc**](service/services-utilities/general-functions/general-functions.go) struct which has a lot of function that may help the developer in processing **HTTP messages**.
@@ -77,10 +77,13 @@ Assume that the name of the vendor is **abc** and the name of the service **xyz*
       	httpMsg                *utils.HttpMsg
       	serviceName            string
       	methodName             string
-          //optional, it's up to you and to optional vaiables hav been added in service's section in config.toml file (you should map them with these struct fields)
+          bypassExts                 []string
+      	processExts                []string
+      	rejectExts                 []string
+      	extArrs                    []services_utilities.Extension
+      
+          //optional, it's up to you and to optional variables have been added in the service section in config.toml file (you should map them with these struct fields)
           generalFunc            *general_functions.GeneralFunc     //optional helper field
-          bypass_extensions = []
-          process_extensions = ["*"] 
           base_url = "echo" 
           scan_endpoint = "echo"
           api_key = "<api key>"
@@ -93,8 +96,8 @@ Assume that the name of the vendor is **abc** and the name of the service **xyz*
 
     - Add **doOnce** and  **abcConfig** variables:
 
-      - **doOnce**: It's a variable from [**sync**](https://pkg.go.dev/sync) package. It's used to apply singular pattern to the service's struct, to read service's **config.toml** file section only one time once **ICAPeg** runs.
-      - **abcConfig**: It's an instance from **Abc** struct to store service's **config.toml** file section variables and store them in memory through it.
+      - **doOnce**: It's a variable from [**sync**](https://pkg.go.dev/sync) package. It's used to apply the singular pattern to the service's struct, read the service's **config.toml** file section only one time once **ICAPeg** runs.
+      - **abcConfig**: It's an instance from **Abc** struct to store the service's **config.toml** file section variables and store them in memory through it.
 
       ```go
       var doOnce sync.Once
@@ -129,7 +132,7 @@ Assume that the name of the vendor is **abc** and the name of the service **xyz*
 
       
 
-    - Add function named **NewAbcService** which create service from abc vendor.
+    - Add a function named **NewAbcService** which creates a service from abc vendor.
 
       It extracts service configuration from **abcConfig** variable.
 
@@ -140,11 +143,13 @@ Assume that the name of the vendor is **abc** and the name of the service **xyz*
       		httpMsg:                httpMsg,
       		serviceName:            serviceName,
       		methodName:             methodName,
+              bypassExts:                 echoConfig.bypassExts,
+      		processExts:                echoConfig.processExts,
+      		rejectExts:                 echoConfig.rejectExts,
               	//optional
       		generalFunc:            general_functions.NewGeneralFunc(httpMsg),  //optional helper 
       		maxFileSize:            abcConfig.maxFileSize,
-      		bypassExts:             abcConfig.bypassExts,
-      		processExts:            abcConfig.processExts,
+      		extArrs:                    echoConfig.extArrs,
       		BaseURL:                abcConfig.BaseURL,
       		Timeout:                abcConfig.Timeout * time.Second,
       		APIKey:                 abcConfig.APIKey,
@@ -168,7 +173,7 @@ Assume that the name of the vendor is **abc** and the name of the service **xyz*
 
 - ### [**service.go**](service/service.go)
 
-  - Add a name of the new vendor as a constant variable in [service.go](service/service.go) at the start of the file in the constants section.
+  - Add the name of the new vendor as a constant variable in [service.go](service/service.go) at the start of the file in the constants section.
 
 ```go
 //Vendors names
