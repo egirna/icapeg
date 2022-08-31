@@ -12,7 +12,7 @@ import (
 var doOnce sync.Once
 var grayimagesConfig *Grayimages
 
-const EchoIdentifier = "ECHO ID"
+const GrayimagesIdentifier = "GRAYIMAGES ID"
 
 // Grayimages represents the information regarding the grayimages service
 type Grayimages struct {
@@ -42,4 +42,21 @@ func InitGrayimagesConfig(serviceName string) {
 		}
 		grayimagesConfig.extArrs = services_utilities.InitExtsArr(grayimagesConfig.processExts, grayimagesConfig.rejectExts, grayimagesConfig.bypassExts)
 	})
+}
+
+// NewGrayimagesService returns a new populated instance of the Grayimages service
+func NewGrayimagesService(serviceName, methodName string, httpMsg *http_message.HttpMsg) *Grayimages {
+	return &Grayimages{
+		httpMsg:                    httpMsg,
+		serviceName:                serviceName,
+		methodName:                 methodName,
+		generalFunc:                general_functions.NewGeneralFunc(httpMsg),
+		maxFileSize:                grayimagesConfig.maxFileSize,
+		bypassExts:                 grayimagesConfig.bypassExts,
+		processExts:                grayimagesConfig.processExts,
+		rejectExts:                 grayimagesConfig.rejectExts,
+		extArrs:                    grayimagesConfig.extArrs,
+		returnOrigIfMaxSizeExc:     grayimagesConfig.returnOrigIfMaxSizeExc,
+		return400IfFileExtRejected: grayimagesConfig.return400IfFileExtRejected,
+	}
 }
