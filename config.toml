@@ -19,7 +19,7 @@ title = "ICAP configuration file"
 
 [app]
 port = 1344
-services= ["echo", "virustotal", "clamav", "cloudmersive"]
+services= ["echo", "virustotal", "clamav", "cloudmersive", "grayimages"]
 debugging_headers=true
 
 [echo]
