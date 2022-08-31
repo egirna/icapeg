@@ -2,7 +2,7 @@
 
 - ### C-ICAP client
 
-  You can test unsing c-icap client in on your linux machine, you can download it from [here](https://howtoinstall.co/en/c-icap).
+  You can test unsing c-icap client on your linux machine, you can download it from [here](https://howtoinstall.co/en/c-icap).
 
   - #### Testing REQMOD
 

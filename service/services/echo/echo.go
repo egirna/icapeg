@@ -2,7 +2,7 @@ package echo
 
 import (
 	"bytes"
-	"icapeg/utils"
+	"icapeg/consts"
 	"io"
 	"net/http"
 	"strconv"
@@ -32,15 +32,15 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 	var fileName string
 	if e.methodName == utils.ICAPModeReq {
 		contentType = e.httpMsg.Request.Header["Content-Type"]
-		fileName = utils.GetFileName(e.httpMsg.Request)
+		fileName = e.generalFunc.GetFileName()
 	} else {
 		contentType = e.httpMsg.Response.Header["Content-Type"]
-		fileName = utils.GetFileName(e.httpMsg.Response)
+		fileName = e.generalFunc.GetFileName()
 	}
 	if len(contentType) == 0 {
 		contentType = append(contentType, "")
 	}
-	fileExtension := utils.GetMimeExtension(file.Bytes(), contentType[0], fileName)
+	fileExtension := e.generalFunc.GetMimeExtension(file.Bytes(), contentType[0], fileName)
 
 	//check if the file extension is a bypass extension
 	//if yes we will not modify the file, and we will return 204 No modifications

@@ -1,10 +1,10 @@
 package clamav
 
 import (
+	"icapeg/http-message"
 	"icapeg/readValues"
 	services_utilities "icapeg/service/services-utilities"
 	general_functions "icapeg/service/services-utilities/general-functions"
-	"icapeg/utils"
 	"sync"
 	"time"
 )
@@ -20,7 +20,7 @@ var clamavConfig *Clamav
 
 // Clamav represents the information regarding the clamav service
 type Clamav struct {
-	httpMsg                    *utils.HttpMsg
+	httpMsg                    *http_message.HttpMsg
 	elapsed                    time.Duration
 	serviceName                string
 	methodName                 string
@@ -55,7 +55,7 @@ func InitClamavConfig(serviceName string) {
 	})
 }
 
-func NewClamavService(serviceName, methodName string, httpMsg *utils.HttpMsg) *Clamav {
+func NewClamavService(serviceName, methodName string, httpMsg *http_message.HttpMsg) *Clamav {
 	return &Clamav{
 		httpMsg:                    httpMsg,
 		serviceName:                serviceName,

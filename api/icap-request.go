@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"errors"
 	"icapeg/config"
+	"icapeg/consts"
+	"icapeg/http-message"
 	"icapeg/icap"
 	"icapeg/service"
 	"icapeg/service/services-utilities/ContentTypes"
-	"icapeg/utils"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -74,7 +75,7 @@ func (i *ICAPRequest) RequestInitialization() error {
 
 	//adding important headers to options ICAP response
 	requiredService := service.GetService(i.vendor, i.serviceName, i.methodName,
-		&utils.HttpMsg{Request: i.req.Request, Response: i.req.Response})
+		&http_message.HttpMsg{Request: i.req.Request, Response: i.req.Response})
 	i.addingISTAGServiceHeaders(requiredService.ISTagValue())
 
 	i.Is204Allowed = i.is204Allowed()
@@ -133,6 +134,7 @@ func (i *ICAPRequest) RequestProcessing() {
 
 	// check the method name
 	switch i.methodName {
+	// for options mode
 	case utils.ICAPModeOptions:
 		i.optionsMode(i.serviceName)
 		break
@@ -148,10 +150,7 @@ func (i *ICAPRequest) HostHeader() {
 
 	if i.methodName == "REQMOD" {
 		i.req.Request.Header.Set("Host", i.req.Request.Host)
-	} // else if i.methodName == "RESPMOD" {
-	//	fmt.Println(i.req.Request.Host)
-	//	i.req.Response.Header.Set("Host", i.req.Request.Host)
-	//}
+	}
 }
 
 func (i *ICAPRequest) RespAndReqMods(partial bool) {
@@ -165,7 +164,7 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 	}
 	//initialize the service by creating instance from the required service
 	requiredService := service.GetService(i.vendor, i.serviceName, i.methodName,
-		&utils.HttpMsg{Request: i.req.Request, Response: i.req.Response})
+		&http_message.HttpMsg{Request: i.req.Request, Response: i.req.Response})
 
 	//calling Processing func to process the http message which encapsulated inside the ICAP request
 	IcapStatusCode, httpMsg, serviceHeaders := requiredService.Processing(partial)
@@ -191,6 +190,8 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 		i.w.WriteHeader(IcapStatusCode, nil, false)
 		break
 	case utils.Continue:
+		//in case the service returned 100 continue
+		//we will get the rest of the body from the client
 		httpMsgBody := i.preview()
 		i.methodName = i.req.Method
 		if i.req.Method == utils.ICAPModeReq {
@@ -274,7 +275,6 @@ func (i *ICAPRequest) getVendorName() string {
 	return i.appCfg.ServicesInstances[i.serviceName].Vendor
 }
 
-
 // addingISTAGServiceHeaders is a func to add the important header to ICAP response
 func (i *ICAPRequest) addingISTAGServiceHeaders(ISTgValue string) {
 	i.h["ISTag"] = []string{ISTgValue}
@@ -349,6 +349,8 @@ func (i *ICAPRequest) optionsMode(serviceName string) {
 	i.w.WriteHeader(http.StatusOK, nil, false)
 }
 
+// preview function is used to get the rest of the http message from the client after sending
+// a preview about the body first
 func (i *ICAPRequest) preview() *bytes.Buffer {
 	r := icap.GetTheRest()
 	c := io.NopCloser(r)

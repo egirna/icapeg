@@ -1,10 +1,10 @@
 package echo
 
 import (
+	"icapeg/http-message"
 	"icapeg/readValues"
 	services_utilities "icapeg/service/services-utilities"
 	general_functions "icapeg/service/services-utilities/general-functions"
-	"icapeg/utils"
 	"sync"
 	"time"
 )
@@ -16,7 +16,7 @@ const EchoIdentifier = "ECHO ID"
 
 // Echo represents the information regarding the Echo service
 type Echo struct {
-	httpMsg                    *utils.HttpMsg
+	httpMsg                    *http_message.HttpMsg
 	elapsed                    time.Duration
 	serviceName                string
 	methodName                 string
@@ -45,7 +45,7 @@ func InitEchoConfig(serviceName string) {
 }
 
 // NewEchoService returns a new populated instance of the Echo service
-func NewEchoService(serviceName, methodName string, httpMsg *utils.HttpMsg) *Echo {
+func NewEchoService(serviceName, methodName string, httpMsg *http_message.HttpMsg) *Echo {
 	return &Echo{
 		httpMsg:                    httpMsg,
 		serviceName:                serviceName,

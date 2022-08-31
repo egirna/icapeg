@@ -6,7 +6,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"icapeg/utils"
+	"icapeg/consts"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -37,15 +37,15 @@ func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]st
 	var fileName string
 	if c.methodName == utils.ICAPModeReq {
 		contentType = c.httpMsg.Request.Header["Content-Type"]
-		fileName = utils.GetFileName(c.httpMsg.Request)
+		fileName = c.generalFunc.GetFileName()
 	} else {
 		contentType = c.httpMsg.Response.Header["Content-Type"]
-		fileName = utils.GetFileName(c.httpMsg.Response)
+		fileName = c.generalFunc.GetFileName()
 	}
 	if len(contentType) == 0 {
 		contentType = append(contentType, "")
 	}
-	fileExtension := utils.GetMimeExtension(file.Bytes(), contentType[0], fileName)
+	fileExtension := c.generalFunc.GetMimeExtension(file.Bytes(), contentType[0], fileName)
 
 	isGzip := false
 
@@ -169,7 +169,7 @@ func (c *CloudMersive) SendFileToAPI(f *bytes.Buffer, filename string) (*http.Re
 	req.Header.Set("Content-Type", bodyWriter.FormDataContentType())
 
 	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: utils.InitSecure(c.verifyServerCert)},
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: c.generalFunc.InitSecure(c.verifyServerCert)},
 	}
 	client := &http.Client{Transport: tr}
 	ctx, _ := context.WithTimeout(context.Background(), c.Timeout)

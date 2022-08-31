@@ -1,10 +1,10 @@
 package cloudmersive
 
 import (
+	"icapeg/http-message"
 	"icapeg/readValues"
 	services_utilities "icapeg/service/services-utilities"
 	general_functions "icapeg/service/services-utilities/general-functions"
-	"icapeg/utils"
 	"sync"
 	"time"
 )
@@ -15,7 +15,7 @@ var cloudMersiveConfig *CloudMersive
 const CloudMersiveIdentifier = "CLOUDMERSIVE ID"
 
 type CloudMersive struct {
-	httpMsg                      *utils.HttpMsg
+	httpMsg                      *http_message.HttpMsg
 	serviceName                  string
 	methodName                   string
 	bypassExts                   []string
@@ -68,7 +68,7 @@ func InitCloudMersiveConfig(serviceName string) {
 	})
 }
 
-func NewCloudMersiveService(serviceName, methodName string, httpMsg *utils.HttpMsg) *CloudMersive {
+func NewCloudMersiveService(serviceName, methodName string, httpMsg *http_message.HttpMsg) *CloudMersive {
 	return &CloudMersive{
 		httpMsg:                     httpMsg,
 		serviceName:                 serviceName,
