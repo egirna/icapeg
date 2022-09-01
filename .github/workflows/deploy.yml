@@ -38,7 +38,11 @@ jobs:
         registry: docker.io
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
-        
+    - name: publish playbook artifact
+      uses: actions/upload-artifact@v2
+      with:
+       name: playbooks
+       path: ansible   
         
 
   deploy:
