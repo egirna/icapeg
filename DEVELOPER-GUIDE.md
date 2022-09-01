@@ -245,7 +245,7 @@ type HttpMsg struct {
 
   - #### **Parameters**
 
-    - **path** (string): [The path of the block page](service/unprocessable-file.html).
+    - **path** (string): [The path of the block page](block-page.html).
     - **reason** (string): The reason for getting a block page.
     - **serviceName** (string): The name of the service which you implement.
     - **identifierId** (string): The identifier of the service (service API identifier for example).
