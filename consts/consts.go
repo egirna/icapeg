@@ -34,5 +34,5 @@ const (
 	ProcessExts                       = "process"
 	RejectExts                        = "reject"
 	BypassExts                        = "bypass"
-	BlockPagePath                     = "service/unprocessable-file.html"
+	BlockPagePath                     = "block-page.html"
 )
