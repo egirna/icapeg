@@ -21,8 +21,6 @@ func (g *Grayimages) Processing(partial bool) (int, interface{}, map[string]stri
 		return utils.Continue, nil, nil
 	}
 
-	isGzip := false
-
 	//extracting the file from http message
 	file, reqContentType, err := g.generalFunc.CopyingFileToTheBuffer(g.methodName)
 	if err != nil {
@@ -45,16 +43,18 @@ func (g *Grayimages) Processing(partial bool) (int, interface{}, map[string]stri
 	if len(contentType) == 0 {
 		contentType = append(contentType, "")
 	}
+	isGzip := g.generalFunc.IsBodyGzipCompressed(g.methodName)
+
 	fileExtension := g.generalFunc.GetMimeExtension(file.Bytes(), contentType[0], fileName)
 
-	/*isProcess, icapStatus, httpMsg := g.generalFunc.CheckTheExtension(fileExtension, g.extArrs,
+	isProcess, icapStatus, httpMsg := g.generalFunc.CheckTheExtension(fileExtension, g.extArrs,
 		g.processExts, g.rejectExts, g.bypassExts, g.return400IfFileExtRejected, isGzip,
-		g.serviceName, g.methodName, GrayImagesIdentifier, g.httpMsg.Request.RequestURI, reqContentType, file)
+		g.serviceName, g.methodName, GrayimagesIdentifier, g.httpMsg.Request.RequestURI, reqContentType, file)
 	if !isProcess {
 		return icapStatus, httpMsg, serviceHeaders
-	}*/
+	}
 
-	if fileExtension != "png" && fileExtension != "jpeg" && fileExtension != "jpg" && fileExtension != "webp" {
+	/*if fileExtension != "png" && fileExtension != "jpeg" && fileExtension != "jpg" && fileExtension != "webp" {
 		originalFile := file.Bytes()
 		if isGzip {
 			originalFile, err = g.generalFunc.CompressFileGzip(originalFile)
@@ -64,15 +64,11 @@ func (g *Grayimages) Processing(partial bool) (int, interface{}, map[string]stri
 		}
 		originalFile = g.generalFunc.PreparingFileAfterScanning(originalFile, reqContentType, g.methodName)
 		return utils.NoModificationStatusCodeStr, g.generalFunc.ReturningHttpMessageWithFile(g.methodName, originalFile), serviceHeaders
-	}
+	}*/
 	// sending request to gray images api
 	scannedFile := file.Bytes()
 	serviceResp, err := g.SendFileToAPI(file, fileExtension, fileName)
 	if err != nil || serviceResp.StatusCode != 200 {
-		if serviceResp != nil {
-			log.Println(serviceResp.StatusCode)
-			log.Println(serviceResp.Body)
-		}
 		// if file recompress the file if it was compressed
 		if isGzip {
 			scannedFile, err = g.generalFunc.CompressFileGzip(scannedFile)
