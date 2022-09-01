@@ -9,7 +9,7 @@ services:
     command: "./docker-entrypoint.sh"
 
   icapeg:
-    image: mahmoud011/icapeg
+    image: egirna/icapeg
     container_name: icapeg
     ports:
       - 1344:1344
