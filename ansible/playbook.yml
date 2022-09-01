@@ -9,7 +9,7 @@
         squid_container: squid5
 
 - name: Ensure python and docker are installed 
-  hosts: esx
+  hosts: all
   become: true
   tasks:
     - name: update apt repo and cach 
@@ -58,7 +58,7 @@
 
 
 - name: deploy app
-  hosts: esx
+  hosts: all
   become: true
   tasks:
     - name: copy docker compose file 
