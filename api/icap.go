@@ -2,11 +2,12 @@ package api
 
 import (
 	"icapeg/icap"
+	"icapeg/logging"
 )
 
 // ToICAPEGServe is the ICAsP Request Handler for all modes and services:
 func ToICAPEGServe(w icap.ResponseWriter, req *icap.Request) {
-
+	logging.Logger.Info("a request is sent to ICAPeg")
 	//Creating new instance from struct IcapRequest yo handle upcoming ICAP requests
 	ICAPRequest := NewICAPRequest(w, req)
 
