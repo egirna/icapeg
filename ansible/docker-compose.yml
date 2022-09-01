@@ -1,0 +1,21 @@
+version: "3.8"
+services:
+
+  node-app:
+    image: mahmoud011/hello-node:latest
+    container_name: nodeapp
+    ports:
+      - 8080:8080
+    
+  squid:
+    image: shereenfarag/alpine-squid-proxy:squid5
+    container_name: squid5
+    ports:
+      - 8081:3128
+    command: "./docker-entrypoint.sh"
+
+  icapeg:
+    image: egirna/icapeg
+    container_name: icapeg
+    ports:
+      - 1344:1344
