@@ -19,6 +19,8 @@ title = "ICAP configuration file"
 
 [app]
 port = 1344
+log_level="debug"
+write_logs_to_console= false
 services= ["echo", "virustotal", "clamav", "cloudmersive"]
 debugging_headers=true
 
