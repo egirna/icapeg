@@ -25,14 +25,31 @@
 
 Open Source multi-vendor ICAP server
 
-Scan files requested via a proxy server using ICAPeg ICAP server, ICAPeg is an ICAP server connecting web proxies with API based scanning services and more soon!. ICAPeg currently supports [VirusTotal](https://www.virustotal.com/gui/home/upload),[VMRAY](https://www.vmray.com/) , & [Clamav](https://www.clamav.net/)  for scanning the files following the ICAP protocol. If you don't know about the ICAP protocol, here is a bit about it:
+Scan files requested via a proxy server using ICAPeg ICAP server, ICAPeg is an ICAP server connecting web proxies with API-based scanning services and more soon. ICAPeg currently supports [**VirusTotal**](https://www.virustotal.com/gui/home/upload), [**Cloudmersive**](https://cloudmersive.com/) & [**Clamav**](https://www.clamav.net/)  for scanning the files following the ICAP protocol. If you don't know about the ICAP protocol, here is a bit about it: 
 
 ## What is ICAP?
 
 **ICAP** stands for **Internet Content Adaptation Protocol**. If a **content** (for example: file) you've requested over the internet
-to download or whatever, needs **adaptation**(some kind of modification or analysis), the proxy server sends the content to the ICAP server for adaptation and after performing the required tasks on the content, the ICAP server sends it back to the proxy server so that it may return the adapted content back to the destination. This can occur both during request and response.
+to download or whatever, needs **adaptation**(some kind of modification or analysis), the proxy server sends the content to the ICAP server for adaptation and after performing the required tasks on the content, the ICAP server sends it back to the proxy server so that it may return the adapted content to the destination. This can occur both during request and response.
 
 To know more about the ICAP protocol, [check this out](https://tools.ietf.org/html/rfc3507).
+
+## Table of Contents
+
+- [Prerequisites](#prerequisites)
+- [Configuration](#configuration)
+- [Adding a new vendor to ICAPeg](#adding-a-new-vendor-to-ICAPeg)
+- [Developer Guide](#developer-guide)
+- [How to Setup Existed Services](#how-to-setup-existed-services)
+  - [Echo](#echo)
+  - [Virustotal](#virustotal)
+  - [ClamAV](#clamav)
+  - [Cloudmersive](#cloudmersive)
+
+- [Things to keep in mind](#things-to-keep-in-mind)
+- [More on ICAPeg](#more-on-icapeg)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Prerequisites
 
@@ -82,9 +99,9 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
 
 - ### Mapping a variable of config.toml file with an environment variable
 
-  This feeature is supported for **strings, int, bool, time.duration and string slices** only **(every type used in this project)**.
+  This feature is supported for **strings, int, bool, time.duration and string slices** only **(every type used in this project)**.
 
-  Let's have an example to explain how to map, assume that there is an env variable called LOG_LEVEL and you want to assign LOG_LEVEL value to app.log_level. You should change the value of (log_level= "debug") to (log_level= "$_LOG_LEVEL").
+  Let's have an example to explain how to map, assume that there is an environment variable in your machine called PORT and you want to assign PORT value to app.port. You should change the value of (port= 1344) to (port= "$_PORT").
 
   > **Note**: before you use this feature please make sure that the env variable that you want to use is globally in your machine and not just exported in a local session.
 
@@ -96,51 +113,36 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
 
         ```toml
         [app]
-        log_level = "debug" # the log levels for tha app, available values: info-->logging the overall progress of the app, debug --> log everything including errors, error --> log infos and just errors
-        write_logs_to_console= false
-        log_flush_duration = 2
         port = 1344
-        services= ["echo", "clamav"]
-        verify_server_cert=false
+        services= ["echo", "virustotal", "clamav", "cloudmersive"]
+        debugging_headers=true
         ```
-
-        - **log_level**
-
-          The log levels for the app, possible values:
-
-          - **info**: Logging the overall progress of the app.
-          - **debug**: Log everything including errors.
-          - **error**: Log info and just errors.
-
-        - **write_logs_to_console**
-
-          It's used to enable writing logs to **ICAPeg** console window or not, possible values:
-
-          - **true**: Writing logs to **ICAPeg** console window and **log.txt** file.
-          - **false**: Writing logs to **ICAPeg** **log.txt** file only.
-
-        - **log_flush_duration**
-
-          Deleting logs that were written in **ICAPeg** log.txt from **n** hours (2 hours for example), possible values:
-
-          - Any integer value.
-
+        
         - **port**
-
+        
           The port number that **ICAPeg** runs on. The default port number for any ICAP server is **1344**, possible values:
-
+        
           - Any port number that isn't used in your machine.
-
+        
         - **services**
-
+        
           The array that contains integrated services names with **ICAPeg**, possible values:
-
+        
           - Integrated services names with **ICAPeg** (ex: ["echo"]).
-
+        
+        - **debugging_headers**
+        
+          A boolean variable which indicates if debugging headers should be displayed with ICAP headers or not. Debugging headers tell the client shadow service is enabled for example. they start with **X-ICAPeg-{{HEADER_NAME}}**. possible values:
+        
+          - **true**: Debugging headers should be displayed with ICAP headers.
+          - **false**: Debugging headers should not be displayed with ICAP headers.
+        
+          - Any port number that isn't used in your machine.
+        
       - **[echo] section** 
-
+      
         >  **Note**: Variables explained in **echo** service are mandatory with any service integrated with **ICAPeg**.
-
+      
         ```toml
         [echo]
         vendor = "echo"
@@ -151,16 +153,13 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
         shadow_service=false
         preview_enabled = true# options send preview header or not
         preview_bytes = "1024" #byte
-        timeout  = 300 #seconds , ICAP will return 408 - Request timeout
-        fail_threshold = 2
+        process_extensions = ["pdf", "zip", "com"] 
+        # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
+        reject_extensions = ["docx"]
+        bypass_extensions = ["*"]
         #max file size value from 1 to 9223372036854775807, and value of zero means unlimited
         max_filesize = 0 #bytes
         return_original_if_max_file_size_exceeded=false
-        bypass_extensions = []
-        process_extensions = ["*"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
-        base_url = "$_CLOUDAPI_URL" #
-        scan_endpoint = "/api/rebuild/file"
-        api_key = "$_AUTH_TOKENS"
         ```
         
         - ### **Mandatory variables (Variables that should any service has)**
@@ -181,7 +180,7 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
         
           - **req_mode**
         
-            Boolean variable that indicates to wether **request mode** is enabled or not, possible values:
+            A boolean variable that indicates whether **request mode** is enabled or not, possible values:
         
             - **true**: Request mode is enabled.
             - **false**: Request mode is disabled.
@@ -190,7 +189,7 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
         
           - **resp_mode**
         
-            Boolean variable that indicates to wether **response mode** is enabled or not, possible values:
+            A boolean variable that indicates whether **response mode** is enabled or not, possible values:
         
             - **true**: Response mode is enabled.
             - **false**: Response mode is disabled.
@@ -199,16 +198,16 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
         
           - **shadow_service**
         
-            Boolean variable that indicates to wether **shadow service mode** is enabled or not, possible values:
+            A boolean variable that indicates whether **shadow service mode** is enabled or not, possible values:
         
             - **true**: Shadow service mode is enabled.
             - **false**: Shadow service mode is disabled.
         
-            > **Note**: Shadow servie mode is used for debugging purposes. it means that when user/client sent a request to **ICAPeg**, **ICAPeg** will send an **ICAP** response with **204 (No modifications) ICAP status code** incase **ICAP** request has (**Allow: 204**) header or with **200 (OK) ICAP status code** with the **original HTTP message** incase **ICAP** request hasn't (**Allow: 204**) header.
+            > **Note**: Shadow service mode is used for debugging purposes. it means that when user/client sent a request to **ICAPeg**, **ICAPeg** will send an **ICAP** response with **204 (No modifications) ICAP status code** in case **ICAP** request has (**Allow: 204**) header or with **200 (OK) ICAP status code** with the **original HTTP message** in case **ICAP** request hasn't (**Allow: 204**) header.
         
           - **preview_enabled**
         
-            Boolean variable that indicates to wether **message preview** is enabled or not, possible values:
+            A boolean variable that indicates whether **message preview** is enabled or not, possible values:
         
             - **true**: Message Preview is enabled.
             - **false**: Message Preview is disabled.
@@ -221,62 +220,110 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
         
             - Any string numeric value
         
-          - **timeout**
+          - **process_extensions**
         
-            It indicates to How many seconds that **ICAP will return 408 - Request timeout** after, possible value:
+            It indicates the file types that should be processed and scanned from the service, and possible values:
         
-            - Any integer value.
+            - Any string file types.
         
+          - **reject_extensions**
+        
+            It indicates the file types that should be rejected by the service, and possible values:
+        
+            - Any string file types.
+        
+          - **bypass_extensions**
+        
+            It indicates the file types that should be bypassed by the service and that means the files with these types will not be processed and will not be rejected. They will just be returned to the client as they were sent to **ICAPeg** from him, and possible values:
+        
+            - Any string file types.
+        
+            > **Notes about extensions arrays:**
+            >
+            > - **Asterisk** sign (*****) means every file type except the ones in other arrays. example:
+            >
+            >   process_extensions = ["pdf", "zip", "com"] 
+            >   reject_extensions = ["docx"]
+            >   bypass_extensions = ["*"]
+            >
+            >   this example means that any file type will be bypassed except **docx** type which in **reject_extensions**, **pdf**, **zip**, **com** types which in **process_extensions**.
+            >
+            > - Only one array from (**process_extensions**, **reject_extensions**, **bypass_extensions**)  arrays should has **Asterisk** sign (*****).
+            >
+            >   process_extensions = ["pdf", "zip", "com"] 
+            >   reject_extensions = ["docx", "pdf", "\*"]
+            >   bypass_extensions = ["*"]
+            >
+            >   this configuration is not valid and **ICAPeg** will not run. another example:
+            >
+            >   process_extensions = ["pdf", "zip", "com"] 
+            >   reject_extensions = ["docx"]
+            >   bypass_extensions = ["*"]
+            >
+            >   this configuration is valid and **ICAPeg** will run normally.
+            >
+            > - Two arrays can't have the same file type. example:
+            >
+            >   process_extensions = ["pdf", "zip", "com"] 
+            >   reject_extensions = ["docx", "pdf"]
+            >   bypass_extensions = ["*"]
+            >
+            >   this configuration is not valid and **ICAPeg** will not run. another example:
+            >
+            >   process_extensions = ["pdf", "zip", "com"] 
+            >   reject_extensions = ["docx"]
+            >   bypass_extensions = ["*"]
+            >
+            >   this configuration is valid and **ICAPeg** will run normally.
+          
         - ### **Optional variables** (Variables that depends on the service)
         
-          > **Note:** 
+          > **Notes:** 
           >
-          > - You may not use these variables in your service and you may use, It depends on your service and It's up to you.
-          > - We will pretend that this service is for file processing and it sends that file to an external api to process it then it gets it back again, So all optional variables depends on that scenario in this service. (It's just a fake scenario service can do any thing not just for processing files).
+          > - You may not use these variables in your service and you may use them, It depends on your service and It's up to you.
+          > - We will pretend that this service is for file processing and it sends that file to an external API to process it then it gets it back again, So all optional variables depend on that scenario in this service. (It's just a fake scenario service that can do anything not just for processing files).
         
           - **max_filesize**
         
-            It's the maximum **HTTP** message file size that service can process , possible values:
+            It's the maximum **HTTP** message file size that the service can process, possible values:
         
             - Any valid integer value.
         
           - **return_original_if_max_file_size_exceeded**
         
-            Boolean variable that indicates to wether service should return the original file if the file size exceeds the maximum file size or not, possible values:
+            A boolean variable that indicates to wether service should return the original file if the file size exceeds the maximum file size or not, possible values:
         
             - **true**: Returning the original file.
             - **false**: Returning **400 Bad request**.
         
             Get more details about **request mode** from [here](https://datatracker.ietf.org/doc/html/rfc3507#section-3.1).
         
-          - **bypass_extensions**
-        
-            An Array that contains the extensions of that service can't process if the **HTTP** message contains a file.
-        
-            - Any valid file extenstions.
-        
-          - **process_extensions**
-        
-            An Array that contains the extensions of that service canprocess if the **HTTP** message contains a file.
-        
-            - Any valid file extenstions.
-        
-          - **base_url**
-        
-            The external **API URL** that service sends the files through a request to it.
-        
-          - **scan_endpoint**
-        
-            Endoint of the exyernal **API URL** that service sends the files through a request to it..
-        
-          - **api_key**
-        
-            The key of the external **API** that service sends the files through a request to it.
-        
 
-## Adding a new service ot ICAPeg
+## Adding a new vendor to ICAPeg
 
-- [How to add a new service for a new vendor](ADDING-NEW-VENDOR.md)
+- [How to add a new service for a new vendor](ADDING-NEW-VENDOR.md).
+
+  After reading the above markdown, read the next section because it may help you while implementing your new service.
+
+## Developer Guide
+
+- [Developer Guide](developer-guide.md).
+
+  This is a developer guide which includes a lot of functions to help the developer while implementing his new service.
+
+## How to Setup Existed Services
+
+- #### **Echo**: It doesn't need setup, it takes the HTTP message and returns it as it is. **Echo** is just an example service.
+
+- #### [**Virustotal**](/vendors-markdowns/virustotal/VIRUSTOTALAPI.md).
+
+- #### [**ClamAV**](/vendors-markdowns/clamav/CLAMAVSETUP.md).
+
+- #### [**Cloudmersive**](/vendors-markdowns/cloudmersive/CLOUDMERSIVEAPI.md).
+
+## Testing
+
+- [How to test **ICAPeg**](Testing.md)
 
 ## Things to keep in mind
 
@@ -293,10 +340,11 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
 2. [Logging](LOGS.md)
 
 
-### Contributing
+## Contributing
 
 This project is still a WIP. So you can contribute as well. See the contributions guide [here](CONTRIBUTING.md).
 
-### License
+## License
 
 ICAPeg is licensed under the [Apache License 2.0](LICENSE).
+
