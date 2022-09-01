@@ -1,0 +1,87 @@
+---
+- name: set global variables 
+  hosts: all
+  tasks:
+    - name: set facts
+      set_fact:
+        linux_user: egirna
+        docker_compose_src: ./ansible/docker-compose.yml
+        squid_container: squid5
+
+- name: Ensure python and docker are installed 
+  hosts: esx
+  become: true
+  tasks:
+    - name: update apt repo and cach 
+      apt:
+        update_cache: yes
+        force_apt_get: yes
+        cache_valid_time: 3600
+    - name: install dependancy  
+      apt: 
+        pkg:
+        - python3
+        - pip
+        -  ca-certificates
+        - curl
+        - gnupg
+        - lsb-release
+    - name: add GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+    - name: add docker repository to apt
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu bionic stable
+        state: present
+    - name: install dependancy  
+      apt: 
+        pkg:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose-plugin
+    - name: Ensure Docker is running 
+      systemd:
+        name: docker
+        state: started
+    - name: Install docker-compose from official github repo
+      get_url:
+        url : https://github.com/docker/compose/releases/download/1.29.2/docker-compose-Linux-x86_64
+        dest: /usr/local/bin/docker-compose
+        mode: +x
+    - name: Install python modules docker-compose 
+      pip:
+        name:
+          - docker
+          - docker-compose
+
+
+- name: deploy app
+  hosts: esx
+  become: true
+  tasks:
+    - name: copy docker compose file 
+      copy:
+        src: "{{docker_compose_src}}"
+        dest: /home/{{linux_user}}/compose/
+    - name: run docker compose 
+      docker_compose:
+        project_src: /home/{{linux_user}}/compose
+        state: present
+        nocache: yes
+        build: yes
+        recreate: always
+        pull: yes
+
+    - name: copy squid.conf to server
+      copy:
+        src: squid.conf
+        dest: /home/{{linux_user}}
+
+    - name: configure Icapeg with Squid5
+      shell: docker cp /home/{{linux_user}}/squid.conf {{squid_container}}:/etc/squid
+       
+    - name: start Squid proxy
+      shell: docker exec -d {{squid_container}} squid
+       

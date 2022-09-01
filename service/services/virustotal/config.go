@@ -1,11 +1,10 @@
 package virustotal
 
 import (
-	"fmt"
-	"icapeg/config"
+	"icapeg/http-message"
 	"icapeg/readValues"
+	services_utilities "icapeg/service/services-utilities"
 	general_functions "icapeg/service/services-utilities/general-functions"
-	"icapeg/utils"
 	"sync"
 	"time"
 )
@@ -13,22 +12,22 @@ import (
 var doOnce sync.Once
 var virustoalConfig *Virustotal
 
+const VirustotalIdentifier = "VIRUSTOTAL ID"
+
 // Virustotal represents the information regarding the Virustotal service
 type Virustotal struct {
-	httpMsg                    *utils.HttpMsg
+	httpMsg                    *http_message.HttpMsg
 	serviceName                string
 	methodName                 string
 	maxFileSize                int
 	bypassExts                 []string
 	processExts                []string
 	rejectExts                 []string
-	extArrs                    []config.Extension
+	extArrs                    []services_utilities.Extension
 	ScanUrl                    string
 	ReportUrl                  string
 	Timeout                    time.Duration
 	APIKey                     string
-	FailThreshold              int
-	policy                     string
 	returnOrigIfMaxSizeExc     bool
 	return400IfFileExtRejected bool
 	generalFunc                *general_functions.GeneralFunc
@@ -45,41 +44,15 @@ func InitVirustotalConfig(serviceName string) {
 			ReportUrl:                  readValues.ReadValuesString(serviceName + ".report_url"),
 			Timeout:                    readValues.ReadValuesDuration(serviceName + ".timeout"),
 			APIKey:                     readValues.ReadValuesString(serviceName + ".api_key"),
-			FailThreshold:              readValues.ReadValuesInt(serviceName + ".fail_threshold"),
-			policy:                     readValues.ReadValuesString(serviceName + ".policy"),
 			returnOrigIfMaxSizeExc:     readValues.ReadValuesBool(serviceName + ".return_original_if_max_file_size_exceeded"),
 			return400IfFileExtRejected: readValues.ReadValuesBool(serviceName + ".return_400_if_file_ext_rejected"),
 		}
-		process := config.Extension{Name: "process", Exts: virustoalConfig.processExts}
-		reject := config.Extension{Name: "reject", Exts: virustoalConfig.rejectExts}
-		bypass := config.Extension{Name: "bypass", Exts: virustoalConfig.bypassExts}
-		extArrs := make([]config.Extension, 3)
-		ind := 0
-		if len(process.Exts) == 1 && process.Exts[0] == "*" {
-			extArrs[2] = process
-		} else {
-			extArrs[ind] = process
-			ind++
-		}
-		if len(reject.Exts) == 1 && reject.Exts[0] == "*" {
-			extArrs[2] = reject
-		} else {
-			extArrs[ind] = reject
-			ind++
-		}
-		if len(bypass.Exts) == 1 && bypass.Exts[0] == "*" {
-			extArrs[2] = bypass
-		} else {
-			extArrs[ind] = bypass
-			ind++
-		}
-		fmt.Println(extArrs)
-		virustoalConfig.extArrs = extArrs
+		virustoalConfig.extArrs = services_utilities.InitExtsArr(virustoalConfig.processExts, virustoalConfig.rejectExts, virustoalConfig.bypassExts)
 	})
 }
 
 // NewVirustotalService returns a new populated instance of the Virustotal service
-func NewVirustotalService(serviceName, methodName string, httpMsg *utils.HttpMsg) *Virustotal {
+func NewVirustotalService(serviceName, methodName string, httpMsg *http_message.HttpMsg) *Virustotal {
 	return &Virustotal{
 		httpMsg:                    httpMsg,
 		serviceName:                serviceName,
@@ -93,8 +66,6 @@ func NewVirustotalService(serviceName, methodName string, httpMsg *utils.HttpMsg
 		ReportUrl:                  virustoalConfig.ReportUrl,
 		Timeout:                    virustoalConfig.Timeout * time.Second,
 		APIKey:                     virustoalConfig.APIKey,
-		FailThreshold:              virustoalConfig.FailThreshold,
-		policy:                     virustoalConfig.policy,
 		returnOrigIfMaxSizeExc:     virustoalConfig.returnOrigIfMaxSizeExc,
 		return400IfFileExtRejected: virustoalConfig.return400IfFileExtRejected,
 		generalFunc:                general_functions.NewGeneralFunc(httpMsg),

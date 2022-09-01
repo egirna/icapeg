@@ -2,7 +2,7 @@
 
 - ### C-ICAP client
 
-  You can test unsing c-icap client in you linux machine, you can download it from [here](https://howtoinstall.co/en/c-icap).
+  You can test unsing c-icap client on your linux machine, you can download it from [here](https://howtoinstall.co/en/c-icap).
 
   - #### Testing REQMOD
 
@@ -24,4 +24,4 @@
 
 - ### Proxy server
 
-  You can test using Proxy server like squid, you can check how to install it in your machine from [here](https://www.egirna.com/post/configure-squid-4-17-with-icap-ssl), Then you should configure it with your favorite browser and enjoy. 
+  You can test using a Proxy server like squid, you can check how to install it in your machine from [here](https://www.egirna.com/post/configure-squid-4-17-with-icap-ssl), Then you should configure it with your favourite browser and enjoy. 
