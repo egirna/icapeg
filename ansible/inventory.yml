@@ -1,4 +1,3 @@
-
 ---
 all:
   children:
@@ -9,6 +8,6 @@ all:
         ansible_ssh_private_key_file: ~/.ssh/id_rsa
         ansible_port: 22209
         ansible_user: egirna
-        ansible_password: ${{ secrets.ANSIBLE_PASSWORD }}
-        ansible_become_pass: ${{ secrets.ANSIBLE_PASSWORD }}
+        ansible_password: {{secrets.ANSIBLE_PASSWORD}}
+        ansible_become_pass: {{secrets.ANSIBLE_PASSWORD}}
         
