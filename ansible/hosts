@@ -1,0 +1,9 @@
+[esx]
+23.106.36.101
+[esx:vars]
+ansible_ssh_private_key_file=~/.ssh/id_rsa
+ansible_port=22209
+ansible_user=egirna
+ansible_password=egirna
+ansible_become_pass=egirna
+
