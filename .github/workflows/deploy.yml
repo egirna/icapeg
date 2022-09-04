@@ -10,6 +10,7 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    environment: myenvironment
     steps:
     - uses: actions/checkout@v3
     
@@ -48,6 +49,7 @@ jobs:
   deploy:
       name: Deploy to server 
       runs-on: ubuntu-latest
+      environment: myenvironment
       needs: build
       steps:
       - name: download artifact
