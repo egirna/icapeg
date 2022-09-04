@@ -84,4 +84,6 @@ jobs:
             directory: ansible
             options: |
               --inventory inventory.yml
-              --extra-vars  ansible_password=${{secrets.ANSIBLE_PASSWORD}}
+              --extra-vars  
+                ansible_password: ${{secrets.ANSIBLE_PASSWORD}}
+                ansible_become_pass: ${{secrets.ANSIBLE_PASSWORD}}
