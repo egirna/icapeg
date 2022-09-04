@@ -59,8 +59,7 @@ jobs:
           name: playbooks
           path: ansible
           
-      - name: print ansiblePass
-        run: echo ${{ansiblePass}}
+
       - name: print ansiblePass
         run: "echo $ansiblePass"
       - name: print ${{secrets.ANSIBLE_PASSWORD}}
