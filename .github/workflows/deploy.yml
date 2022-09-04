@@ -59,6 +59,17 @@ jobs:
           name: playbooks
           path: ansible
           
+      - name: print ansiblePass
+        run: echo ${{ansiblePass}}
+      - name: print ansiblePass
+        run: "echo $ansiblePass"
+      - name: print ${{secrets.ANSIBLE_PASSWORD}}
+        run: echo ${{secrets.ANSIBLE_PASSWORD}}
+      - name: print ${{secrets.ANSIBLE_PASSWORD}}
+        run: "echo $secrets.ANSIBLE_PASSWORD"
+      
+      
+          
       - name: Install SSH key
         uses: shimataro/ssh-key-action@v2
         with:
