@@ -83,4 +83,4 @@ jobs:
             playbook: playbook.yml
             directory: ansible
             options: |
-              --inventory hosts
+              --inventory inventory.yml
