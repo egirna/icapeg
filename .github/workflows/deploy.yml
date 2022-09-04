@@ -70,4 +70,4 @@ jobs:
           playbook: playbook.yml
           directory: ansible
           options: |
-            --inventory inventory.yml
+            --inventory hosts
