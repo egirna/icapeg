@@ -64,7 +64,7 @@ jobs:
           
 #       - name: print ansiblePass
 #         run: "echo $ansiblePass"
-#       - name: print ${{secrets.ANSIBLE_PASSWORD}}
+#       - name: print ${{secrets.DOCKER_USERNAME}}
 #         run: echo ${{secrets.ANSIBLE_PASSWORD}}
 #       - name: print ${{secrets.ANSIBLE_PASSWORD}}
 #         run: "echo $secrets.ANSIBLE_PASSWORD"
