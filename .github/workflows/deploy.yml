@@ -53,34 +53,34 @@ jobs:
         ansiblePass: ${{secrets.ANSIBLE_PASSWORD}}
       needs: build
       steps:
-      - name: download artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: playbooks
-          path: ansible
+        - name: Install SSH key
+          uses: actions/checkout@v3
+        
+#       - name: download artifact
+#         uses: actions/download-artifact@v2
+#         with:
+#           name: playbooks
+#           path: ansible
           
-
-      - name: print ansiblePass
-        run: "echo $ansiblePass"
-      - name: print ${{secrets.ANSIBLE_PASSWORD}}
-        run: echo ${{secrets.ANSIBLE_PASSWORD}}
-      - name: print ${{secrets.ANSIBLE_PASSWORD}}
-        run: "echo $secrets.ANSIBLE_PASSWORD"
+#       - name: print ansiblePass
+#         run: "echo $ansiblePass"
+#       - name: print ${{secrets.ANSIBLE_PASSWORD}}
+#         run: echo ${{secrets.ANSIBLE_PASSWORD}}
+#       - name: print ${{secrets.ANSIBLE_PASSWORD}}
+#         run: "echo $secrets.ANSIBLE_PASSWORD"
       
-      
-          
-      - name: Install SSH key
-        uses: shimataro/ssh-key-action@v2
-        with:
-          key: ${{ secrets.SSH_KEY }}
-          name: id_rsa # optional
-          known_hosts: 'just-a-placeholder-so-we-dont-get-errors'
-          if_key_exists: replace # replace / ignore / fail; optional (defaults to fail)
+        - name: Install SSH key
+          uses: shimataro/ssh-key-action@v2
+          with:
+            key: ${{ secrets.SSH_KEY }}
+            name: id_rsa # optional
+            known_hosts: 'just-a-placeholder-so-we-dont-get-errors'
+            if_key_exists: replace # replace / ignore / fail; optional (defaults to fail)
 
-      - name: Run playbook
-        uses: dawidd6/action-ansible-playbook@v2
-        with:
-          playbook: playbook.yml
-          directory: ansible
-          options: |
-            --inventory inventory.yml
+        - name: Run playbook
+          uses: dawidd6/action-ansible-playbook@v2
+          with:
+            playbook: playbook.yml
+            directory: ansible
+            options: |
+              --inventory hosts
