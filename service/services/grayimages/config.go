@@ -2,6 +2,7 @@ package grayimages
 
 import (
 	"icapeg/http-message"
+	"icapeg/logging"
 	"icapeg/readValues"
 	services_utilities "icapeg/service/services-utilities"
 	general_functions "icapeg/service/services-utilities/general-functions"
@@ -32,6 +33,7 @@ type Grayimages struct {
 }
 
 func InitGrayimagesConfig(serviceName string) {
+	logging.Logger.Debug("loading " + serviceName + " service configurations")
 	doOnce.Do(func() {
 		grayimagesConfig = &Grayimages{
 			BaseURL:                    readValues.ReadValuesString(serviceName + ".base_url"),
