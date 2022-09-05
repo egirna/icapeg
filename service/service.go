@@ -2,6 +2,7 @@ package service
 
 import (
 	"icapeg/http-message"
+	"icapeg/logging"
 	"icapeg/service/services/clamav"
 	"icapeg/service/services/cloudmersive"
 	"icapeg/service/services/echo"
@@ -27,6 +28,7 @@ type (
 // GetService returns a service based on the service name
 // change name to vendor and add parameter service name
 func GetService(vendor, serviceName, methodName string, httpMsg *http_message.HttpMsg) Service {
+	logging.Logger.Info("getting instance from " + serviceName + " struct")
 	switch vendor {
 	case VendorEcho:
 		return echo.NewEchoService(serviceName, methodName, httpMsg)
@@ -42,6 +44,7 @@ func GetService(vendor, serviceName, methodName string, httpMsg *http_message.Ht
 
 // InitServiceConfig is used to load the services configuration
 func InitServiceConfig(vendor, serviceName string) {
+	logging.Logger.Info("loading all the services configuration")
 	switch vendor {
 	case VendorEcho:
 		echo.InitEchoConfig(serviceName)

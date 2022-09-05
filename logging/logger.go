@@ -12,7 +12,7 @@ func InitializeLogger(logLevel string, writeLogsToConsole bool) {
 	config := zap.NewProductionEncoderConfig()
 	config.EncodeTime = zapcore.ISO8601TimeEncoder
 	fileEncoder := zapcore.NewJSONEncoder(config)
-	logFile, _ := os.OpenFile("log.json", os.O_CREATE|os.O_WRONLY, 0644)
+	logFile, _ := os.OpenFile("log.json", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 	writer := zapcore.AddSync(logFile)
 	defaultLogLevel, _ := zapcore.ParseLevel(logLevel)
 	var core zapcore.Core

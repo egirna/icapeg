@@ -110,7 +110,7 @@ func (i *ICAPRequest) RequestInitialization() error {
 
 // RequestProcessing is a func to process the ICAP request upon the service and method required
 func (i *ICAPRequest) RequestProcessing() {
-	logging.Logger.Debug("processing ICAP request")
+	logging.Logger.Info("processing ICAP request upon the service and method required")
 	partial := false
 
 	if i.methodName != utils.ICAPModeOptions {
