@@ -3,6 +3,7 @@ package echo
 import (
 	"bytes"
 	"icapeg/consts"
+	"icapeg/logging"
 	"io"
 	"net/http"
 	"strconv"
@@ -11,9 +12,11 @@ import (
 
 // Processing is a func used for to processing the http message
 func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
+	logging.Logger.Info(e.serviceName + " service has started processing")
 	serviceHeaders := make(map[string]string)
 	// no need to scan part of the file, this service needs all the file at ine time
 	if partial {
+		logging.Logger.Info(e.serviceName + " service has stopped processing partially")
 		return utils.Continue, nil, nil
 	}
 
@@ -22,6 +25,8 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 	//extracting the file from http message
 	file, reqContentType, err := e.generalFunc.CopyingFileToTheBuffer(e.methodName)
 	if err != nil {
+		logging.Logger.Error(e.serviceName + " error: " + err.Error())
+		logging.Logger.Info(e.serviceName + " service has stopped processing")
 		return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
 	}
 	//getting the extension of the file
@@ -48,23 +53,27 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 		e.processExts, e.rejectExts, e.bypassExts, e.return400IfFileExtRejected, isGzip,
 		e.serviceName, e.methodName, EchoIdentifier, e.httpMsg.Request.RequestURI, reqContentType, file)
 	if !isProcess {
+		logging.Logger.Info(e.serviceName + " service has stopped processing")
 		return icapStatus, httpMsg, serviceHeaders
 	}
 
 	//check if the file size is greater than max file size of the service
 	//if yes we will return 200 ok or 204 no modification, it depends on the configuration of the service
 	if e.maxFileSize != 0 && e.maxFileSize < file.Len() {
-		status, file, httpMsg := e.generalFunc.IfMaxFileSizeExc(e.returnOrigIfMaxSizeExc, e.serviceName, file)
+		status, file, httpMsg := e.generalFunc.IfMaxFileSizeExc(e.returnOrigIfMaxSizeExc, e.serviceName, file, e.maxFileSize)
 		fileAfterPrep, httpMsg := e.generalFunc.IfStatusIs204WithFile(e.methodName, status, file, isGzip, reqContentType, httpMsg)
 		if fileAfterPrep == nil && httpMsg == nil {
+			logging.Logger.Info(e.serviceName + " service has stopped processing")
 			return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
 		}
 		switch msg := httpMsg.(type) {
 		case *http.Request:
 			msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
+			logging.Logger.Info(e.serviceName + " service has stopped processing")
 			return status, msg, nil
 		case *http.Response:
 			msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
+			logging.Logger.Info(e.serviceName + " service has stopped processing")
 			return status, msg, nil
 		}
 		return status, nil, nil
@@ -74,6 +83,7 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 
 	//returning the scanned file if everything is ok
 	scannedFile = e.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, e.methodName)
+	logging.Logger.Info(e.serviceName + " service has stopped processing")
 	return utils.OkStatusCodeStr, e.generalFunc.ReturningHttpMessageWithFile(e.methodName, scannedFile), serviceHeaders
 }
 

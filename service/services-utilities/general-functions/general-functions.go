@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"icapeg/consts"
 	"icapeg/http-message"
+	"icapeg/logging"
 	services_utilities "icapeg/service/services-utilities"
 	"icapeg/service/services-utilities/ContentTypes"
 	"image"
@@ -43,6 +44,7 @@ func NewGeneralFunc(httpMsg *http_message.HttpMsg) *GeneralFunc {
 
 // CopyingFileToTheBuffer is a func which used for extracting a file from the body of the http message
 func (f *GeneralFunc) CopyingFileToTheBuffer(methodName string) (*bytes.Buffer, ContentTypes.ContentType, error) {
+	logging.Logger.Info("extracting the body of HTTP message")
 	file := &bytes.Buffer{}
 	var err error
 	var reqContentType ContentTypes.ContentType
@@ -64,14 +66,17 @@ func (f *GeneralFunc) CopyingFileToTheBuffer(methodName string) (*bytes.Buffer, 
 func (f *GeneralFunc) CheckTheExtension(fileExtension string, extArrs []services_utilities.Extension, processExts,
 	rejectExts, bypassExts []string, return400IfFileExtRejected, isGzip bool, serviceName, methodName, identifier,
 	requestURI string, reqContentType ContentTypes.ContentType, file *bytes.Buffer) (bool, int, interface{}) {
+	logging.Logger.Info("checking the extension (reject or bypass or process)")
 	for i := 0; i < 3; i++ {
 		if extArrs[i].Name == utils.ProcessExts {
 			if f.ifFileExtIsX(fileExtension, processExts) {
+				logging.Logger.Debug("extension is process")
 				break
 			}
 		} else if extArrs[i].Name == utils.RejectExts {
 			if f.ifFileExtIsX(fileExtension, rejectExts) {
 				reason := "File rejected"
+				logging.Logger.Debug("extension is reject")
 				if return400IfFileExtRejected {
 					return false, utils.BadRequestStatusCodeStr, nil
 				}
@@ -82,6 +87,7 @@ func (f *GeneralFunc) CheckTheExtension(fileExtension string, extArrs []services
 			}
 		} else if extArrs[i].Name == utils.BypassExts {
 			if f.ifFileExtIsX(fileExtension, bypassExts) {
+				logging.Logger.Debug("extension is bypass")
 				fileAfterPrep, httpMsg := f.IfICAPStatusIs204(methodName, utils.NoModificationStatusCodeStr,
 					file, isGzip, reqContentType, f.httpMsg)
 				if fileAfterPrep == nil && httpMsg == nil {
@@ -145,6 +151,7 @@ func (f *GeneralFunc) ifFileExtIsX(fileExtension string, arr []string) bool {
 // IsBodyGzipCompressed is a func used for checking if the body of
 // the http message is compressed ing Gzip or not
 func (f *GeneralFunc) IsBodyGzipCompressed(methodName string) bool {
+	logging.Logger.Info("checking if the body is compressed in GZIP")
 	switch methodName {
 	case utils.ICAPModeReq:
 		return f.httpMsg.Request.Header.Get("Content-Encoding") == "gzip"
@@ -158,6 +165,7 @@ func (f *GeneralFunc) IsBodyGzipCompressed(methodName string) bool {
 
 // DecompressGzipBody is a func used for decompress files which compressed in Gzip
 func (f *GeneralFunc) DecompressGzipBody(file *bytes.Buffer) (*bytes.Buffer, error) {
+	logging.Logger.Info("decompressing the HTTP message body")
 	reader, err := gzip.NewReader(file)
 	defer reader.Close()
 	result, err := ioutil.ReadAll(reader)
@@ -169,8 +177,10 @@ func (f *GeneralFunc) DecompressGzipBody(file *bytes.Buffer) (*bytes.Buffer, err
 
 // IfMaxFileSizeExc is a functions which used for deciding the right http message should be returned
 // if the file size is greater than the max file size of the service
-func (f *GeneralFunc) IfMaxFileSizeExc(returnOrigIfMaxSizeExc bool, serviceName string, file *bytes.Buffer) (int, *bytes.Buffer, interface{}) {
-	//check if returning the original file option is enabled in this case or not
+func (f *GeneralFunc) IfMaxFileSizeExc(returnOrigIfMaxSizeExc bool, serviceName string, file *bytes.Buffer, maxFileSize int) (int, *bytes.Buffer, interface{}) {
+	logging.Logger.Debug("HTTP message body size exceeds the limit")
+	logging.Logger.Debug("HTTP message body size: " + strconv.Itoa(file.Len()) +
+		" MB, the allowed max file size: " + strconv.Itoa(maxFileSize) + " MB") //check if returning the original file option is enabled in this case or not
 	//if yes, return no modification status code
 	//if not, return an error page
 	if returnOrigIfMaxSizeExc {
@@ -185,6 +195,8 @@ func (f *GeneralFunc) IfMaxFileSizeExc(returnOrigIfMaxSizeExc bool, serviceName 
 
 // GetFileName returns the filename from the http request
 func (f *GeneralFunc) GetFileName() string {
+	logging.Logger.Info("getting the file name")
+
 	//req.RequestURI  inserting dummy response if the http request is nil
 	var Requrl string
 	if f.httpMsg.Request == nil || f.httpMsg.Request.RequestURI == "" {
@@ -210,6 +222,7 @@ func (f *GeneralFunc) GetFileName() string {
 
 // CompressFileGzip is a func which used for compress files in gzip
 func (f *GeneralFunc) CompressFileGzip(scannedFile []byte) ([]byte, error) {
+	logging.Logger.Info("compressing the file in GZIP")
 	var newBuf bytes.Buffer
 	gz := gzip.NewWriter(&newBuf)
 	if _, err := gz.Write(scannedFile); err != nil {
@@ -221,6 +234,7 @@ func (f *GeneralFunc) CompressFileGzip(scannedFile []byte) ([]byte, error) {
 
 // ErrPageResp is a func used for creating http response for returning an error page
 func (f *GeneralFunc) ErrPageResp(status int, pageContentLength int) *http.Response {
+	logging.Logger.Info("preparing http response with the block page")
 	return &http.Response{
 		StatusCode: status,
 		Status:     strconv.Itoa(status) + " " + http.StatusText(status),
@@ -233,6 +247,7 @@ func (f *GeneralFunc) ErrPageResp(status int, pageContentLength int) *http.Respo
 
 // GenHtmlPage is a func used for generating an error page
 func (f *GeneralFunc) GenHtmlPage(path, reason, serviceName, identifierId, reqUrl string) *bytes.Buffer {
+	logging.Logger.Info("preparing a block page")
 	htmlTmpl, _ := template.ParseFiles(path)
 	htmlErrPage := &bytes.Buffer{}
 	htmlTmpl.Execute(htmlErrPage, &errorPage{
@@ -247,6 +262,7 @@ func (f *GeneralFunc) GenHtmlPage(path, reason, serviceName, identifierId, reqUr
 // PreparingFileAfterScanning is a func used for preparing the http response before returning it
 // preparing means converting the file to the original structure before scanning
 func (f *GeneralFunc) PreparingFileAfterScanning(scannedFile []byte, reqContentType ContentTypes.ContentType, methodName string) []byte {
+	logging.Logger.Info("preparing body after the service finished processing")
 	switch methodName {
 	case utils.ICAPModeReq:
 		return []byte(reqContentType.BodyAfterScanning(scannedFile))
@@ -280,6 +296,7 @@ func (f *GeneralFunc) IfStatusIs204WithFile(methodName string, status int, file 
 
 // ReturningHttpMessageWithFile function to return the suitable http message (http request, http response)
 func (f *GeneralFunc) ReturningHttpMessageWithFile(methodName string, file []byte) interface{} {
+	logging.Logger.Info("returning the HTTP message after processing by the service")
 	switch methodName {
 	case utils.ICAPModeReq:
 		f.httpMsg.Request.Header.Set(utils.ContentLength, strconv.Itoa(len(string(file))))
@@ -318,6 +335,7 @@ func (f *GeneralFunc) IfICAPStatusIs204(methodName string, status int, file *byt
 
 // function to return the suitable http message (http request, http response)
 func (f *GeneralFunc) returningHttpMessage(methodName string, file []byte) interface{} {
+	logging.Logger.Info("returning the HTTP message after processing by the service")
 	switch methodName {
 	case utils.ICAPModeReq:
 		f.httpMsg.Request.Header.Set(utils.ContentLength, strconv.Itoa(len(string(file))))
@@ -333,6 +351,7 @@ func (f *GeneralFunc) returningHttpMessage(methodName string, file []byte) inter
 
 // GetDecodedImage takes the HTTP file and converts it to an image object
 func (f *GeneralFunc) GetDecodedImage(file *bytes.Buffer) (image.Image, error) {
+	logging.Logger.Info("getting decoded image")
 	img, _, err := image.Decode(file)
 	return img, err
 }
@@ -347,11 +366,13 @@ func (f *GeneralFunc) InitSecure(VerifyServerCert bool) bool {
 
 // GetMimeExtension returns the mime type extension of the data
 func (f *GeneralFunc) GetMimeExtension(data []byte, contentType string, filename string) string {
+	logging.Logger.Info("getting the mime extension of the HTTP message body")
 	kind, _ := filetype.Match(data)
 	exts := map[string]string{"application/xml": "xml", "application/html": "html", "text/html": "html", "text/json": "html", "application/json": "json", "text/plain": "txt"}
 	contentType = strings.Split(contentType, ";")[0]
 	if kind == filetype.Unknown {
 		if _, ok := exts[contentType]; ok {
+			logging.Logger.Debug("HTTP message body mime extension is " + kind.Extension)
 			return exts[contentType]
 		}
 	}
@@ -362,8 +383,10 @@ func (f *GeneralFunc) GetMimeExtension(data []byte, contentType string, filename
 		}
 	}
 	if kind == filetype.Unknown {
+		logging.Logger.Debug("HTTP message body mime extension is " + kind.Extension)
 		return utils.Unknown
 	}
+	logging.Logger.Debug("HTTP message body mime extension is " + kind.Extension)
 	return kind.Extension
 
 }

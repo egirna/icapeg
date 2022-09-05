@@ -2,6 +2,7 @@ package cloudmersive
 
 import (
 	"icapeg/http-message"
+	"icapeg/logging"
 	"icapeg/readValues"
 	services_utilities "icapeg/service/services-utilities"
 	general_functions "icapeg/service/services-utilities/general-functions"
@@ -42,6 +43,7 @@ type CloudMersive struct {
 }
 
 func InitCloudMersiveConfig(serviceName string) {
+	logging.Logger.Debug("loading " + serviceName + " service configurations")
 	doOnce.Do(func() {
 		cloudMersiveConfig = &CloudMersive{
 			maxFileSize:                  readValues.ReadValuesInt(serviceName + ".max_filesize"),
