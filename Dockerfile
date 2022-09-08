@@ -3,7 +3,6 @@ WORKDIR /home/icapeg
 COPY . .
 RUN go build .
 
-
 FROM alpine
 WORKDIR /home/icapeg
 # RUN apk add --no-cache libc6-compat
