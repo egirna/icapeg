@@ -1,7 +1,7 @@
-package echo
+package hashlookuppackage
 
 import (
-	"icapeg/http-message"
+	http_message "icapeg/http-message"
 	"icapeg/logging"
 	"icapeg/readValues"
 	services_utilities "icapeg/service/services-utilities"
@@ -11,14 +11,13 @@ import (
 )
 
 var doOnce sync.Once
-var echoConfig *Echo
+var hashLookupConfig *Hashlookup
 
-const EchoIdentifier = "ECHO ID"
+const HashLookupIdentifier = "HASHLOOKUP ID"
 
-// Echo represents the information regarding the Echo service
-type Echo struct {
+// Hashlookup represents the information regarding the Hashlookup service
+type Hashlookup struct {
 	httpMsg                    *http_message.HttpMsg
-	elapsed                    time.Duration
 	serviceName                string
 	methodName                 string
 	maxFileSize                int
@@ -26,39 +25,45 @@ type Echo struct {
 	processExts                []string
 	rejectExts                 []string
 	extArrs                    []services_utilities.Extension
+	ScanUrl                    string
+	Timeout                    time.Duration
 	returnOrigIfMaxSizeExc     bool
 	return400IfFileExtRejected bool
 	generalFunc                *general_functions.GeneralFunc
 }
 
-func InitEchoConfig(serviceName string) {
+func InitHashlookupConfig(serviceName string) {
 	logging.Logger.Debug("loading " + serviceName + " service configurations")
 	doOnce.Do(func() {
-		echoConfig = &Echo{
+		hashLookupConfig = &Hashlookup{
 			maxFileSize:                readValues.ReadValuesInt(serviceName + ".max_filesize"),
 			bypassExts:                 readValues.ReadValuesSlice(serviceName + ".bypass_extensions"),
 			processExts:                readValues.ReadValuesSlice(serviceName + ".process_extensions"),
 			rejectExts:                 readValues.ReadValuesSlice(serviceName + ".reject_extensions"),
+			ScanUrl:                    readValues.ReadValuesString(serviceName + ".scan_url"),
+			Timeout:                    readValues.ReadValuesDuration(serviceName + ".timeout"),
 			returnOrigIfMaxSizeExc:     readValues.ReadValuesBool(serviceName + ".return_original_if_max_file_size_exceeded"),
 			return400IfFileExtRejected: readValues.ReadValuesBool(serviceName + ".return_400_if_file_ext_rejected"),
 		}
-		echoConfig.extArrs = services_utilities.InitExtsArr(echoConfig.processExts, echoConfig.rejectExts, echoConfig.bypassExts)
+		hashLookupConfig.extArrs = services_utilities.InitExtsArr(hashLookupConfig.processExts, hashLookupConfig.rejectExts, hashLookupConfig.bypassExts)
 	})
 }
 
-// NewEchoService returns a new populated instance of the Echo service
-func NewEchoService(serviceName, methodName string, httpMsg *http_message.HttpMsg) *Echo {
-	return &Echo{
+// NewHashlookupService returns a new populated instance of the Hashlookup service
+func NewHashlookupService(serviceName, methodName string, httpMsg *http_message.HttpMsg) *Hashlookup {
+	return &Hashlookup{
 		httpMsg:                    httpMsg,
 		serviceName:                serviceName,
 		methodName:                 methodName,
+		maxFileSize:                hashLookupConfig.maxFileSize,
+		bypassExts:                 hashLookupConfig.bypassExts,
+		processExts:                hashLookupConfig.processExts,
+		rejectExts:                 hashLookupConfig.rejectExts,
+		extArrs:                    hashLookupConfig.extArrs,
+		ScanUrl:                    hashLookupConfig.ScanUrl,
+		Timeout:                    hashLookupConfig.Timeout * time.Second,
+		returnOrigIfMaxSizeExc:     hashLookupConfig.returnOrigIfMaxSizeExc,
+		return400IfFileExtRejected: hashLookupConfig.return400IfFileExtRejected,
 		generalFunc:                general_functions.NewGeneralFunc(httpMsg),
-		maxFileSize:                echoConfig.maxFileSize,
-		bypassExts:                 echoConfig.bypassExts,
-		processExts:                echoConfig.processExts,
-		rejectExts:                 echoConfig.rejectExts,
-		extArrs:                    echoConfig.extArrs,
-		returnOrigIfMaxSizeExc:     echoConfig.returnOrigIfMaxSizeExc,
-		return400IfFileExtRejected: echoConfig.return400IfFileExtRejected,
 	}
 }

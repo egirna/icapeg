@@ -2,10 +2,12 @@ package service
 
 import (
 	"icapeg/http-message"
+	"icapeg/logging"
 	"icapeg/service/services/clamav"
 	"icapeg/service/services/cloudmersive"
 	"icapeg/service/services/echo"
 	"icapeg/service/services/grayimages"
+	hashlookuppackage "icapeg/service/services/hashlookup"
 	"icapeg/service/services/virustotal"
 )
 
@@ -16,6 +18,7 @@ const (
 	VendorVirustotal   = "virustotal"
 	VendorCloudMersive = "cloudmersive"
 	VendorGrayimages   = "grayimages"
+	VendorHashlookup   = "hashlookup"
 )
 
 type (
@@ -29,6 +32,7 @@ type (
 // GetService returns a service based on the service name
 // change name to vendor and add parameter service name
 func GetService(vendor, serviceName, methodName string, httpMsg *http_message.HttpMsg) Service {
+	logging.Logger.Info("getting instance from " + serviceName + " struct")
 	switch vendor {
 	case VendorEcho:
 		return echo.NewEchoService(serviceName, methodName, httpMsg)
@@ -40,6 +44,8 @@ func GetService(vendor, serviceName, methodName string, httpMsg *http_message.Ht
 		return cloudmersive.NewCloudMersiveService(serviceName, methodName, httpMsg)
 	case VendorGrayimages:
 		return grayimages.NewGrayimagesService(serviceName, methodName, httpMsg)
+	case VendorHashlookup:
+		return hashlookuppackage.NewHashlookupService(serviceName, methodName, httpMsg)
 	}
 
 	return nil
@@ -47,6 +53,7 @@ func GetService(vendor, serviceName, methodName string, httpMsg *http_message.Ht
 
 // InitServiceConfig is used to load the services configuration
 func InitServiceConfig(vendor, serviceName string) {
+	logging.Logger.Info("loading all the services configuration")
 	switch vendor {
 	case VendorEcho:
 		echo.InitEchoConfig(serviceName)
@@ -58,5 +65,7 @@ func InitServiceConfig(vendor, serviceName string) {
 		cloudmersive.InitCloudMersiveConfig(serviceName)
 	case VendorGrayimages:
 		grayimages.InitGrayimagesConfig(serviceName)
+	case VendorHashlookup:
+		hashlookuppackage.InitHashlookupConfig(serviceName)
 	}
 }
