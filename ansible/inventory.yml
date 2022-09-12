@@ -1,0 +1,12 @@
+---
+all:
+  children:
+    web-servers:
+      hosts:
+        '{{ AnsibleHost }}'
+      vars:
+        ansible_ssh_private_key_file: ~/.ssh/id_rsa
+        ansible_port: '{{ AnsiblePort }}'
+        ansible_user: '{{ AnsibleUsername }}'
+        ansible_password: '{{ ansiblePassword }}'
+        ansible_become_pass: '{{ ansiblePassword }}'

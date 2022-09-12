@@ -114,7 +114,7 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 	return utils.OkStatusCodeStr, v.generalFunc.ReturningHttpMessageWithFile(v.methodName, scannedFile), serviceHeaders
 }
 
-// SendFileToScan is a function to send the file to GW API
+// SendFileToScan is a function to send the file to API
 func (v *Virustotal) SendFileToScan(f *bytes.Buffer) (string, string, string, error) {
 	logging.Logger.Debug("sending the HTTP message body to " + v.serviceName + " API to be scanned")
 	urlStr := v.ScanUrl

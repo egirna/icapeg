@@ -7,6 +7,7 @@ import (
 	"icapeg/service/services/cloudmersive"
 	"icapeg/service/services/echo"
 	"icapeg/service/services/grayimages"
+	hashlookuppackage "icapeg/service/services/hashlookup"
 	"icapeg/service/services/virustotal"
 )
 
@@ -17,6 +18,7 @@ const (
 	VendorVirustotal   = "virustotal"
 	VendorCloudMersive = "cloudmersive"
 	VendorGrayimages   = "grayimages"
+	VendorHashlookup   = "hashlookup"
 )
 
 type (
@@ -42,6 +44,8 @@ func GetService(vendor, serviceName, methodName string, httpMsg *http_message.Ht
 		return cloudmersive.NewCloudMersiveService(serviceName, methodName, httpMsg)
 	case VendorGrayimages:
 		return grayimages.NewGrayimagesService(serviceName, methodName, httpMsg)
+	case VendorHashlookup:
+		return hashlookuppackage.NewHashlookupService(serviceName, methodName, httpMsg)
 	}
 
 	return nil
@@ -61,5 +65,7 @@ func InitServiceConfig(vendor, serviceName string) {
 		cloudmersive.InitCloudMersiveConfig(serviceName)
 	case VendorGrayimages:
 		grayimages.InitGrayimagesConfig(serviceName)
+	case VendorHashlookup:
+		hashlookuppackage.InitHashlookupConfig(serviceName)
 	}
 }
