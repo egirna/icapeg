@@ -86,12 +86,14 @@ func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]st
 	// sending request to cloudmersive api
 	serviceResp, err := c.SendFileToAPI(file, fileName)
 	if err != nil {
+		logging.Logger.Error(c.serviceName + " error: " + err.Error())
 		logging.Logger.Info(c.serviceName + " service has stopped processing")
 		return serviceResp.StatusCode, nil, serviceHeaders
 	}
 	// getting response body
 	body, err := ioutil.ReadAll(serviceResp.Body)
 	if err != nil {
+		logging.Logger.Error(c.serviceName + " error: " + err.Error())
 		logging.Logger.Info(c.serviceName + " service has stopped processing")
 		return serviceResp.StatusCode, nil, serviceHeaders
 	}
@@ -175,15 +177,18 @@ func (c *CloudMersive) SendFileToAPI(f *bytes.Buffer, filename string) (*http.Re
 
 	part, err := bodyWriter.CreateFormFile("file", filename)
 	if err != nil {
+		logging.Logger.Error(c.serviceName + " error: " + err.Error())
 		return nil, err
 	}
 
 	io.Copy(part, bytes.NewReader(f.Bytes()))
 	if err := bodyWriter.Close(); err != nil {
+		logging.Logger.Error(c.serviceName + " error: " + err.Error())
 		return nil, err
 	}
 	req, err := http.NewRequest(http.MethodPost, url, bodyBuf)
 	if err != nil {
+		logging.Logger.Error(c.serviceName + " error: " + err.Error())
 		return nil, err
 	}
 	req.Header.Add("allowExecutables", strconv.FormatBool(c.allowExecutables))
@@ -209,6 +214,7 @@ func (c *CloudMersive) SendFileToAPI(f *bytes.Buffer, filename string) (*http.Re
 
 	res, err := client.Do(req)
 	if err != nil {
+		logging.Logger.Error(c.serviceName + " error: " + err.Error())
 		return nil, err
 	}
 	return res, nil

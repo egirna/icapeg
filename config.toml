@@ -21,7 +21,6 @@ title = "ICAP configuration file"
 port = 1344
 log_level="debug"
 write_logs_to_console= false
-services= ["echo", "virustotal", "clamav", "cloudmersive"]
 services= ["echo", "virustotal", "clamav", "cloudmersive", "grayimages"]
 debugging_headers=true
 

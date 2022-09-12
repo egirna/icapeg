@@ -87,7 +87,9 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 	scannedFile := file.Bytes()
 	resource, score, total, err := v.SendFileToScan(file)
 	if err != nil {
+		logging.Logger.Error(v.serviceName + " error: " + err.Error())
 		if strings.Contains(err.Error(), "context deadline exceeded") {
+			logging.Logger.Info(v.serviceName + " service has stopped processing")
 			return utils.RequestTimeOutStatusCodeStr, nil, nil
 		}
 		logging.Logger.Info(v.serviceName + " service has stopped processing")
@@ -127,6 +129,7 @@ func (v *Virustotal) SendFileToScan(f *bytes.Buffer) (string, string, string, er
 
 	req, err := http.NewRequest(http.MethodPost, urlStr, bodyBuf)
 	if err != nil {
+		logging.Logger.Error(v.serviceName + " error: " + err.Error())
 		return "", "", "", err
 	}
 
@@ -139,6 +142,7 @@ func (v *Virustotal) SendFileToScan(f *bytes.Buffer) (string, string, string, er
 	req.Header.Add("Content-Type", bodyWriter.FormDataContentType())
 	resp, err := client.Do(req)
 	if err != nil {
+		logging.Logger.Error(v.serviceName + " error: " + err.Error())
 		return "", "", "", err
 	}
 	var data map[string]interface{}
@@ -164,6 +168,7 @@ func (v *Virustotal) SendFileToGetReport(resource string) (string, string, strin
 
 		req, err := http.NewRequest(http.MethodPost, urlStr, bodyBuf)
 		if err != nil {
+			logging.Logger.Error(v.serviceName + " error: " + err.Error())
 			return "", "", "", err
 		}
 
@@ -177,6 +182,7 @@ func (v *Virustotal) SendFileToGetReport(resource string) (string, string, strin
 		resp, err := client.Do(req)
 		var data map[string]interface{}
 		if err != nil {
+			logging.Logger.Error(v.serviceName + " error: " + err.Error())
 			return "", "", "", err
 		}
 		err = json.NewDecoder(resp.Body).Decode(&data)
