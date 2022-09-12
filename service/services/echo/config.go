@@ -2,6 +2,7 @@ package echo
 
 import (
 	"icapeg/http-message"
+	"icapeg/logging"
 	"icapeg/readValues"
 	services_utilities "icapeg/service/services-utilities"
 	general_functions "icapeg/service/services-utilities/general-functions"
@@ -31,6 +32,7 @@ type Echo struct {
 }
 
 func InitEchoConfig(serviceName string) {
+	logging.Logger.Debug("loading " + serviceName + " service configurations")
 	doOnce.Do(func() {
 		echoConfig = &Echo{
 			maxFileSize:                readValues.ReadValuesInt(serviceName + ".max_filesize"),

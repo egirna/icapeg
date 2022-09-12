@@ -1,6 +1,9 @@
 package services_utilities
 
-import "icapeg/consts"
+import (
+	"icapeg/consts"
+	"icapeg/logging"
+)
 
 // Extension struct is used for storing the name of the extension array (bypass, reject, process)
 // in Name field and the content of the array (for example ["pdf", "zip", "com"])
@@ -29,6 +32,7 @@ type Extension struct {
 // so when the service want to check about if the extension of the current HTTP body is process, bypass or reject
 // it will search first in process array, then in reject array, then in bypass array
 func InitExtsArr(processExts, rejectExts, bypassExts []string) []Extension {
+	logging.Logger.Info("preparing the order of checking extensions array")
 	process := Extension{Name: utils.ProcessExts, Exts: processExts}
 	reject := Extension{Name: utils.RejectExts, Exts: rejectExts}
 	bypass := Extension{Name: utils.BypassExts, Exts: bypassExts}
