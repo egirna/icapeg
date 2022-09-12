@@ -2,9 +2,10 @@ package server
 
 import (
 	"fmt"
-	"log"
+	"icapeg/logging"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -23,9 +24,8 @@ func StartServer() error {
 	config.Init()
 
 	icap.HandleFunc("/", api.ToICAPEGServe)
-	//http.HandleFunc("/", api.ErrorPageHanlder)
 
-	log.Println("starting the ICAP server")
+	logging.Logger.Info("starting the ICAP server")
 
 	stop := make(chan os.Signal, 1)
 
@@ -33,8 +33,7 @@ func StartServer() error {
 
 	go func() {
 		if err := icap.ListenAndServe(fmt.Sprintf(":%d", config.App().Port), nil); err != nil {
-			log.Println(err)
-			log.Fatal(err)
+			logging.Logger.Fatal(err.Error())
 		}
 	}()
 
@@ -48,13 +47,13 @@ func StartServer() error {
 	}()
 
 	time.Sleep(5 * time.Millisecond)
-
-	log.Printf("ICAP server is running on localhost: %d", config.App().Port)
+	port := strconv.Itoa(config.App().Port)
+	logging.Logger.Info("ICAP server is running on localhost: " + port)
 
 	<-stop
 	ticker.Stop()
 
-	log.Printf("ICAP server gracefully shut down")
+	logging.Logger.Info("ICAP server gracefully shut down")
 
 	return nil
 }

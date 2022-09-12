@@ -1,26 +1,27 @@
 package clamav
 
 import (
-	"fmt"
-	"icapeg/config"
+	"icapeg/http-message"
+	"icapeg/logging"
 	"icapeg/readValues"
+	services_utilities "icapeg/service/services-utilities"
 	general_functions "icapeg/service/services-utilities/general-functions"
-	"icapeg/utils"
 	"sync"
 	"time"
 )
 
 // the clamav constants
 const (
-	ClamavMalStatus = "FOUND"
+	ClamavMalStatus  = "FOUND"
+	ClamavIdentifier = "CLAMAV ID"
 )
 
 var doOnce sync.Once
 var clamavConfig *Clamav
 
-// Clamav represents the informations regarding the clamav service
+// Clamav represents the information regarding the clamav service
 type Clamav struct {
-	httpMsg                    *utils.HttpMsg
+	httpMsg                    *http_message.HttpMsg
 	elapsed                    time.Duration
 	serviceName                string
 	methodName                 string
@@ -28,7 +29,7 @@ type Clamav struct {
 	bypassExts                 []string
 	processExts                []string
 	rejectExts                 []string
-	extArrs                    []config.Extension
+	extArrs                    []services_utilities.Extension
 	SocketPath                 string
 	Timeout                    time.Duration
 	badFileStatus              []string
@@ -39,6 +40,7 @@ type Clamav struct {
 }
 
 func InitClamavConfig(serviceName string) {
+	logging.Logger.Debug("loading " + serviceName + " service configurations")
 	doOnce.Do(func() {
 		clamavConfig = &Clamav{
 			maxFileSize:                readValues.ReadValuesInt(serviceName + ".max_filesize"),
@@ -51,35 +53,11 @@ func InitClamavConfig(serviceName string) {
 			return400IfFileExtRejected: readValues.ReadValuesBool(serviceName + ".return_400_if_file_ext_rejected"),
 		}
 
-		process := config.Extension{Name: "process", Exts: clamavConfig.processExts}
-		reject := config.Extension{Name: "reject", Exts: clamavConfig.rejectExts}
-		bypass := config.Extension{Name: "bypass", Exts: clamavConfig.bypassExts}
-		extArrs := make([]config.Extension, 3)
-		ind := 0
-		if len(process.Exts) == 1 && process.Exts[0] == "*" {
-			extArrs[2] = process
-		} else {
-			extArrs[ind] = process
-			ind++
-		}
-		if len(reject.Exts) == 1 && reject.Exts[0] == "*" {
-			extArrs[2] = reject
-		} else {
-			extArrs[ind] = reject
-			ind++
-		}
-		if len(bypass.Exts) == 1 && bypass.Exts[0] == "*" {
-			extArrs[2] = bypass
-		} else {
-			extArrs[ind] = bypass
-			ind++
-		}
-		fmt.Println(extArrs)
-		clamavConfig.extArrs = extArrs
+		clamavConfig.extArrs = services_utilities.InitExtsArr(clamavConfig.processExts, clamavConfig.rejectExts, clamavConfig.bypassExts)
 	})
 }
 
-func NewClamavService(serviceName, methodName string, httpMsg *utils.HttpMsg) *Clamav {
+func NewClamavService(serviceName, methodName string, httpMsg *http_message.HttpMsg) *Clamav {
 	return &Clamav{
 		httpMsg:                    httpMsg,
 		serviceName:                serviceName,

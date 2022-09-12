@@ -4,6 +4,7 @@
 *.dll
 *.so
 *.dylib
+tmp.go
 icapeg
 send_bin_to_vm.sh
 
@@ -22,6 +23,7 @@ vendor/
 
 # Logs
 logs.txt
+log.json
 
 # Env file
 app.env

@@ -14,30 +14,14 @@
 #NOTE: before you use this feature please make sure that the env variable that you want to use is globally in
 # your machine and not just exported in a local session
 
-####### POLICY
-# Please before adding policy JSON file add "\" before special characters and "\n" instead of new lines
-#by this tool: https://onlinestringtools.com/escape-string#:~:text=String%20escaper%20tool%20What%20is,single%20quotes%2C%20and%20double%20quotes.
-# You shouldn't remove the policy variable from config file
-#if you don't want to set a value for policy you should do like that
-#policy = ""
 
 title = "ICAP configuration file"
 
 [app]
-log_level = "info" # the log levels for tha app, available values: info-->logging the overall progress of the app, debug --> log everything including errors, error --> log infos and just errors
-write_logs_to_console = false
-log_service_url = "http://logging-transaction-logging-api:8080/upload"
-log_flush_duration = 2
 port = 1344
-resp_scanner_vendor_shadow = "none"
-req_scanner_vendor_shadow = "none"
-preview_bytes = "1024" #byte
-preview_enabled = true# options send preview header or not
-propagate_error = true
-service_caption ="Go-ICAP server - glasswall Rebuild service"
-services= ["echo", "virustotal", "clamav"]
-timeout = 25
-verify_server_cert=false
+log_level="debug"
+write_logs_to_console= false
+services= ["echo", "virustotal", "clamav", "cloudmersive", "grayimages", "hashlookup"]
 debugging_headers=true
 
 [echo]
@@ -52,11 +36,6 @@ preview_enabled = true# options send preview header or not
 process_extensions = ["pdf", "zip", "com"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
 reject_extensions = ["docx"]
 bypass_extensions = ["*"]
-base_url = "echo" #
-scan_endpoint = "echo"
-api_key = "<api key>"
-timeout  = 300 #seconds , ICAP will return 408 - Request timeout
-fail_threshold = 2
 #max file size value from 1 to 9223372036854775807, and value of zero means unlimited
 max_filesize = 0 #bytes
 return_original_if_max_file_size_exceeded=false
@@ -76,8 +55,6 @@ reject_extensions = ["docx"]
 bypass_extensions = ["*"]
 socket_path = "/var/run/clamav/clamd.ctl"
 timeout = 10 #seconds, the time upto which the server will wait for clamav to scan the results
-bad_file_status = ["malicious"]
-ok_file_status = ["ok"]
 #max file size value from 1 to 9223372036854775807, and value of zero means unlimited
 max_filesize = 0 #bytes
 return_original_if_max_file_size_exceeded=false
@@ -99,16 +76,79 @@ scan_url = "https://www.virustotal.com/vtapi/v2/file/scan" #
 report_url = "https://www.virustotal.com/vtapi/v2/file/report" #
 api_key = "$_VIRUSTOTAL_API_KEY"
 timeout  = 1000 #seconds , ICAP will return 408 - Request timeout
-fail_threshold = 2
-policy= ""
 #max file size value from 1 to 9223372036854775807, and value of zero means unlimited
 max_filesize = 0 #bytes
 return_original_if_max_file_size_exceeded=false
 return_400_if_file_ext_rejected=false
 
 
-#ICAP possible codes: 204 (No modifications needed) , 400 (Bad Request) , 403 (Forbidden) , 500 (Server Error) , 502 (Bad Gateway)
-api_response_400 = 400 #Bad Request
-api_response_403 = 403 #Forbidden
-api_response_415 = 204 #Unsupported Media Type
-api_response_422 = 204 #Unprocessable Entity
+[cloudmersive]
+vendor = "cloudmersive"
+service_caption= "cloudmersive service"   #Service
+service_tag = "CLOUDMERSIVE ICAP"  #ISTAG
+req_mode=true
+resp_mode=true
+shadow_service=false
+preview_enabled = false# options send preview header or not
+preview_bytes = "1024" #byte
+timeout  = 300 #seconds , ICAP will return 408 - Request timeout
+#max file size value from 1 to 9223372036854775807, and value of zero means unlimited
+max_filesize = 0 #bytes
+return_original_if_max_file_size_exceeded=false
+return_400_if_file_ext_rejected=false
+bypass_extensions = ["*"]
+process_extensions = ["pdf"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
+reject_extensions = []
+verify_server_cert=false
+base_url = "$_CLOUDMERSIVE_BASE_URL" #
+scan_endpoint = "/virus/scan/file/advanced"
+api_key = "$_CLOUDMERSIVE_API_KEY"
+allow_executables = true
+allow_invalid_files = false
+allow_scripts = true
+allow_password_protected_files = false
+allow_macros = false
+allow_xml_external_entities = false
+allow_html = true
+allow_insecure_deserialization = false
+
+[grayimages]
+vendor = "grayimages"
+service_caption= "grayimages service"   #Service
+service_tag = "GRAYIMAGES ICAP"  #ISTAG
+req_mode=true
+resp_mode=true
+shadow_service=false
+preview_bytes = "1024" #byte
+preview_enabled = true# options send preview header or not
+bypass_extensions = ["*"]
+process_extensions = ["png","jpg","jpeg","webp"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
+reject_extensions = [""]
+base_url = "" #
+scan_endpoint = "<grayimages>"
+api_key = "<api key>"
+timeout  = 300 #seconds , ICAP will return 408 - Request timeout
+fail_threshold = 2
+max_filesize = 0 #bytes
+return_original_if_max_file_size_exceeded=true
+return_400_if_file_ext_rejected=false
+
+[hashlookup]
+vendor = "hashlookup"
+service_caption= "hash lookup"   #Service
+service_tag = "HASHLOOKUP ICAP"  #ISTAG
+req_mode=true
+resp_mode=true
+shadow_service=false
+preview_bytes = "1024" #byte
+preview_enabled = true# options send preview header or not
+bypass_extensions = ["*"]
+process_extensions = ["pdf","exe", "zip"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
+reject_extensions = ["docx"]
+scan_url = "http://23.106.36.101:5555/is-malicious" #
+timeout  = 300 #seconds , ICAP will return 408 - Request timeout
+fail_threshold = 2
+max_filesize = 0 #bytes
+return_original_if_max_file_size_exceeded=true
+return_400_if_file_ext_rejected=false
+

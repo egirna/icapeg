@@ -1,4 +1,4 @@
-package echo
+package grayimages
 
 import (
 	"icapeg/http-message"
@@ -11,12 +11,12 @@ import (
 )
 
 var doOnce sync.Once
-var echoConfig *Echo
+var grayimagesConfig *Grayimages
 
-const EchoIdentifier = "ECHO ID"
+const GrayimagesIdentifier = "GRAYIMAGES ID"
 
-// Echo represents the information regarding the Echo service
-type Echo struct {
+// Grayimages represents the information regarding the grayimages service
+type Grayimages struct {
 	httpMsg                    *http_message.HttpMsg
 	elapsed                    time.Duration
 	serviceName                string
@@ -25,16 +25,18 @@ type Echo struct {
 	bypassExts                 []string
 	processExts                []string
 	rejectExts                 []string
+	BaseURL                    string
 	extArrs                    []services_utilities.Extension
 	returnOrigIfMaxSizeExc     bool
 	return400IfFileExtRejected bool
 	generalFunc                *general_functions.GeneralFunc
 }
 
-func InitEchoConfig(serviceName string) {
+func InitGrayimagesConfig(serviceName string) {
 	logging.Logger.Debug("loading " + serviceName + " service configurations")
 	doOnce.Do(func() {
-		echoConfig = &Echo{
+		grayimagesConfig = &Grayimages{
+			BaseURL:                    readValues.ReadValuesString(serviceName + ".base_url"),
 			maxFileSize:                readValues.ReadValuesInt(serviceName + ".max_filesize"),
 			bypassExts:                 readValues.ReadValuesSlice(serviceName + ".bypass_extensions"),
 			processExts:                readValues.ReadValuesSlice(serviceName + ".process_extensions"),
@@ -42,23 +44,24 @@ func InitEchoConfig(serviceName string) {
 			returnOrigIfMaxSizeExc:     readValues.ReadValuesBool(serviceName + ".return_original_if_max_file_size_exceeded"),
 			return400IfFileExtRejected: readValues.ReadValuesBool(serviceName + ".return_400_if_file_ext_rejected"),
 		}
-		echoConfig.extArrs = services_utilities.InitExtsArr(echoConfig.processExts, echoConfig.rejectExts, echoConfig.bypassExts)
+		grayimagesConfig.extArrs = services_utilities.InitExtsArr(grayimagesConfig.processExts, grayimagesConfig.rejectExts, grayimagesConfig.bypassExts)
 	})
 }
 
-// NewEchoService returns a new populated instance of the Echo service
-func NewEchoService(serviceName, methodName string, httpMsg *http_message.HttpMsg) *Echo {
-	return &Echo{
+// NewGrayimagesService returns a new populated instance of the Grayimages service
+func NewGrayimagesService(serviceName, methodName string, httpMsg *http_message.HttpMsg) *Grayimages {
+	return &Grayimages{
 		httpMsg:                    httpMsg,
 		serviceName:                serviceName,
 		methodName:                 methodName,
 		generalFunc:                general_functions.NewGeneralFunc(httpMsg),
-		maxFileSize:                echoConfig.maxFileSize,
-		bypassExts:                 echoConfig.bypassExts,
-		processExts:                echoConfig.processExts,
-		rejectExts:                 echoConfig.rejectExts,
-		extArrs:                    echoConfig.extArrs,
-		returnOrigIfMaxSizeExc:     echoConfig.returnOrigIfMaxSizeExc,
-		return400IfFileExtRejected: echoConfig.return400IfFileExtRejected,
+		BaseURL:                    grayimagesConfig.BaseURL,
+		maxFileSize:                grayimagesConfig.maxFileSize,
+		bypassExts:                 grayimagesConfig.bypassExts,
+		processExts:                grayimagesConfig.processExts,
+		rejectExts:                 grayimagesConfig.rejectExts,
+		extArrs:                    grayimagesConfig.extArrs,
+		returnOrigIfMaxSizeExc:     grayimagesConfig.returnOrigIfMaxSizeExc,
+		return400IfFileExtRejected: grayimagesConfig.return400IfFileExtRejected,
 	}
 }
