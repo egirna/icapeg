@@ -60,7 +60,7 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 	//check if the file size is greater than max file size of the service
 	//if yes we will return 200 ok or 204 no modification, it depends on the configuration of the service
 	if e.maxFileSize != 0 && e.maxFileSize < file.Len() {
-		status, file, httpMsg := e.generalFunc.IfMaxFileSizeExc(e.returnOrigIfMaxSizeExc, e.serviceName, file, e.maxFileSize)
+		status, file, httpMsg := e.generalFunc.IfMaxFileSizeExc(e.returnOrigIfMaxSizeExc, e.serviceName, e.methodName, file, e.maxFileSize)
 		fileAfterPrep, httpMsg := e.generalFunc.IfStatusIs204WithFile(e.methodName, status, file, isGzip, reqContentType, httpMsg)
 		if fileAfterPrep == nil && httpMsg == nil {
 			logging.Logger.Info(e.serviceName + " service has stopped processing")
@@ -84,6 +84,9 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 	//returning the scanned file if everything is ok
 	scannedFile = e.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, e.methodName)
 	logging.Logger.Info(e.serviceName + " service has stopped processing")
+	if e.httpMsg.Request.URL.Scheme == "" {
+		e.httpMsg.Request.URL.Opaque = e.httpMsg.Request.URL.Host
+	}
 	return utils.OkStatusCodeStr, e.generalFunc.ReturningHttpMessageWithFile(e.methodName, scannedFile), serviceHeaders
 }
 

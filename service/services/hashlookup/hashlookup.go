@@ -66,7 +66,7 @@ func (h *Hashlookup) Processing(partial bool) (int, interface{}, map[string]stri
 	//check if the file size is greater than max file size of the service
 	//if yes we will return 200 ok or 204 no modification, it depends on the configuration of the service
 	if h.maxFileSize != 0 && h.maxFileSize < file.Len() {
-		status, file, httpMsg := h.generalFunc.IfMaxFileSizeExc(h.returnOrigIfMaxSizeExc, h.serviceName, file, h.maxFileSize)
+		status, file, httpMsg := h.generalFunc.IfMaxFileSizeExc(h.returnOrigIfMaxSizeExc, h.serviceName, h.methodName, file, h.maxFileSize)
 		fileAfterPrep, httpMsg := h.generalFunc.IfStatusIs204WithFile(h.methodName, status, file, isGzip, reqContentType, httpMsg)
 		if fileAfterPrep == nil && httpMsg == nil {
 			logging.Logger.Info(h.serviceName + " service has stopped processing")

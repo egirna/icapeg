@@ -65,7 +65,7 @@ func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]st
 
 	//check if the file size is greater than max file size of the service or 3M size, according to account payment plans ,etc
 	if c.maxFileSize != 0 && c.maxFileSize < file.Len() || file.Len() > 3e6 {
-		status, file, httpMsg := c.generalFunc.IfMaxFileSizeExc(c.returnOrigIfMaxSizeExc, c.serviceName, file, c.maxFileSize)
+		status, file, httpMsg := c.generalFunc.IfMaxFileSizeExc(c.returnOrigIfMaxSizeExc, c.serviceName, c.methodName, file, c.maxFileSize)
 		fileAfterPrep, httpMsg := c.generalFunc.IfStatusIs204WithFile(c.methodName, status, file, isGzip, reqContentType, httpMsg)
 		if fileAfterPrep == nil && httpMsg == nil {
 			logging.Logger.Info(c.serviceName + " service has stopped processing")
