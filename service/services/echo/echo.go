@@ -60,13 +60,13 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 	//check if the file size is greater than max file size of the service
 	//if yes we will return 200 ok or 204 no modification, it depends on the configuration of the service
 	if e.maxFileSize != 0 && e.maxFileSize < file.Len() {
-		status, file, httpMsg := e.generalFunc.IfMaxFileSizeExc(e.returnOrigIfMaxSizeExc, e.serviceName, e.methodName, file, e.maxFileSize)
-		fileAfterPrep, httpMsg := e.generalFunc.IfStatusIs204WithFile(e.methodName, status, file, isGzip, reqContentType, httpMsg)
-		if fileAfterPrep == nil && httpMsg == nil {
+		status, file, httpMsgAfter := e.generalFunc.IfMaxFileSizeExc(e.returnOrigIfMaxSizeExc, e.serviceName, e.methodName, file, e.maxFileSize)
+		fileAfterPrep, httpMsgAfter := e.generalFunc.IfStatusIs204WithFile(e.methodName, status, file, isGzip, reqContentType, httpMsgAfter, true)
+		if fileAfterPrep == nil && httpMsgAfter == nil {
 			logging.Logger.Info(e.serviceName + " service has stopped processing")
 			return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
 		}
-		switch msg := httpMsg.(type) {
+		switch msg := httpMsgAfter.(type) {
 		case *http.Request:
 			msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
 			logging.Logger.Info(e.serviceName + " service has stopped processing")

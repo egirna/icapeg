@@ -67,7 +67,7 @@ func (h *Hashlookup) Processing(partial bool) (int, interface{}, map[string]stri
 	//if yes we will return 200 ok or 204 no modification, it depends on the configuration of the service
 	if h.maxFileSize != 0 && h.maxFileSize < file.Len() {
 		status, file, httpMsg := h.generalFunc.IfMaxFileSizeExc(h.returnOrigIfMaxSizeExc, h.serviceName, h.methodName, file, h.maxFileSize)
-		fileAfterPrep, httpMsg := h.generalFunc.IfStatusIs204WithFile(h.methodName, status, file, isGzip, reqContentType, httpMsg)
+		fileAfterPrep, httpMsg := h.generalFunc.IfStatusIs204WithFile(h.methodName, status, file, isGzip, reqContentType, httpMsg, true)
 		if fileAfterPrep == nil && httpMsg == nil {
 			logging.Logger.Info(h.serviceName + " service has stopped processing")
 			return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
@@ -98,13 +98,21 @@ func (h *Hashlookup) Processing(partial bool) (int, interface{}, map[string]stri
 	}
 
 	if isMal {
-		reason := "File is not safe"
 		logging.Logger.Debug(h.serviceName + ": file is not safe")
-		errPage := h.generalFunc.GenHtmlPage(utils.BlockPagePath, reason, h.serviceName, HashLookupIdentifier, h.httpMsg.Request.RequestURI)
-		h.httpMsg.Response = h.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
-		h.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
-		logging.Logger.Info(h.serviceName + " service has stopped processing")
-		return utils.OkStatusCodeStr, h.httpMsg.Response, serviceHeaders
+		if h.methodName == utils.ICAPModeResp {
+			errPage := h.generalFunc.GenHtmlPage(utils.BlockPagePath, utils.ErrPageReasonFileIsNotSafe, h.serviceName, HashLookupIdentifier, h.httpMsg.Request.RequestURI)
+			h.httpMsg.Response = h.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
+			h.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
+			logging.Logger.Info(h.serviceName + " service has stopped processing")
+			return utils.OkStatusCodeStr, h.httpMsg.Response, serviceHeaders
+		} else {
+			htmlPage, req, err := h.generalFunc.ReqModErrPage(utils.ErrPageReasonFileIsNotSafe, h.serviceName, HashLookupIdentifier)
+			if err != nil {
+				return utils.InternalServerErrStatusCodeStr, nil, nil
+			}
+			req.Body = io.NopCloser(htmlPage)
+			return utils.OkStatusCodeStr, req, serviceHeaders
+		}
 	}
 
 	//returning the scanned file if everything is ok

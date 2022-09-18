@@ -66,7 +66,7 @@ func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]st
 	//check if the file size is greater than max file size of the service or 3M size, according to account payment plans ,etc
 	if c.maxFileSize != 0 && c.maxFileSize < file.Len() || file.Len() > 3e6 {
 		status, file, httpMsg := c.generalFunc.IfMaxFileSizeExc(c.returnOrigIfMaxSizeExc, c.serviceName, c.methodName, file, c.maxFileSize)
-		fileAfterPrep, httpMsg := c.generalFunc.IfStatusIs204WithFile(c.methodName, status, file, isGzip, reqContentType, httpMsg)
+		fileAfterPrep, httpMsg := c.generalFunc.IfStatusIs204WithFile(c.methodName, status, file, isGzip, reqContentType, httpMsg, true)
 		if fileAfterPrep == nil && httpMsg == nil {
 			logging.Logger.Info(c.serviceName + " service has stopped processing")
 			return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
@@ -156,11 +156,20 @@ func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]st
 			serviceHeaders["FoundViruses"] += v
 		}
 		logging.Logger.Debug(c.serviceName + " error: " + reason)
-		errPage := c.generalFunc.GenHtmlPage(utils.BlockPagePath, reason, c.serviceName, serviceResp.Header["Request-Context"][0], c.httpMsg.Request.RequestURI)
-		c.httpMsg.Response = c.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
-		c.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
-		logging.Logger.Info(c.serviceName + " service has stopped processing")
-		return utils.OkStatusCodeStr, c.httpMsg.Response, serviceHeaders
+		if c.methodName == utils.ICAPModeResp {
+			errPage := c.generalFunc.GenHtmlPage(utils.BlockPagePath, reason, c.serviceName, serviceResp.Header["Request-Context"][0], c.httpMsg.Request.RequestURI)
+			c.httpMsg.Response = c.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
+			c.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
+			logging.Logger.Info(c.serviceName + " service has stopped processing")
+			return utils.OkStatusCodeStr, c.httpMsg.Response, serviceHeaders
+		} else {
+			htmlPage, req, err := c.generalFunc.ReqModErrPage(reason, c.serviceName, CloudMersiveIdentifier)
+			if err != nil {
+				return utils.InternalServerErrStatusCodeStr, nil, nil
+			}
+			req.Body = io.NopCloser(htmlPage)
+			return utils.OkStatusCodeStr, req, serviceHeaders
+		}
 	}
 	serviceHeaders["CleanResult"] = "true"
 	scannedFile := c.generalFunc.PreparingFileAfterScanning(file.Bytes(), reqContentType, c.methodName)

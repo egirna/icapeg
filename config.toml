@@ -23,6 +23,8 @@ log_level="debug"
 write_logs_to_console= false
 services= ["echo", "virustotal", "clamav", "cloudmersive", "grayimages", "hashlookup"]
 debugging_headers=true
+web_server_host = "$_WEB_SERVER_HOST"
+web_server_endpoint = "$_WEB_SERVER_ENDPOINT"
 
 [echo]
 vendor = "echo"
@@ -33,8 +35,8 @@ resp_mode=true
 shadow_service=false
 preview_bytes = "1024" #byte
 preview_enabled = true# options send preview header or not
-process_extensions = ["pdf", "zip", "com"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
-reject_extensions = ["docx"]
+process_extensions = ["zip", "com"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
+reject_extensions = ["pdf"]
 bypass_extensions = ["*"]
 #max file size value from 1 to 9223372036854775807, and value of zero means unlimited
 max_filesize = 0 #bytes
