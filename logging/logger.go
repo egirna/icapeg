@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"fmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"os"
@@ -12,7 +13,12 @@ func InitializeLogger(logLevel string, writeLogsToConsole bool) {
 	config := zap.NewProductionEncoderConfig()
 	config.EncodeTime = zapcore.ISO8601TimeEncoder
 	fileEncoder := zapcore.NewJSONEncoder(config)
-	logFile, _ := os.OpenFile("log.json", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
+	os.Mkdir("./logs", os.ModePerm)
+	_, err := os.Create("logs/logs.json")
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	logFile, _ := os.OpenFile("logs/logs.json", os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.ModePerm)
 	writer := zapcore.AddSync(logFile)
 	defaultLogLevel, _ := zapcore.ParseLevel(logLevel)
 	var core zapcore.Core
