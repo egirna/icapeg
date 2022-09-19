@@ -23,6 +23,8 @@ log_level="debug"
 write_logs_to_console= false
 services= ["echo", "virustotal", "clamav", "cloudmersive", "grayimages", "hashlookup"]
 debugging_headers=true
+web_server_host = "$_WEB_SERVER_HOST"
+web_server_endpoint = "$_WEB_SERVER_ENDPOINT"
 
 [echo]
 vendor = "echo"
@@ -96,9 +98,9 @@ timeout  = 300 #seconds , ICAP will return 408 - Request timeout
 max_filesize = 0 #bytes
 return_original_if_max_file_size_exceeded=false
 return_400_if_file_ext_rejected=false
+process_extensions = ["pdf", "zip", "com"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
+reject_extensions = ["docx"]
 bypass_extensions = ["*"]
-process_extensions = ["pdf"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
-reject_extensions = []
 verify_server_cert=false
 base_url = "$_CLOUDMERSIVE_BASE_URL" #
 scan_endpoint = "/virus/scan/file/advanced"

@@ -3,6 +3,8 @@ package server
 import (
 	"fmt"
 	"icapeg/logging"
+	http_server "icapeg/server/http-server"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
@@ -22,6 +24,13 @@ func StartServer() error {
 	// and there, the request will be filtered to check if the service exists or not
 
 	config.Init()
+
+	//HTTP server
+	htmlWebServer := http.NewServeMux()
+	htmlWebServer.HandleFunc("/service/message", http_server.HtmlMessage)
+	go func() {
+		http.ListenAndServe(":8081", htmlWebServer)
+	}()
 
 	icap.HandleFunc("/", api.ToICAPEGServe)
 
