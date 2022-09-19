@@ -23,7 +23,9 @@ jobs:
           fi
 
       - name: TestCov
-        run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...     
+        run: |
+            go mod tidy
+            go test -v -race -coverprofile=coverage.out -covermode=atomic ./...     
         
       - name: Upload coverage reports to Codecov with GitHub Action
         uses: codecov/codecov-action@v3
