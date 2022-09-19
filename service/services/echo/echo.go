@@ -84,9 +84,6 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 	//returning the scanned file if everything is ok
 	scannedFile = e.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, e.methodName)
 	logging.Logger.Info(e.serviceName + " service has stopped processing")
-	if e.httpMsg.Request.URL.Scheme == "" {
-		e.httpMsg.Request.URL.Opaque = e.httpMsg.Request.URL.Host
-	}
 	return utils.OkStatusCodeStr, e.generalFunc.ReturningHttpMessageWithFile(e.methodName, scannedFile), serviceHeaders
 }
 
