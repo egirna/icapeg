@@ -3,11 +3,13 @@ package general_functions
 import (
 	"bytes"
 	"compress/gzip"
+	"encoding/json"
 	"github.com/h2non/filetype"
 	"html/template"
 	"icapeg/consts"
 	"icapeg/http-message"
 	"icapeg/logging"
+	"icapeg/readValues"
 	services_utilities "icapeg/service/services-utilities"
 	"icapeg/service/services-utilities/ContentTypes"
 	"image"
@@ -21,7 +23,7 @@ import (
 
 // error page struct
 type (
-	errorPage struct {
+	ErrorPage struct {
 		Reason       string `json:"reason"`
 		ServiceName  string `json:"service_name"`
 		RequestedURL string `json:"requested_url"`
@@ -75,15 +77,28 @@ func (f *GeneralFunc) CheckTheExtension(fileExtension string, extArrs []services
 			}
 		} else if extArrs[i].Name == utils.RejectExts {
 			if f.ifFileExtIsX(fileExtension, rejectExts) {
-				reason := "File rejected"
 				logging.Logger.Debug("extension is reject")
 				if return400IfFileExtRejected {
 					return false, utils.BadRequestStatusCodeStr, nil
 				}
-				errPage := f.GenHtmlPage(utils.BlockPagePath, reason, serviceName, identifier, requestURI)
-				f.httpMsg.Response = f.ErrPageResp(http.StatusForbidden, errPage.Len())
-				f.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
-				return false, utils.OkStatusCodeStr, f.httpMsg.Response
+				if methodName == "RESPMOD" {
+					errPage := f.GenHtmlPage(utils.BlockPagePath, utils.ErrPageReasonFileRejected, serviceName, identifier, requestURI)
+					f.httpMsg.Response = f.ErrPageResp(http.StatusForbidden, errPage.Len())
+					f.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
+					return false, utils.OkStatusCodeStr, f.httpMsg.Response
+				} else {
+					htmlPage, req, err := f.ReqModErrPage(utils.ErrPageReasonFileRejected, serviceName, "NO ID")
+					if err != nil {
+						return false, utils.InternalServerErrStatusCodeStr, nil
+					}
+					reqContentType = &ContentTypes.RegularFile{
+						Buf:     file,
+						Encoded: false,
+					}
+					fileAfterPrep := f.PreparingFileAfterScanning(htmlPage.Bytes(), reqContentType, methodName)
+					req.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
+					return false, utils.OkStatusCodeStr, req
+				}
 			}
 		} else if extArrs[i].Name == utils.BypassExts {
 			if f.ifFileExtIsX(fileExtension, bypassExts) {
@@ -175,9 +190,50 @@ func (f *GeneralFunc) DecompressGzipBody(file *bytes.Buffer) (*bytes.Buffer, err
 	return bytes.NewBuffer(result), nil
 }
 
+func (f *GeneralFunc) ReqModErrPage(reason, serviceName, IdentifierId string) (*bytes.Buffer, *http.Request, error) {
+	host := readValues.ReadValuesString("app.web_server_host")
+	endpoint := readValues.ReadValuesString("app.web_server_endpoint")
+	url := host + endpoint
+	f.httpMsg.Request.URL.Scheme = ""
+	f.httpMsg.Request.URL.Opaque = url
+	f.httpMsg.Request.URL.Path = ""
+	f.httpMsg.Request.URL.Host = host
+	for key, _ := range f.httpMsg.Request.Header {
+		f.httpMsg.Request.Header.Del(key)
+	}
+	reqUri := f.httpMsg.Request.RequestURI
+	f.httpMsg.Request.Header.Set("Host", host)
+	f.httpMsg.Request.Method = http.MethodGet
+	f.httpMsg.Request.RequestURI = url
+	f.httpMsg.Request.Body = io.NopCloser(strings.NewReader(""))
+	htmlPageStructInstance := &ErrorPage{
+		Reason:       reason,
+		ServiceName:  serviceName,
+		RequestedURL: reqUri,
+		IdentifierId: IdentifierId,
+	}
+	req := &http.Request{
+		URL:        f.httpMsg.Request.URL,
+		RequestURI: f.httpMsg.Request.RequestURI,
+		Header:     f.httpMsg.Request.Header,
+		RemoteAddr: f.httpMsg.Request.RemoteAddr,
+		Host:       f.httpMsg.Request.Host,
+		Method:     f.httpMsg.Request.Method,
+		Proto:      f.httpMsg.Request.Proto,
+		ProtoMajor: f.httpMsg.Request.ProtoMajor,
+		ProtoMinor: f.httpMsg.Request.ProtoMinor,
+	}
+	body, err := json.Marshal(htmlPageStructInstance)
+	if err != nil {
+		return nil, nil, err
+	}
+	return bytes.NewBuffer(body), req, err
+}
+
 // IfMaxFileSizeExc is a functions which used for deciding the right http message should be returned
 // if the file size is greater than the max file size of the service
-func (f *GeneralFunc) IfMaxFileSizeExc(returnOrigIfMaxSizeExc bool, serviceName string, file *bytes.Buffer, maxFileSize int) (int, *bytes.Buffer, interface{}) {
+func (f *GeneralFunc) IfMaxFileSizeExc(returnOrigIfMaxSizeExc bool, serviceName, methodName string,
+	file *bytes.Buffer, maxFileSize int) (int, *bytes.Buffer, interface{}) {
 	logging.Logger.Debug("HTTP message body size exceeds the limit")
 	logging.Logger.Debug("HTTP message body size: " + strconv.Itoa(file.Len()) +
 		" MB, the allowed max file size: " + strconv.Itoa(maxFileSize) + " MB") //check if returning the original file option is enabled in this case or not
@@ -186,10 +242,18 @@ func (f *GeneralFunc) IfMaxFileSizeExc(returnOrigIfMaxSizeExc bool, serviceName 
 	if returnOrigIfMaxSizeExc {
 		return utils.NoModificationStatusCodeStr, file, nil
 	} else {
-		htmlErrPage := f.GenHtmlPage(utils.BlockPagePath,
-			"The Max file size is exceeded", serviceName, "NO ID", f.httpMsg.Request.RequestURI)
-		f.httpMsg.Response = f.ErrPageResp(http.StatusForbidden, htmlErrPage.Len())
-		return utils.OkStatusCodeStr, htmlErrPage, f.httpMsg.Response
+		if methodName == utils.ICAPModeResp {
+			htmlErrPage := f.GenHtmlPage(utils.BlockPagePath,
+				utils.ErrPageReasonMaxFileExceeded, serviceName, "NO ID", f.httpMsg.Request.RequestURI)
+			f.httpMsg.Response = f.ErrPageResp(http.StatusForbidden, htmlErrPage.Len())
+			return utils.OkStatusCodeStr, htmlErrPage, f.httpMsg.Response
+		} else {
+			htmlPage, req, err := f.ReqModErrPage(utils.ErrPageReasonMaxFileExceeded, serviceName, "NO ID")
+			if err != nil {
+				return utils.InternalServerErrStatusCodeStr, htmlPage, req
+			}
+			return utils.OkStatusCodeStr, htmlPage, req
+		}
 	}
 }
 
@@ -250,7 +314,7 @@ func (f *GeneralFunc) GenHtmlPage(path, reason, serviceName, identifierId, reqUr
 	logging.Logger.Info("preparing a block page")
 	htmlTmpl, _ := template.ParseFiles(path)
 	htmlErrPage := &bytes.Buffer{}
-	htmlTmpl.Execute(htmlErrPage, &errorPage{
+	htmlTmpl.Execute(htmlErrPage, &ErrorPage{
 		Reason:       reason,
 		ServiceName:  serviceName,
 		RequestedURL: reqUrl,
@@ -272,7 +336,7 @@ func (f *GeneralFunc) PreparingFileAfterScanning(scannedFile []byte, reqContentT
 
 // IfStatusIs204WithFile handling the HTTP message if the status should be 204 no modifications
 func (f *GeneralFunc) IfStatusIs204WithFile(methodName string, status int, file *bytes.Buffer, isGzip bool,
-	reqContentType ContentTypes.ContentType, httpMessage interface{}) ([]byte,
+	reqContentType ContentTypes.ContentType, httpMessage interface{}, isErr bool) ([]byte,
 	interface{}) {
 	var fileAfterPrep []byte
 	var err error
@@ -284,6 +348,12 @@ func (f *GeneralFunc) IfStatusIs204WithFile(methodName string, status int, file 
 	}
 
 	if methodName == utils.ICAPModeReq {
+		if isErr {
+			reqContentType = &ContentTypes.RegularFile{
+				Buf:     file,
+				Encoded: false,
+			}
+		}
 		fileAfterPrep = f.PreparingFileAfterScanning(file.Bytes(), reqContentType, methodName)
 	} else {
 		fileAfterPrep = file.Bytes()
@@ -301,6 +371,9 @@ func (f *GeneralFunc) ReturningHttpMessageWithFile(methodName string, file []byt
 	case utils.ICAPModeReq:
 		f.httpMsg.Request.Header.Set(utils.ContentLength, strconv.Itoa(len(string(file))))
 		f.httpMsg.Request.Body = io.NopCloser(bytes.NewBuffer(file))
+		if f.httpMsg.Request.URL.Scheme == "" {
+			f.httpMsg.Request.URL.Opaque = f.httpMsg.Request.URL.Host
+		}
 		return f.httpMsg.Request
 	case utils.ICAPModeResp:
 		f.httpMsg.Response.Header.Set(utils.ContentLength, strconv.Itoa(len(string(file))))

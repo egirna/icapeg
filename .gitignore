@@ -24,6 +24,7 @@ vendor/
 # Logs
 logs.txt
 log.json
+logs
 
 # Env file
 app.env

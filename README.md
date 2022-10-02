@@ -339,6 +339,7 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
 
 2. [Logging](LOGS.md)
 
+3. [Monitoring ICAPeg logs with ELK](Monitoring.md)
 
 ## Contributing
 
