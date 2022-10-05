@@ -5,10 +5,10 @@ jobs:
     name: codecov
     runs-on: ubuntu-latest
     steps:
-      - name: Set up Go 1.16
+      - name: Set up Go 1.19.1
         uses: actions/setup-go@v2
         with:
-          go-version: 1.16
+          go-version: 1.19.1
         id: go
 
       - name: Check out code into the Go module directory
@@ -23,7 +23,7 @@ jobs:
           fi
 
       - name: TestCov
-        run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...     
+        run:  go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
         
       - name: Upload coverage reports to Codecov with GitHub Action
         uses: codecov/codecov-action@v3
