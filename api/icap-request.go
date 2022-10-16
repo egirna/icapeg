@@ -50,9 +50,6 @@ func (i *ICAPRequest) RequestInitialization() error {
 	logging.Logger.Debug("Creating an instance from ICAPeg configuration")
 	i.appCfg = config.App()
 
-	//adding headers to the log
-	i.addHeadersToLogs()
-
 	// checking if the service doesn't exist in toml file
 	// if it does not exist, the response will be 404 ICAP Service Not Found
 	logging.Logger.Debug("checking if the service doesn't exist in toml file")
@@ -112,7 +109,6 @@ func (i *ICAPRequest) RequestInitialization() error {
 func (i *ICAPRequest) RequestProcessing() {
 	logging.Logger.Info("processing ICAP request upon the service and method required")
 	partial := false
-
 	if i.methodName != utils.ICAPModeOptions {
 		file := &bytes.Buffer{}
 		fileLen := 0
@@ -150,12 +146,14 @@ func (i *ICAPRequest) RequestProcessing() {
 	// for options mode
 	case utils.ICAPModeOptions:
 		logging.Logger.Debug("OPTIONS mode")
+		i.LogICAPReqHeaders(utils.ICAPModeOptions)
 		i.optionsMode(i.serviceName)
 		break
 
 	//for reqmod and respmod
 	default:
 		logging.Logger.Debug("Response or Request mode")
+		i.LogICAPReqHeaders(i.methodName)
 		i.RespAndReqMods(partial)
 	}
 
@@ -207,7 +205,6 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 	case utils.InternalServerErrStatusCodeStr:
 		logging.Logger.Debug(i.serviceName + " returned ICAP response with status code " + strconv.Itoa(utils.InternalServerErrStatusCodeStr))
 		i.w.WriteHeader(IcapStatusCode, nil, false)
-		break
 	case utils.Continue:
 		logging.Logger.Debug(i.serviceName + " returned ICAP response with status code " + strconv.Itoa(utils.Continue))
 		//in case the service returned 100 continue
@@ -220,11 +217,9 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 			i.req.Response.Body = io.NopCloser(bytes.NewBuffer(httpMsgBody.Bytes()))
 		}
 		i.RespAndReqMods(false)
-		break
 	case utils.RequestTimeOutStatusCodeStr:
 		logging.Logger.Debug(i.serviceName + " returned ICAP response with status code " + strconv.Itoa(utils.RequestTimeOutStatusCodeStr))
 		i.w.WriteHeader(IcapStatusCode, nil, false)
-		break
 	case utils.NoModificationStatusCodeStr:
 		logging.Logger.Debug(i.serviceName + " returned ICAP response with status code " + strconv.Itoa(utils.NoModificationStatusCodeStr))
 		if i.Is204Allowed {
@@ -232,16 +227,14 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 		} else {
 			i.w.WriteHeader(utils.OkStatusCodeStr, httpMsg, true)
 		}
-		break
 	case utils.OkStatusCodeStr:
 		logging.Logger.Debug(i.serviceName + " returned ICAP response with status code " + strconv.Itoa(utils.OkStatusCodeStr))
 		i.w.WriteHeader(utils.OkStatusCodeStr, httpMsg, true)
-		break
 	case utils.BadRequestStatusCodeStr:
 		logging.Logger.Debug(i.serviceName + " returned ICAP response with status code " + strconv.Itoa(utils.BadRequestStatusCodeStr))
 		i.w.WriteHeader(IcapStatusCode, httpMsg, true)
-		break
 	}
+	i.LogICAPResHeaders(i.methodName)
 }
 
 // adding headers to the logging
@@ -397,4 +390,32 @@ func (i *ICAPRequest) preview() *bytes.Buffer {
 	buf := new(bytes.Buffer)
 	buf.ReadFrom(c)
 	return buf
+}
+
+func (i *ICAPRequest) LogICAPReqHeaders(methodName string) {
+	logging.Logger.Debug("ICAP " + methodName + " request headers")
+	for key, value := range i.req.Header {
+		values := ""
+		for i := 0; i < len(value); i++ {
+			values += value[0]
+			if i != len(value)-1 {
+				values += ", "
+			}
+		}
+		logging.Logger.Debug("ICAP " + methodName + " request header -> " + key + ": " + values)
+	}
+}
+
+func (i *ICAPRequest) LogICAPResHeaders(methodName string) {
+	logging.Logger.Debug("ICAP " + methodName + " response headers")
+	for key, value := range i.w.Header() {
+		values := ""
+		for i := 0; i < len(value); i++ {
+			values += value[0]
+			if i != len(value)-1 {
+				values += ", "
+			}
+		}
+		logging.Logger.Debug("ICAP " + methodName + " response header -> " + key + ": " + values)
+	}
 }
