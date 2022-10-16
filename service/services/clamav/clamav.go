@@ -12,6 +12,7 @@ import (
 )
 
 func (c *Clamav) Processing(partial bool) (int, interface{}, map[string]string) {
+	c.generalFunc.LogHTTPMsgHeaders(c.methodName, false)
 	logging.Logger.Info(c.serviceName + " service has started processing")
 	serviceHeaders := make(map[string]string)
 	// no need to scan part of the file, this service needs all the file at ine time
@@ -144,6 +145,7 @@ func (c *Clamav) Processing(partial bool) (int, interface{}, map[string]string) 
 		logging.Logger.Info(c.serviceName + " service has stopped processing")
 		return utils.NoModificationStatusCodeStr, msg, serviceHeaders
 	}
+	c.generalFunc.LogHTTPMsgHeaders(c.methodName, true)
 	logging.Logger.Info(c.serviceName + " service has stopped processing")
 	return utils.NoModificationStatusCodeStr, nil, serviceHeaders
 

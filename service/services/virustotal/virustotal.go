@@ -17,6 +17,7 @@ import (
 
 // Processing is a func used for to processing the http message
 func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]string) {
+	v.generalFunc.LogHTTPMsgHeaders(v.methodName, false)
 	logging.Logger.Info(v.serviceName + " service has stopped processing partially")
 	serviceHeaders := make(map[string]string)
 
@@ -118,6 +119,7 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 	}
 	//returning the scanned file if everything is ok
 	scannedFile = v.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, v.methodName)
+	v.generalFunc.LogHTTPMsgHeaders(v.methodName, true)
 	logging.Logger.Info(v.serviceName + " service has stopped processing")
 	return utils.OkStatusCodeStr, v.generalFunc.ReturningHttpMessageWithFile(v.methodName, scannedFile), serviceHeaders
 }

@@ -17,6 +17,7 @@ import (
 )
 
 func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]string) {
+	c.generalFunc.LogHTTPMsgHeaders(c.methodName, false)
 	logging.Logger.Info(c.serviceName + " service has started processing")
 	// no need to scan part of the file, this service needs all the file at one time
 	if partial {
@@ -173,6 +174,7 @@ func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]st
 	}
 	serviceHeaders["CleanResult"] = "true"
 	scannedFile := c.generalFunc.PreparingFileAfterScanning(file.Bytes(), reqContentType, c.methodName)
+	c.generalFunc.LogHTTPMsgHeaders(c.methodName, true)
 	logging.Logger.Info(c.serviceName + " service has stopped processing")
 	return utils.OkStatusCodeStr, c.generalFunc.ReturningHttpMessageWithFile(c.methodName, scannedFile), serviceHeaders
 }

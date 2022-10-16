@@ -12,6 +12,7 @@ import (
 
 // Processing is a func used for to processing the http message
 func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
+	e.generalFunc.LogHTTPMsgHeaders(e.methodName, false)
 	logging.Logger.Info(e.serviceName + " service has started processing")
 	serviceHeaders := make(map[string]string)
 	// no need to scan part of the file, this service needs all the file at ine time
@@ -83,6 +84,7 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 
 	//returning the scanned file if everything is ok
 	scannedFile = e.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, e.methodName)
+	e.generalFunc.LogHTTPMsgHeaders(e.methodName, true)
 	logging.Logger.Info(e.serviceName + " service has stopped processing")
 	return utils.OkStatusCodeStr, e.generalFunc.ReturningHttpMessageWithFile(e.methodName, scannedFile), serviceHeaders
 }

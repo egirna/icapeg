@@ -18,6 +18,8 @@ import (
 
 // Processing is a func used for to processing the http message
 func (h *Hashlookup) Processing(partial bool) (int, interface{}, map[string]string) {
+	h.generalFunc.LogHTTPMsgHeaders(h.methodName, false)
+
 	logging.Logger.Info(h.serviceName + " service has started processing")
 	serviceHeaders := make(map[string]string)
 	// no need to scan part of the file, this service needs all the file at ine time
@@ -117,6 +119,7 @@ func (h *Hashlookup) Processing(partial bool) (int, interface{}, map[string]stri
 
 	//returning the scanned file if everything is ok
 	scannedFile = h.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, h.methodName)
+	h.generalFunc.LogHTTPMsgHeaders(h.methodName, true)
 	logging.Logger.Info(h.serviceName + " service has stopped processing")
 	return utils.OkStatusCodeStr, h.generalFunc.ReturningHttpMessageWithFile(h.methodName, scannedFile), serviceHeaders
 }

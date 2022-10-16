@@ -14,6 +14,8 @@ import (
 )
 
 func (g *Grayimages) Processing(partial bool) (int, interface{}, map[string]string) {
+	g.generalFunc.LogHTTPMsgHeaders(g.methodName, false)
+
 	logging.Logger.Info(g.serviceName + " service has started processing")
 	serviceHeaders := make(map[string]string)
 
@@ -102,6 +104,7 @@ func (g *Grayimages) Processing(partial bool) (int, interface{}, map[string]stri
 	}
 	// send the image after gray scale
 	scannedFile = g.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, g.methodName)
+	g.generalFunc.LogHTTPMsgHeaders(g.methodName, true)
 	logging.Logger.Info(g.serviceName + " service has stopped processing")
 	return utils.OkStatusCodeStr, g.generalFunc.ReturningHttpMessageWithFile(g.methodName, scannedFile), serviceHeaders
 }
