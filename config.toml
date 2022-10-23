@@ -92,7 +92,7 @@ resp_mode=true # enable support for ICAP response mode
 shadow_service=false
 preview_bytes = "1024" #byte
 preview_enabled = true# options send preview header or not
-process_extensions = ["pdf", "zip", "com"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
+process_extensions = ["exe", "pdf", "zip", "com"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
 reject_extensions = ["docx"]
 bypass_extensions = ["*"]
 scan_url = "https://api.scanii.com/v2.1/files" #
