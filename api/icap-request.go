@@ -130,11 +130,11 @@ func (i *ICAPRequest) RequestProcessing() {
 			partial = false
 
 		} else {
-			if i.req.Header.Get("Preview") != "" && i.req.EndIndicator != "0; ieof" {
+			if i.req.Header.Get("Preview") != "" && i.req.EndIndicator != "0; ieof" && i.req.EndIndicator != "" {
 				partial = true
 			}
 		}
-		if i.req.Header.Get("Preview") != "" && i.req.EndIndicator != "0; ieof" {
+		if i.req.Header.Get("Preview") != "" && i.req.EndIndicator != "0; ieof" && i.req.EndIndicator != "" {
 			partial = true
 		}
 	}
