@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"icapeg/config"
 	"icapeg/consts"
@@ -27,6 +28,10 @@ type ICAPRequest struct {
 	serviceName            string
 	methodName             string
 	vendor                 string
+	optionsReqHeaders      string
+	optionsRespHeaders     string
+	generalReqHeaders      string
+	generalRespHeaders     string
 }
 
 // NewICAPRequest is a func to create a new instance from struct IcapRequest yo handle upcoming ICAP requests
@@ -146,14 +151,19 @@ func (i *ICAPRequest) RequestProcessing() {
 	// for options mode
 	case utils.ICAPModeOptions:
 		logging.Logger.Debug("OPTIONS mode")
-		i.LogICAPReqHeaders(utils.ICAPModeOptions)
+		i.optionsReqHeaders = i.LogICAPReqHeaders()
 		i.optionsMode(i.serviceName)
+		optionsReqResp := make(map[string]interface{})
+		optionsReqResp["ICAP-OPTIONS-Request"] = i.optionsReqHeaders
+		optionsReqResp["ICAP-OPTIONS-Response"] = i.optionsRespHeaders
+		jsonHeaders, _ := json.Marshal(optionsReqResp)
+		logging.Logger.Debug(string(jsonHeaders))
 		break
 
 	//for reqmod and respmod
 	default:
 		logging.Logger.Debug("Response or Request mode")
-		i.LogICAPReqHeaders(i.methodName)
+		i.generalReqHeaders = i.LogICAPReqHeaders()
 		i.RespAndReqMods(partial)
 	}
 
@@ -234,7 +244,19 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 		logging.Logger.Debug(i.serviceName + " returned ICAP response with status code " + strconv.Itoa(utils.BadRequestStatusCodeStr))
 		i.w.WriteHeader(IcapStatusCode, httpMsg, true)
 	}
-	i.LogICAPResHeaders(i.methodName)
+	i.generalRespHeaders = i.LogICAPResHeaders(IcapStatusCode)
+	generalReqResp := make(map[string]interface{})
+	if i.methodName == utils.ICAPModeReq {
+		generalReqResp["ICAP-REQMOD-Request"] = i.generalReqHeaders
+		generalReqResp["ICAP-REQMOD-Response"] = i.generalRespHeaders
+
+	} else {
+		generalReqResp["ICAP-RESPMOD-Request"] = i.generalReqHeaders
+		generalReqResp["ICAP-RESPMOD-Response"] = i.generalRespHeaders
+	}
+	jsonHeaders, _ := json.Marshal(generalReqResp)
+	logging.Logger.Debug(string(jsonHeaders))
+
 }
 
 // adding headers to the logging
@@ -378,6 +400,7 @@ func (i *ICAPRequest) optionsMode(serviceName string) {
 	}
 	i.h.Set("Transfer-Preview", utils.Any)
 	i.w.WriteHeader(http.StatusOK, nil, false)
+	i.optionsRespHeaders = i.LogICAPResHeaders(http.StatusOK)
 }
 
 // preview function is used to get the rest of the http message from the client after sending
@@ -392,8 +415,9 @@ func (i *ICAPRequest) preview() *bytes.Buffer {
 	return buf
 }
 
-func (i *ICAPRequest) LogICAPReqHeaders(methodName string) {
-	logging.Logger.Debug("ICAP " + methodName + " request headers")
+func (i *ICAPRequest) LogICAPReqHeaders() string {
+	reqHeaders := make(map[string]interface{})
+	reqHeaders["ICAP-Requested-URL"] = "icap://" + i.req.URL.Host + "/" + i.serviceName
 	for key, value := range i.req.Header {
 		values := ""
 		for i := 0; i < len(value); i++ {
@@ -402,12 +426,15 @@ func (i *ICAPRequest) LogICAPReqHeaders(methodName string) {
 				values += ", "
 			}
 		}
-		logging.Logger.Debug("ICAP " + methodName + " request header -> " + key + ": " + values)
+		reqHeaders[key] = value
 	}
+	jsonHeaders, _ := json.Marshal(reqHeaders)
+	return string(jsonHeaders)
 }
 
-func (i *ICAPRequest) LogICAPResHeaders(methodName string) {
-	logging.Logger.Debug("ICAP " + methodName + " response headers")
+func (i *ICAPRequest) LogICAPResHeaders(statusCode int) string {
+	respHeaders := make(map[string]interface{})
+	respHeaders["ICAP-Response-Status-Code"] = statusCode
 	for key, value := range i.w.Header() {
 		values := ""
 		for i := 0; i < len(value); i++ {
@@ -416,6 +443,8 @@ func (i *ICAPRequest) LogICAPResHeaders(methodName string) {
 				values += ", "
 			}
 		}
-		logging.Logger.Debug("ICAP " + methodName + " response header -> " + key + ": " + values)
+		respHeaders[key] = value
 	}
+	jsonHeaders, _ := json.Marshal(respHeaders)
+	return string(jsonHeaders)
 }
