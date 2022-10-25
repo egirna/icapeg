@@ -16,14 +16,18 @@ import (
 	"time"
 )
 
-func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]string) {
-	c.generalFunc.LogHTTPMsgHeaders(c.methodName, false)
+func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]string, string) {
+	c.generalFunc.LogHTTPMsgHeaders(c.methodName)
 	logging.Logger.Info(c.serviceName + " service has started processing")
 	// no need to scan part of the file, this service needs all the file at one time
 	if partial {
 		logging.Logger.Info(c.serviceName + " service has stopped processing partially")
-		return utils.Continue, nil, nil
+		return utils.Continue, nil, nil, ""
 	}
+
+	msgHeaders := make(map[string]interface{})
+	msgHeaders["HTTP-Msg-Before-Processing"] = c.generalFunc.LogHTTPMsgHeaders(c.methodName)
+	logging.Logger.Info(c.serviceName + " service has started processing")
 
 	// ICAP response headers
 	serviceHeaders := make(map[string]string)
@@ -32,7 +36,7 @@ func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]st
 	if err != nil {
 		logging.Logger.Error(c.serviceName + " error: " + err.Error())
 		logging.Logger.Info(c.serviceName + " service has stopped processing")
-		return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
+		return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders, ""
 	}
 
 	//getting the extension of the file
@@ -61,7 +65,10 @@ func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]st
 		c.processExts, c.rejectExts, c.bypassExts, c.return400IfFileExtRejected, isGzip,
 		c.serviceName, c.methodName, CloudMersiveIdentifier, c.httpMsg.Request.RequestURI, reqContentType, file)
 	if !isProcess {
-		return icapStatus, httpMsg, serviceHeaders
+		logging.Logger.Info(c.serviceName + " service has stopped processing")
+		msgHeaders["HTTP-Msg-After-Processing"] = c.generalFunc.LogHTTPMsgHeaders(c.methodName)
+		jsonHeaders, _ := json.Marshal(msgHeaders)
+		return icapStatus, httpMsg, serviceHeaders, string(jsonHeaders)
 	}
 
 	//check if the file size is greater than max file size of the service or 3M size, according to account payment plans ,etc
@@ -70,33 +77,39 @@ func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]st
 		fileAfterPrep, httpMsg := c.generalFunc.IfStatusIs204WithFile(c.methodName, status, file, isGzip, reqContentType, httpMsg, true)
 		if fileAfterPrep == nil && httpMsg == nil {
 			logging.Logger.Info(c.serviceName + " service has stopped processing")
-			return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
+			return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders, ""
 		}
 		switch msg := httpMsg.(type) {
 		case *http.Request:
 			msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
 			logging.Logger.Info(c.serviceName + " service has stopped processing")
-			return status, msg, nil
+			msgHeaders["HTTP-Msg-After-Processing"] = c.generalFunc.LogHTTPMsgHeaders(c.methodName)
+			jsonHeaders, _ := json.Marshal(msgHeaders)
+			return status, msg, nil, string(jsonHeaders)
 		case *http.Response:
 			msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
 			logging.Logger.Info(c.serviceName + " service has stopped processing")
-			return status, msg, nil
+			msgHeaders["HTTP-Msg-After-Processing"] = c.generalFunc.LogHTTPMsgHeaders(c.methodName)
+			jsonHeaders, _ := json.Marshal(msgHeaders)
+			return status, msg, nil, string(jsonHeaders)
 		}
-		return status, nil, nil
+		msgHeaders["HTTP-Msg-After-Processing"] = c.generalFunc.LogHTTPMsgHeaders(c.methodName)
+		jsonHeaders, _ := json.Marshal(msgHeaders)
+		return status, nil, nil, string(jsonHeaders)
 	}
 	// sending request to cloudmersive api
 	serviceResp, err := c.SendFileToAPI(file, fileName)
 	if err != nil {
 		logging.Logger.Error(c.serviceName + " error: " + err.Error())
 		logging.Logger.Info(c.serviceName + " service has stopped processing")
-		return serviceResp.StatusCode, nil, serviceHeaders
+		return serviceResp.StatusCode, nil, serviceHeaders, ""
 	}
 	// getting response body
 	body, err := ioutil.ReadAll(serviceResp.Body)
 	if err != nil {
 		logging.Logger.Error(c.serviceName + " error: " + err.Error())
 		logging.Logger.Info(c.serviceName + " service has stopped processing")
-		return serviceResp.StatusCode, nil, serviceHeaders
+		return serviceResp.StatusCode, nil, serviceHeaders, ""
 	}
 	var data map[string]interface{}
 	json.Unmarshal(body, &data)
@@ -107,8 +120,10 @@ func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]st
 		errPage := c.generalFunc.GenHtmlPage(utils.BlockPagePath, msg, c.serviceName, serviceResp.Header["Request-Context"][0], c.httpMsg.Request.RequestURI)
 		c.httpMsg.Response = c.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
 		c.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
+		msgHeaders["HTTP-Msg-After-Processing"] = c.generalFunc.LogHTTPMsgHeaders(c.methodName)
+		jsonHeaders, _ := json.Marshal(msgHeaders)
 		logging.Logger.Info(c.serviceName + " service has stopped processing")
-		return utils.OkStatusCodeStr, c.httpMsg.Response, serviceHeaders
+		return utils.OkStatusCodeStr, c.httpMsg.Response, serviceHeaders, string(jsonHeaders)
 	}
 	// check CleanResult, if false detect why
 	var reason string
@@ -136,13 +151,13 @@ func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]st
 		if reason != "" {
 			if c.return400IfFileExtRejected {
 				logging.Logger.Info(c.serviceName + " service has stopped processing")
-				return utils.BadRequestStatusCodeStr, nil, serviceHeaders
+				return utils.BadRequestStatusCodeStr, nil, serviceHeaders, ""
 			}
 			errPage := c.generalFunc.GenHtmlPage(utils.BlockPagePath, reason, c.serviceName, serviceResp.Header["Request-Context"][0], c.httpMsg.Request.RequestURI)
 			c.httpMsg.Response = c.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
 			c.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
 			logging.Logger.Info(c.serviceName + " service has stopped processing")
-			return utils.OkStatusCodeStr, c.httpMsg.Response, serviceHeaders
+			return utils.OkStatusCodeStr, c.httpMsg.Response, serviceHeaders, ""
 		}
 		logging.Logger.Debug(c.serviceName + " error: " + reason)
 	}
@@ -162,21 +177,27 @@ func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]st
 			c.httpMsg.Response = c.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
 			c.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
 			logging.Logger.Info(c.serviceName + " service has stopped processing")
-			return utils.OkStatusCodeStr, c.httpMsg.Response, serviceHeaders
+			msgHeaders["HTTP-Msg-After-Processing"] = c.generalFunc.LogHTTPMsgHeaders(c.methodName)
+			jsonHeaders, _ := json.Marshal(msgHeaders)
+			return utils.OkStatusCodeStr, c.httpMsg.Response, serviceHeaders, string(jsonHeaders)
 		} else {
 			htmlPage, req, err := c.generalFunc.ReqModErrPage(reason, c.serviceName, CloudMersiveIdentifier)
 			if err != nil {
-				return utils.InternalServerErrStatusCodeStr, nil, nil
+				return utils.InternalServerErrStatusCodeStr, nil, nil, ""
 			}
 			req.Body = io.NopCloser(htmlPage)
-			return utils.OkStatusCodeStr, req, serviceHeaders
+			msgHeaders["HTTP-Msg-After-Processing"] = c.generalFunc.LogHTTPMsgHeaders(c.methodName)
+			jsonHeaders, _ := json.Marshal(msgHeaders)
+			return utils.OkStatusCodeStr, req, serviceHeaders, string(jsonHeaders)
 		}
 	}
 	serviceHeaders["CleanResult"] = "true"
 	scannedFile := c.generalFunc.PreparingFileAfterScanning(file.Bytes(), reqContentType, c.methodName)
-	c.generalFunc.LogHTTPMsgHeaders(c.methodName, true)
+	c.generalFunc.LogHTTPMsgHeaders(c.methodName)
 	logging.Logger.Info(c.serviceName + " service has stopped processing")
-	return utils.OkStatusCodeStr, c.generalFunc.ReturningHttpMessageWithFile(c.methodName, scannedFile), serviceHeaders
+	msgHeaders["HTTP-Msg-After-Processing"] = c.generalFunc.LogHTTPMsgHeaders(c.methodName)
+	jsonHeaders, _ := json.Marshal(msgHeaders)
+	return utils.OkStatusCodeStr, c.generalFunc.ReturningHttpMessageWithFile(c.methodName, scannedFile), serviceHeaders, string(jsonHeaders)
 }
 
 func (c *CloudMersive) SendFileToAPI(f *bytes.Buffer, filename string) (*http.Response, error) {

@@ -239,6 +239,7 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 		if i.Is204Allowed {
 			i.w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
 		} else {
+			IcapStatusCode = utils.OkStatusCodeStr
 			i.w.WriteHeader(utils.OkStatusCodeStr, httpMsg, true)
 		}
 	case utils.OkStatusCodeStr:
@@ -248,9 +249,7 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 		logging.Logger.Debug(i.serviceName + " returned ICAP response with status code " + strconv.Itoa(utils.BadRequestStatusCodeStr))
 		i.w.WriteHeader(IcapStatusCode, httpMsg, true)
 	}
-	if IcapStatusCode != utils.Continue {
-		i.allHeaders(IcapStatusCode, httpMshHeaders)
-	}
+	i.allHeaders(IcapStatusCode, httpMshHeaders)
 }
 
 func (i *ICAPRequest) allHeaders(IcapStatusCode int, httpMshHeaders string) {
@@ -264,7 +263,9 @@ func (i *ICAPRequest) allHeaders(IcapStatusCode int, httpMshHeaders string) {
 		generalReqResp["ICAP-RESPMOD-Request"] = i.generalReqHeaders
 		generalReqResp["ICAP-RESPMOD-Response"] = i.generalRespHeaders
 	}
-	generalReqResp["HTTP-Headers"] = httpMshHeaders
+	if IcapStatusCode == utils.OkStatusCodeStr {
+		generalReqResp["HTTP-Headers"] = httpMshHeaders
+	}
 	jsonHeaders, _ := json.Marshal(generalReqResp)
 	final := string(jsonHeaders)
 	final = strings.ReplaceAll(final, `\`, "")

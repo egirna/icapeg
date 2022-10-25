@@ -16,16 +16,17 @@ import (
 )
 
 // Processing is a func used for to processing the http message
-func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]string) {
-	v.generalFunc.LogHTTPMsgHeaders(v.methodName, false)
-	logging.Logger.Info(v.serviceName + " service has stopped processing partially")
+func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]string, string) {
 	serviceHeaders := make(map[string]string)
 
 	// no need to scan part of the file, this service needs all the file at ine time
 	if partial {
 		logging.Logger.Info(v.serviceName + " service has stopped processing partially")
-		return utils.Continue, nil, nil
+		return utils.Continue, nil, nil, ""
 	}
+	msgHeaders := make(map[string]interface{})
+	msgHeaders["HTTP-Msg-Before-Processing"] = v.generalFunc.LogHTTPMsgHeaders(v.methodName)
+	logging.Logger.Info(v.serviceName + " service has started processing")
 
 	isGzip := false
 
@@ -34,7 +35,7 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 	if err != nil {
 		logging.Logger.Error(v.serviceName + " error: " + err.Error())
 		logging.Logger.Info(v.serviceName + " service has stopped processing")
-		return utils.InternalServerErrStatusCodeStr, nil, nil
+		return utils.InternalServerErrStatusCodeStr, nil, nil, ""
 	}
 
 	//getting the extension of the file
@@ -60,9 +61,18 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 		v.serviceName, v.methodName, VirustotalIdentifier, v.httpMsg.Request.RequestURI, reqContentType, file)
 	if !isProcess {
 		logging.Logger.Info(v.serviceName + " service has stopped processing")
-		return icapStatus, httpMsg, serviceHeaders
+		msgHeaders["HTTP-Msg-After-Processing"] = v.generalFunc.LogHTTPMsgHeaders(v.methodName)
+		jsonHeaders, _ := json.Marshal(msgHeaders)
+		return icapStatus, httpMsg, serviceHeaders, string(jsonHeaders)
 	}
 
+	if v.generalFunc.ShouldUpdateContentLengthAfterPreview(v.methodName, file.Len()) {
+		if v.methodName == utils.ICAPModeReq {
+			v.httpMsg.Request.Header.Set("Content-Length", strconv.Itoa(file.Len()))
+		} else {
+			v.httpMsg.Response.Header.Set("Content-Length", strconv.Itoa(file.Len()))
+		}
+	}
 	//check if the file size is greater than max file size of the service
 	//if yes we will return 200 ok or 204 no modification, it depends on the configuration of the service
 	if v.maxFileSize != 0 && v.maxFileSize < file.Len() {
@@ -70,19 +80,25 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 		fileAfterPrep, httpMsg := v.generalFunc.IfStatusIs204WithFile(v.methodName, status, file, isGzip, reqContentType, httpMsg, true)
 		if fileAfterPrep == nil && httpMsg == nil {
 			logging.Logger.Info(v.serviceName + " service has stopped processing")
-			return utils.InternalServerErrStatusCodeStr, nil, nil
+			return utils.InternalServerErrStatusCodeStr, nil, nil, ""
 		}
 		switch msg := httpMsg.(type) {
 		case *http.Request:
 			msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
 			logging.Logger.Info(v.serviceName + " service has stopped processing")
-			return status, msg, nil
+			msgHeaders["HTTP-Msg-After-Processing"] = v.generalFunc.LogHTTPMsgHeaders(v.methodName)
+			jsonHeaders, _ := json.Marshal(msgHeaders)
+			return status, msg, nil, string(jsonHeaders)
 		case *http.Response:
 			msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
 			logging.Logger.Info(v.serviceName + " service has stopped processing")
-			return status, msg, nil
+			msgHeaders["HTTP-Msg-After-Processing"] = v.generalFunc.LogHTTPMsgHeaders(v.methodName)
+			jsonHeaders, _ := json.Marshal(msgHeaders)
+			return status, msg, nil, string(jsonHeaders)
 		}
-		return status, nil, nil
+		msgHeaders["HTTP-Msg-After-Processing"] = v.generalFunc.LogHTTPMsgHeaders(v.methodName)
+		jsonHeaders, _ := json.Marshal(msgHeaders)
+		return status, nil, nil, string(jsonHeaders)
 	}
 
 	scannedFile := file.Bytes()
@@ -91,10 +107,10 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 		logging.Logger.Error(v.serviceName + " error: " + err.Error())
 		if strings.Contains(err.Error(), "context deadline exceeded") {
 			logging.Logger.Info(v.serviceName + " service has stopped processing")
-			return utils.RequestTimeOutStatusCodeStr, nil, nil
+			return utils.RequestTimeOutStatusCodeStr, nil, nil, ""
 		}
 		logging.Logger.Info(v.serviceName + " service has stopped processing")
-		return utils.InternalServerErrStatusCodeStr, nil, nil
+		return utils.InternalServerErrStatusCodeStr, nil, nil, ""
 	}
 	serviceHeaders["Virustotal-Total"] = total
 	serviceHeaders["Virustotal-Positives"] = score
@@ -107,21 +123,24 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 			v.httpMsg.Response = v.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
 			v.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
 			logging.Logger.Info(v.serviceName + " service has stopped processing")
-			return utils.OkStatusCodeStr, v.httpMsg.Response, serviceHeaders
+			msgHeaders["HTTP-Msg-After-Processing"] = v.generalFunc.LogHTTPMsgHeaders(v.methodName)
+			jsonHeaders, _ := json.Marshal(msgHeaders)
+			return utils.OkStatusCodeStr, v.httpMsg.Response, serviceHeaders, string(jsonHeaders)
 		} else {
 			htmlPage, req, err := v.generalFunc.ReqModErrPage(utils.ErrPageReasonFileIsNotSafe, v.serviceName, resource)
 			if err != nil {
-				return utils.InternalServerErrStatusCodeStr, nil, nil
+				return utils.InternalServerErrStatusCodeStr, nil, nil, ""
 			}
 			req.Body = io.NopCloser(htmlPage)
-			return utils.OkStatusCodeStr, req, serviceHeaders
+			return utils.OkStatusCodeStr, req, serviceHeaders, ""
 		}
 	}
 	//returning the scanned file if everything is ok
 	scannedFile = v.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, v.methodName)
-	v.generalFunc.LogHTTPMsgHeaders(v.methodName, true)
+	msgHeaders["HTTP-Msg-After-Processing"] = v.generalFunc.LogHTTPMsgHeaders(v.methodName)
+	jsonHeaders, _ := json.Marshal(msgHeaders)
 	logging.Logger.Info(v.serviceName + " service has stopped processing")
-	return utils.OkStatusCodeStr, v.generalFunc.ReturningHttpMessageWithFile(v.methodName, scannedFile), serviceHeaders
+	return utils.OkStatusCodeStr, v.generalFunc.ReturningHttpMessageWithFile(v.methodName, scannedFile), serviceHeaders, string(jsonHeaders)
 }
 
 // SendFileToScan is a function to send the file to API

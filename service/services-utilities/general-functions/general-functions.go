@@ -463,15 +463,22 @@ func (f *GeneralFunc) GetMimeExtension(data []byte, contentType string, filename
 	return kind.Extension
 
 }
-
-func (f *GeneralFunc) LogHTTPMsgHeaders(methodName string, after bool) {
-
+func (f *GeneralFunc) ShouldUpdateContentLengthAfterPreview(methodName string, fileLen int) bool {
 	if methodName == utils.ICAPModeReq {
-		if after {
-			logging.Logger.Debug("HTTP request headers after processing by the service")
-		} else {
-			logging.Logger.Debug("HTTP request headers before processing by the service")
+		if f.httpMsg.Request.Header.Get("Content-Length") != "" {
+			return true
 		}
+		return false
+	} else {
+		if f.httpMsg.Response.Header.Get("Content-Length") != "" {
+			return true
+		}
+		return false
+	}
+}
+func (f *GeneralFunc) LogHTTPMsgHeaders(methodName string) string {
+	msgHeaders := make(map[string]interface{})
+	if methodName == utils.ICAPModeReq {
 		for key, value := range f.httpMsg.Request.Header {
 			values := ""
 			for i := 0; i < len(value); i++ {
@@ -480,14 +487,9 @@ func (f *GeneralFunc) LogHTTPMsgHeaders(methodName string, after bool) {
 					values += ", "
 				}
 			}
-			logging.Logger.Debug("HTTP request header -> " + key + ": " + values)
+			msgHeaders[key] = values
 		}
 	} else {
-		if after {
-			logging.Logger.Debug("HTTP response headers after processing by the service")
-		} else {
-			logging.Logger.Debug("HTTP response headers before processing by the service")
-		}
 		for key, value := range f.httpMsg.Response.Header {
 			values := ""
 			for i := 0; i < len(value); i++ {
@@ -496,7 +498,9 @@ func (f *GeneralFunc) LogHTTPMsgHeaders(methodName string, after bool) {
 					values += ", "
 				}
 			}
-			logging.Logger.Debug("HTTP response header -> " + key + ": " + values)
+			msgHeaders[key] = values
 		}
 	}
+	jsonHeaders, _ := json.Marshal(msgHeaders)
+	return string(jsonHeaders)
 }

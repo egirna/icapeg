@@ -17,16 +17,19 @@ import (
 )
 
 // Processing is a func used for to processing the http message
-func (h *Hashlookup) Processing(partial bool) (int, interface{}, map[string]string) {
-	h.generalFunc.LogHTTPMsgHeaders(h.methodName, false)
+func (h *Hashlookup) Processing(partial bool) (int, interface{}, map[string]string, string) {
+	h.generalFunc.LogHTTPMsgHeaders(h.methodName)
 
 	logging.Logger.Info(h.serviceName + " service has started processing")
 	serviceHeaders := make(map[string]string)
 	// no need to scan part of the file, this service needs all the file at ine time
 	if partial {
 		logging.Logger.Info(h.serviceName + " service has stopped processing partially")
-		return utils.Continue, nil, nil
+		return utils.Continue, nil, nil, ""
 	}
+	h.generalFunc.LogHTTPMsgHeaders(h.methodName)
+	msgHeaders := make(map[string]interface{})
+	msgHeaders["HTTP-Msg-Before-Processing"] = h.generalFunc.LogHTTPMsgHeaders(h.methodName)
 
 	isGzip := false
 
@@ -35,7 +38,7 @@ func (h *Hashlookup) Processing(partial bool) (int, interface{}, map[string]stri
 	if err != nil {
 		logging.Logger.Error(h.serviceName + " error: " + err.Error())
 		logging.Logger.Info(h.serviceName + " service has stopped processing")
-		return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
+		return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders, ""
 	}
 	//getting the extension of the file
 	var contentType []string
@@ -62,7 +65,9 @@ func (h *Hashlookup) Processing(partial bool) (int, interface{}, map[string]stri
 		h.serviceName, h.methodName, HashLookupIdentifier, h.httpMsg.Request.RequestURI, reqContentType, file)
 	if !isProcess {
 		logging.Logger.Info(h.serviceName + " service has stopped processing")
-		return icapStatus, httpMsg, serviceHeaders
+		msgHeaders["HTTP-Msg-After-Processing"] = h.generalFunc.LogHTTPMsgHeaders(h.methodName)
+		jsonHeaders, _ := json.Marshal(msgHeaders)
+		return icapStatus, httpMsg, serviceHeaders, string(jsonHeaders)
 	}
 
 	//check if the file size is greater than max file size of the service
@@ -72,19 +77,25 @@ func (h *Hashlookup) Processing(partial bool) (int, interface{}, map[string]stri
 		fileAfterPrep, httpMsg := h.generalFunc.IfStatusIs204WithFile(h.methodName, status, file, isGzip, reqContentType, httpMsg, true)
 		if fileAfterPrep == nil && httpMsg == nil {
 			logging.Logger.Info(h.serviceName + " service has stopped processing")
-			return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
+			return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders, ""
 		}
 		switch msg := httpMsg.(type) {
 		case *http.Request:
 			msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
 			logging.Logger.Info(h.serviceName + " service has stopped processing")
-			return status, msg, nil
+			msgHeaders["HTTP-Msg-After-Processing"] = h.generalFunc.LogHTTPMsgHeaders(h.methodName)
+			jsonHeaders, _ := json.Marshal(msgHeaders)
+			return status, msg, nil, string(jsonHeaders)
 		case *http.Response:
 			msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
 			logging.Logger.Info(h.serviceName + " service has stopped processing")
-			return status, msg, nil
+			msgHeaders["HTTP-Msg-After-Processing"] = h.generalFunc.LogHTTPMsgHeaders(h.methodName)
+			jsonHeaders, _ := json.Marshal(msgHeaders)
+			return status, msg, nil, string(jsonHeaders)
 		}
-		return status, nil, nil
+		msgHeaders["HTTP-Msg-After-Processing"] = h.generalFunc.LogHTTPMsgHeaders(h.methodName)
+		jsonHeaders, _ := json.Marshal(msgHeaders)
+		return status, nil, nil, string(jsonHeaders)
 	}
 
 	scannedFile := file.Bytes()
@@ -93,10 +104,10 @@ func (h *Hashlookup) Processing(partial bool) (int, interface{}, map[string]stri
 		logging.Logger.Error(h.serviceName + " error: " + err.Error())
 		if strings.Contains(err.Error(), "context deadline exceeded") {
 			logging.Logger.Info(h.serviceName + " service has stopped processing")
-			return utils.RequestTimeOutStatusCodeStr, nil, nil
+			return utils.RequestTimeOutStatusCodeStr, nil, nil, ""
 		}
 		logging.Logger.Info(h.serviceName + " service has stopped processing")
-		return utils.InternalServerErrStatusCodeStr, nil, nil
+		return utils.InternalServerErrStatusCodeStr, nil, nil, ""
 	}
 
 	if isMal {
@@ -106,22 +117,29 @@ func (h *Hashlookup) Processing(partial bool) (int, interface{}, map[string]stri
 			h.httpMsg.Response = h.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
 			h.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
 			logging.Logger.Info(h.serviceName + " service has stopped processing")
-			return utils.OkStatusCodeStr, h.httpMsg.Response, serviceHeaders
+			msgHeaders["HTTP-Msg-After-Processing"] = h.generalFunc.LogHTTPMsgHeaders(h.methodName)
+			jsonHeaders, _ := json.Marshal(msgHeaders)
+			return utils.OkStatusCodeStr, h.httpMsg.Response, serviceHeaders, string(jsonHeaders)
 		} else {
 			htmlPage, req, err := h.generalFunc.ReqModErrPage(utils.ErrPageReasonFileIsNotSafe, h.serviceName, HashLookupIdentifier)
 			if err != nil {
-				return utils.InternalServerErrStatusCodeStr, nil, nil
+				return utils.InternalServerErrStatusCodeStr, nil, nil, ""
 			}
 			req.Body = io.NopCloser(htmlPage)
-			return utils.OkStatusCodeStr, req, serviceHeaders
+			msgHeaders["HTTP-Msg-After-Processing"] = h.generalFunc.LogHTTPMsgHeaders(h.methodName)
+			jsonHeaders, _ := json.Marshal(msgHeaders)
+			return utils.OkStatusCodeStr, req, serviceHeaders, string(jsonHeaders)
 		}
 	}
 
 	//returning the scanned file if everything is ok
 	scannedFile = h.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, h.methodName)
-	h.generalFunc.LogHTTPMsgHeaders(h.methodName, true)
+	h.generalFunc.LogHTTPMsgHeaders(h.methodName)
 	logging.Logger.Info(h.serviceName + " service has stopped processing")
-	return utils.OkStatusCodeStr, h.generalFunc.ReturningHttpMessageWithFile(h.methodName, scannedFile), serviceHeaders
+	msgHeaders["HTTP-Msg-After-Processing"] = h.generalFunc.LogHTTPMsgHeaders(h.methodName)
+	jsonHeaders, _ := json.Marshal(msgHeaders)
+	return utils.OkStatusCodeStr,
+		h.generalFunc.ReturningHttpMessageWithFile(h.methodName, scannedFile), serviceHeaders, string(jsonHeaders)
 }
 
 // SendFileToScan is a function to send the file to API
