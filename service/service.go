@@ -9,6 +9,7 @@ import (
 	"icapeg/service/services/grayimages"
 	hashlookuppackage "icapeg/service/services/hashlookup"
 	"icapeg/service/services/virustotal"
+	"icapeg/service/services/scanii"
 )
 
 // Vendors names
@@ -16,6 +17,7 @@ const (
 	VendorEcho         = "echo"
 	VendorClamav       = "clamav"
 	VendorVirustotal   = "virustotal"
+	VendorScanii   	   = "scanii"
 	VendorCloudMersive = "cloudmersive"
 	VendorGrayimages   = "grayimages"
 	VendorHashlookup   = "hashlookup"
@@ -38,6 +40,8 @@ func GetService(vendor, serviceName, methodName string, httpMsg *http_message.Ht
 		return echo.NewEchoService(serviceName, methodName, httpMsg)
 	case VendorVirustotal:
 		return virustotal.NewVirustotalService(serviceName, methodName, httpMsg)
+	case VendorScanii:
+		return scanii.NewScaniiService(serviceName, methodName, httpMsg)
 	case VendorClamav:
 		return clamav.NewClamavService(serviceName, methodName, httpMsg)
 	case VendorCloudMersive:
@@ -61,6 +65,8 @@ func InitServiceConfig(vendor, serviceName string) {
 		clamav.InitClamavConfig(serviceName)
 	case VendorVirustotal:
 		virustotal.InitVirustotalConfig(serviceName)
+	case VendorScanii:
+		scanii.InitScaniiConfig(serviceName)
 	case VendorCloudMersive:
 		cloudmersive.InitCloudMersiveConfig(serviceName)
 	case VendorGrayimages:

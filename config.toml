@@ -21,7 +21,7 @@ title = "ICAP configuration file"
 port = 1344
 log_level="debug"
 write_logs_to_console= false
-services= ["echo", "virustotal", "clamav", "cloudmersive", "grayimages", "hashlookup"]
+services= ["echo", "virustotal", "scanii", "clamav", "cloudmersive", "grayimages", "hashlookup"]
 debugging_headers=true
 web_server_host = "$_WEB_SERVER_HOST"
 web_server_endpoint = "$_WEB_SERVER_ENDPOINT"
@@ -83,6 +83,26 @@ max_filesize = 0 #bytes
 return_original_if_max_file_size_exceeded=false
 return_400_if_file_ext_rejected=false
 
+[scanii]
+vendor = "scanii"
+service_caption= "scanii service"   #Service
+service_tag = "scanii ICAP"  #ISTAG
+req_mode=true # enable support for ICAP request mode
+resp_mode=true # enable support for ICAP response mode
+shadow_service=false
+preview_bytes = "1024" #byte
+preview_enabled = true# options send preview header or not
+process_extensions = ["exe", "pdf", "zip", "com"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
+reject_extensions = ["docx"]
+bypass_extensions = ["*"]
+scan_url = "https://api.scanii.com/v2.1/files" #
+report_url = "https://api.scanii.com/v2.1/files/" #
+api_key = "$_SCANII_API_KEY"
+timeout  = 1000 #seconds , ICAP will return 408 - Request timeout
+#max file size value from 1 to 9223372036854775807, and value of zero means unlimited
+max_filesize = 0 #bytes
+return_original_if_max_file_size_exceeded=false
+return_400_if_file_ext_rejected=false
 
 [cloudmersive]
 vendor = "cloudmersive"
