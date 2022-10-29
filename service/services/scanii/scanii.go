@@ -132,6 +132,7 @@ func (v *Scanii) SendFileToScan(f *bytes.Buffer) (string, string, string, error)
 	bodyWriter := multipart.NewWriter(bodyBuf)
 	part, err := bodyWriter.CreateFormFile("file", "filename")
 	io.Copy(part, bytes.NewReader(f.Bytes()))
+
 	part, _ = bodyWriter.CreateFormField("apikey")
 	io.Copy(part, strings.NewReader(v.APIKey))
 
@@ -169,9 +170,9 @@ func (v *Scanii) SendFileToGetReport(resource string) (string, string, string, e
 		//form-data
 		bodyBuf := &bytes.Buffer{}
 		bodyWriter := multipart.NewWriter(bodyBuf)
-		part, _ := bodyWriter.CreateFormField("apikey")
-		io.Copy(part, strings.NewReader(v.APIKey))
-		part, _ = bodyWriter.CreateFormField("resource")
+		// part, _ := bodyWriter.CreateFormField("apikey")
+		// io.Copy(part, strings.NewReader(v.APIKey))
+		part, _ := bodyWriter.CreateFormField("")
 		io.Copy(part, strings.NewReader(resource))
 
 		req, err := http.NewRequest(http.MethodPost, urlStr, bodyBuf)

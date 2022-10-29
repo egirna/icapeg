@@ -96,7 +96,7 @@ process_extensions = ["exe", "pdf", "zip", "com"] # * = everything except the on
 reject_extensions = ["docx"]
 bypass_extensions = ["*"]
 scan_url = "https://api.scanii.com/v2.1/files" #
-report_url = "https://api.scanii.com/v2.1/files/report" #
+report_url = "https://api.scanii.com/v2.1/files/" #
 api_key = "$_SCANII_API_KEY"
 timeout  = 1000 #seconds , ICAP will return 408 - Request timeout
 #max file size value from 1 to 9223372036854775807, and value of zero means unlimited
