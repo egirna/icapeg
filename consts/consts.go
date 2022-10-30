@@ -38,4 +38,6 @@ const (
 	ErrPageReasonFileRejected         = "File rejected"
 	ErrPageReasonMaxFileExceeded      = "The Max file size is exceeded"
 	ErrPageReasonFileIsNotSafe        = "File is not safe"
+	ICAPRequestIdLen                  = 20
+	IdentifierString                  = "abcdefghijklmnopqrstuvwxyz0123456789"
 )

@@ -24,7 +24,8 @@ const (
 type (
 	// Service holds the info to distinguish a service
 	Service interface {
-		Processing(bool) (int, interface{}, map[string]string, string)
+		Processing(bool) (int, interface{}, map[string]string,
+			map[string]interface{}, map[string]interface{}, map[string]interface{})
 		ISTagValue() string
 	}
 )

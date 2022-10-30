@@ -13,6 +13,7 @@ import (
 	"icapeg/service/services-utilities/ContentTypes"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
@@ -29,10 +30,10 @@ type ICAPRequest struct {
 	serviceName            string
 	methodName             string
 	vendor                 string
-	optionsReqHeaders      string
-	optionsRespHeaders     string
-	generalReqHeaders      string
-	generalRespHeaders     string
+	optionsReqHeaders      map[string]interface{}
+	optionsRespHeaders     map[string]interface{}
+	generalReqHeaders      map[string]interface{}
+	generalRespHeaders     map[string]interface{}
 }
 
 // NewICAPRequest is a func to create a new instance from struct IcapRequest yo handle upcoming ICAP requests
@@ -155,6 +156,7 @@ func (i *ICAPRequest) RequestProcessing() {
 		i.optionsReqHeaders = i.LogICAPReqHeaders()
 		i.optionsMode(i.serviceName)
 		optionsReqResp := make(map[string]interface{})
+		optionsReqResp["X-ICAP-Metadata"] = i.generateICAPReqMetaData(utils.ICAPRequestIdLen)
 		optionsReqResp["ICAP-OPTIONS-Request"] = i.optionsReqHeaders
 		optionsReqResp["ICAP-OPTIONS-Response"] = i.optionsRespHeaders
 		jsonHeaders, _ := json.Marshal(optionsReqResp)
@@ -194,7 +196,8 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 
 	logging.Logger.Debug("calling Processing func to process the http message which encapsulated inside the ICAP request")
 	//calling Processing func to process the http message which encapsulated inside the ICAP request
-	IcapStatusCode, httpMsg, serviceHeaders, httpMshHeaders := requiredService.Processing(partial)
+	IcapStatusCode, httpMsg, serviceHeaders, httpMshHeadersBeforeProcessing, httpMshHeadersAfterProcessing,
+		vendorMsgs := requiredService.Processing(partial)
 
 	// adding the headers which the service wants to add them in the ICAP response
 	logging.Logger.Debug("adding the headers which the service wants to add them in the ICAP response")
@@ -229,7 +232,7 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 		} else {
 			i.req.Response.Body = io.NopCloser(bytes.NewBuffer(httpMsgBody.Bytes()))
 		}
-		i.allHeaders(IcapStatusCode, httpMshHeaders)
+		i.allHeaders(IcapStatusCode, httpMshHeadersBeforeProcessing, httpMshHeadersAfterProcessing, vendorMsgs)
 		i.RespAndReqMods(false)
 	case utils.RequestTimeOutStatusCodeStr:
 		logging.Logger.Debug(i.serviceName + " returned ICAP response with status code " + strconv.Itoa(utils.RequestTimeOutStatusCodeStr))
@@ -249,12 +252,19 @@ func (i *ICAPRequest) RespAndReqMods(partial bool) {
 		logging.Logger.Debug(i.serviceName + " returned ICAP response with status code " + strconv.Itoa(utils.BadRequestStatusCodeStr))
 		i.w.WriteHeader(IcapStatusCode, httpMsg, true)
 	}
-	i.allHeaders(IcapStatusCode, httpMshHeaders)
+	i.allHeaders(IcapStatusCode, httpMshHeadersBeforeProcessing, httpMshHeadersAfterProcessing, vendorMsgs)
 }
 
-func (i *ICAPRequest) allHeaders(IcapStatusCode int, httpMshHeaders string) {
+func (i *ICAPRequest) allHeaders(IcapStatusCode int, httpMshHeadersBeforeProcessing map[string]interface{},
+	httpMshHeadersAfterProcessing map[string]interface{}, vendorMsgs map[string]interface{}) {
 	i.generalRespHeaders = i.LogICAPResHeaders(IcapStatusCode)
-	generalReqResp := make(map[string]string)
+	generalReqResp := make(map[string]interface{})
+	generalReqResp["X-ICAP-Metadata"] = i.generateICAPReqMetaData(utils.ICAPRequestIdLen)
+	generalReqResp["Vendor-Messages"] = vendorMsgs
+	i.generalReqHeaders["HTTP-Message"] = httpMshHeadersBeforeProcessing
+	if IcapStatusCode == utils.OkStatusCodeStr {
+		i.generalRespHeaders["HTTP-Message"] = httpMshHeadersAfterProcessing
+	}
 	if i.methodName == utils.ICAPModeReq {
 		generalReqResp["ICAP-REQMOD-Request"] = i.generalReqHeaders
 		generalReqResp["ICAP-REQMOD-Response"] = i.generalRespHeaders
@@ -262,9 +272,6 @@ func (i *ICAPRequest) allHeaders(IcapStatusCode int, httpMshHeaders string) {
 	} else {
 		generalReqResp["ICAP-RESPMOD-Request"] = i.generalReqHeaders
 		generalReqResp["ICAP-RESPMOD-Response"] = i.generalRespHeaders
-	}
-	if IcapStatusCode == utils.OkStatusCodeStr {
-		generalReqResp["HTTP-Headers"] = httpMshHeaders
 	}
 	jsonHeaders, _ := json.Marshal(generalReqResp)
 	final := string(jsonHeaders)
@@ -428,7 +435,7 @@ func (i *ICAPRequest) preview() *bytes.Buffer {
 	return buf
 }
 
-func (i *ICAPRequest) LogICAPReqHeaders() string {
+func (i *ICAPRequest) LogICAPReqHeaders() map[string]interface{} {
 	reqHeaders := make(map[string]interface{})
 	reqHeaders["ICAP-Requested-URL"] = "icap://" + i.req.URL.Host + "/" + i.serviceName
 	for key, value := range i.req.Header {
@@ -441,11 +448,10 @@ func (i *ICAPRequest) LogICAPReqHeaders() string {
 		}
 		reqHeaders[key] = value
 	}
-	jsonHeaders, _ := json.Marshal(reqHeaders)
-	return string(jsonHeaders)
+	return reqHeaders
 }
 
-func (i *ICAPRequest) LogICAPResHeaders(statusCode int) string {
+func (i *ICAPRequest) LogICAPResHeaders(statusCode int) map[string]interface{} {
 	respHeaders := make(map[string]interface{})
 	respHeaders["ICAP-Response-Status-Code"] = statusCode
 	for key, value := range i.h {
@@ -458,6 +464,15 @@ func (i *ICAPRequest) LogICAPResHeaders(statusCode int) string {
 		}
 		respHeaders[key] = value
 	}
-	jsonHeaders, _ := json.Marshal(respHeaders)
-	return string(jsonHeaders)
+	return respHeaders
+}
+
+func (i *ICAPRequest) generateICAPReqMetaData(size int) string {
+
+	name := make([]rune, size)
+	var letterRunes = []rune(utils.IdentifierString)
+	for i := range name {
+		name[i] += letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return string(name)
 }

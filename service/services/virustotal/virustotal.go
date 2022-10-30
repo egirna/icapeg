@@ -16,16 +16,20 @@ import (
 )
 
 // Processing is a func used for to processing the http message
-func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]string, string) {
+func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]string, map[string]interface{},
+	map[string]interface{}, map[string]interface{}) {
+
 	serviceHeaders := make(map[string]string)
+	msgHeadersBeforeProcessing := v.generalFunc.LogHTTPMsgHeaders(v.methodName)
+	msgHeadersAfterProcessing := make(map[string]interface{})
+	vendorMsgs := make(map[string]interface{})
 
 	// no need to scan part of the file, this service needs all the file at ine time
 	if partial {
 		logging.Logger.Info(v.serviceName + " service has stopped processing partially")
-		return utils.Continue, nil, nil, ""
+		return utils.Continue, nil, nil,
+			msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 	}
-	msgHeaders := make(map[string]interface{})
-	msgHeaders["HTTP-Msg-Before-Processing"] = v.generalFunc.LogHTTPMsgHeaders(v.methodName)
 	logging.Logger.Info(v.serviceName + " service has started processing")
 
 	isGzip := false
@@ -35,7 +39,8 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 	if err != nil {
 		logging.Logger.Error(v.serviceName + " error: " + err.Error())
 		logging.Logger.Info(v.serviceName + " service has stopped processing")
-		return utils.InternalServerErrStatusCodeStr, nil, nil, ""
+		return utils.InternalServerErrStatusCodeStr, nil, nil,
+			msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 	}
 
 	//getting the extension of the file
@@ -61,9 +66,9 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 		v.serviceName, v.methodName, VirustotalIdentifier, v.httpMsg.Request.RequestURI, reqContentType, file)
 	if !isProcess {
 		logging.Logger.Info(v.serviceName + " service has stopped processing")
-		msgHeaders["HTTP-Msg-After-Processing"] = v.generalFunc.LogHTTPMsgHeaders(v.methodName)
-		jsonHeaders, _ := json.Marshal(msgHeaders)
-		return icapStatus, httpMsg, serviceHeaders, string(jsonHeaders)
+		msgHeadersAfterProcessing = v.generalFunc.LogHTTPMsgHeaders(v.methodName)
+		return icapStatus, httpMsg, serviceHeaders,
+			msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 	}
 
 	if v.generalFunc.ShouldUpdateContentLengthAfterPreview(v.methodName, file.Len()) {
@@ -80,25 +85,26 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 		fileAfterPrep, httpMsg := v.generalFunc.IfStatusIs204WithFile(v.methodName, status, file, isGzip, reqContentType, httpMsg, true)
 		if fileAfterPrep == nil && httpMsg == nil {
 			logging.Logger.Info(v.serviceName + " service has stopped processing")
-			return utils.InternalServerErrStatusCodeStr, nil, nil, ""
+			return utils.InternalServerErrStatusCodeStr, nil, nil,
+				msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 		}
 		switch msg := httpMsg.(type) {
 		case *http.Request:
 			msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
 			logging.Logger.Info(v.serviceName + " service has stopped processing")
-			msgHeaders["HTTP-Msg-After-Processing"] = v.generalFunc.LogHTTPMsgHeaders(v.methodName)
-			jsonHeaders, _ := json.Marshal(msgHeaders)
-			return status, msg, nil, string(jsonHeaders)
+			msgHeadersAfterProcessing = v.generalFunc.LogHTTPMsgHeaders(v.methodName)
+			return status, msg, nil,
+				msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 		case *http.Response:
 			msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
 			logging.Logger.Info(v.serviceName + " service has stopped processing")
-			msgHeaders["HTTP-Msg-After-Processing"] = v.generalFunc.LogHTTPMsgHeaders(v.methodName)
-			jsonHeaders, _ := json.Marshal(msgHeaders)
-			return status, msg, nil, string(jsonHeaders)
+			msgHeadersAfterProcessing = v.generalFunc.LogHTTPMsgHeaders(v.methodName)
+			return status, msg, nil,
+				msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 		}
-		msgHeaders["HTTP-Msg-After-Processing"] = v.generalFunc.LogHTTPMsgHeaders(v.methodName)
-		jsonHeaders, _ := json.Marshal(msgHeaders)
-		return status, nil, nil, string(jsonHeaders)
+		msgHeadersAfterProcessing = v.generalFunc.LogHTTPMsgHeaders(v.methodName)
+		return status, nil, nil,
+			msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 	}
 
 	scannedFile := file.Bytes()
@@ -107,10 +113,12 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 		logging.Logger.Error(v.serviceName + " error: " + err.Error())
 		if strings.Contains(err.Error(), "context deadline exceeded") {
 			logging.Logger.Info(v.serviceName + " service has stopped processing")
-			return utils.RequestTimeOutStatusCodeStr, nil, nil, ""
+			return utils.RequestTimeOutStatusCodeStr, nil, nil,
+				msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 		}
 		logging.Logger.Info(v.serviceName + " service has stopped processing")
-		return utils.InternalServerErrStatusCodeStr, nil, nil, ""
+		return utils.InternalServerErrStatusCodeStr, nil, nil,
+			msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 	}
 	serviceHeaders["Virustotal-Total"] = total
 	serviceHeaders["Virustotal-Positives"] = score
@@ -123,24 +131,26 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 			v.httpMsg.Response = v.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
 			v.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
 			logging.Logger.Info(v.serviceName + " service has stopped processing")
-			msgHeaders["HTTP-Msg-After-Processing"] = v.generalFunc.LogHTTPMsgHeaders(v.methodName)
-			jsonHeaders, _ := json.Marshal(msgHeaders)
-			return utils.OkStatusCodeStr, v.httpMsg.Response, serviceHeaders, string(jsonHeaders)
+			msgHeadersAfterProcessing = v.generalFunc.LogHTTPMsgHeaders(v.methodName)
+			return utils.OkStatusCodeStr, v.httpMsg.Response, serviceHeaders,
+				msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 		} else {
 			htmlPage, req, err := v.generalFunc.ReqModErrPage(utils.ErrPageReasonFileIsNotSafe, v.serviceName, resource)
 			if err != nil {
-				return utils.InternalServerErrStatusCodeStr, nil, nil, ""
+				return utils.InternalServerErrStatusCodeStr, nil, nil,
+					msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 			}
 			req.Body = io.NopCloser(htmlPage)
-			return utils.OkStatusCodeStr, req, serviceHeaders, ""
+			return utils.OkStatusCodeStr, req, serviceHeaders,
+				msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 		}
 	}
 	//returning the scanned file if everything is ok
 	scannedFile = v.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, v.methodName)
-	msgHeaders["HTTP-Msg-After-Processing"] = v.generalFunc.LogHTTPMsgHeaders(v.methodName)
-	jsonHeaders, _ := json.Marshal(msgHeaders)
+	msgHeadersAfterProcessing = v.generalFunc.LogHTTPMsgHeaders(v.methodName)
 	logging.Logger.Info(v.serviceName + " service has stopped processing")
-	return utils.OkStatusCodeStr, v.generalFunc.ReturningHttpMessageWithFile(v.methodName, scannedFile), serviceHeaders, string(jsonHeaders)
+	return utils.OkStatusCodeStr, v.generalFunc.ReturningHttpMessageWithFile(v.methodName, scannedFile), serviceHeaders,
+		msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 }
 
 // SendFileToScan is a function to send the file to API

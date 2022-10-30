@@ -476,7 +476,7 @@ func (f *GeneralFunc) ShouldUpdateContentLengthAfterPreview(methodName string, f
 		return false
 	}
 }
-func (f *GeneralFunc) LogHTTPMsgHeaders(methodName string) string {
+func (f *GeneralFunc) LogHTTPMsgHeaders(methodName string) map[string]interface{} {
 	msgHeaders := make(map[string]interface{})
 	if methodName == utils.ICAPModeReq {
 		for key, value := range f.httpMsg.Request.Header {
@@ -501,6 +501,5 @@ func (f *GeneralFunc) LogHTTPMsgHeaders(methodName string) string {
 			msgHeaders[key] = values
 		}
 	}
-	jsonHeaders, _ := json.Marshal(msgHeaders)
-	return string(jsonHeaders)
+	return msgHeaders
 }
