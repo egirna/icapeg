@@ -160,6 +160,24 @@ type HttpMsg struct {
 
     - **Bool** variable, possible values are **true** if the body is compressed in **Gzip** and false if the body is not.
 
+- ### **ReqModErrPage**
+
+  - #### **Description**
+
+    It prepares and returns error page specified to the service included in http request to replace the original HTTP request with the new one (HTTP request with error page). 
+
+  - #### **Parameters**
+
+    - **reason** (string): The reason of returning this HTML error page and this reason will be typed in the page.
+    - **serviceName** (string): The service's name which uses this function and this service name will be typed in the page.
+    - **serviceName** (string): The service's identifier which uses this function and this service identifier will be typed in the page.
+
+  - #### **Return Values**
+
+    - Instance from ***bytes.Buffer** type which is the HTML page converted to bytes.Buffer type to be included later inside the new HTTP request.
+    - Instance from ***http.Request** type which is the new HTTP request of the error page.
+    - Instance from **error** type to indicate whether there is an error or not, the value will be nil if there is no error.
+
 - ### **DecompressGzipBody**
 
   - #### **Description**
@@ -172,7 +190,7 @@ type HttpMsg struct {
 
     #### **Return Values**
 
-    - Instance from ***bytes.Buffer** type which is the file after decompression.
+    - Instance from **bytes.Buffer** type which is the file after decompression.
     - Instance from **error** type to indicate if there is an error or not, the value will be nil if there is no error.
 
 - ### **IfMaxFileSizeExc**
@@ -308,4 +326,81 @@ type HttpMsg struct {
 
     - **interface{}** which is the **HTTP message** which should be returned from [**Processing**](service/service.go) function.
 
-  
+- **IfICAPStatusIs204**
+
+  - **Description**
+
+    It prepares the HTTP message if the ICAP status code is 204.
+
+  - #### **Parameters**
+
+    - **methodName** (string): possible values are (**REQMOD** and **RESPMOD**).
+    - **status** (int): The status of the **ICAP response**.
+    - **file** (*bytes.Buffer): The body of **HTTP message**.
+    - **isGzip** (bool): Boolean variable indicates to if the **HTTP message** body was compressed in the **HTTP message** before starting processing.
+    - **reqContentType** ([ContentType](service/services-utilities/ContentTypes/contentType.go)): the content type of the **HTTP message** body before processing (multipart for example).
+    - **httpMessage** interface{}: The **HTTP message** which should be returned from [**Processing**](service/service.go) function.
+
+  - #### **Return Values**
+
+    - **[]byte** which is array of bytes contains the body of the HTTP message.
+    - **interface{}** which is the **HTTP message** which should be returned from [**Processing**](service/service.go) function.
+
+- **GetDecodedImage**
+
+  - **Description**
+
+    It takes the HTTP file and converts it to an image object.
+
+  - #### **Parameters**
+
+    - **file** (*bytes.Buffer): The body of file.
+
+  - #### **Return Values**
+
+    - Instance from **image.Image** type which is the file after converted to image object.
+    - Instance from **error** type to indicate if there is an error or not, the value will be nil if there is no error.
+
+- **InitSecure**
+
+  - **Description**
+
+    It sets insecure flag based on user input
+
+  - #### **Parameters**
+
+    - **VerifyServerCert** (bool): The body of file.
+
+  - #### **Return Values**
+
+    - Instance from **bool** indicates to is the scure flag is true or false.
+
+- **GetMimeExtension**
+
+  - **Description**
+
+    It returns the mime type extension of the data
+
+  - #### **Parameters**
+
+    - **data** ([]byte): The file in bytes.
+    - **contentType** (string): The content type of the data.
+    - **filename** (string): the name of the data.
+
+  - #### **Return Values**
+
+    - Instance from **string** indicates to is the mime type extension of the data.
+
+- **LogHTTPMsgHeaders**
+
+  - **Description**
+
+    It returns the HTTP message headers as a map.
+
+  - #### **Parameters**
+
+    - **methodName** (string): possible values are (**REQMOD** and **RESPMOD**).
+
+  - #### **Return Values**
+
+    - Instance from **map[string]interface{}** contains the header of the HTTP message.

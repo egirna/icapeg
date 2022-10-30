@@ -463,19 +463,7 @@ func (f *GeneralFunc) GetMimeExtension(data []byte, contentType string, filename
 	return kind.Extension
 
 }
-func (f *GeneralFunc) ShouldUpdateContentLengthAfterPreview(methodName string, fileLen int) bool {
-	if methodName == utils.ICAPModeReq {
-		if f.httpMsg.Request.Header.Get("Content-Length") != "" {
-			return true
-		}
-		return false
-	} else {
-		if f.httpMsg.Response.Header.Get("Content-Length") != "" {
-			return true
-		}
-		return false
-	}
-}
+
 func (f *GeneralFunc) LogHTTPMsgHeaders(methodName string) map[string]interface{} {
 	msgHeaders := make(map[string]interface{})
 	if methodName == utils.ICAPModeReq {

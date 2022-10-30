@@ -64,13 +64,7 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string, ma
 		return icapStatus, httpMsg, serviceHeaders, msgHeadersBeforeProcessing,
 			msgHeadersAfterProcessing, vendorMsgs
 	}
-	if e.generalFunc.ShouldUpdateContentLengthAfterPreview(e.methodName, file.Len()) {
-		if e.methodName == utils.ICAPModeReq {
-			e.httpMsg.Request.Header.Set("Content-Length", strconv.Itoa(file.Len()))
-		} else {
-			e.httpMsg.Response.Header.Set("Content-Length", strconv.Itoa(file.Len()))
-		}
-	}
+
 	//check if the file size is greater than max file size of the service
 	//if yes we will return 200 ok or 204 no modification, it depends on the configuration of the service
 	if e.maxFileSize != 0 && e.maxFileSize < file.Len() {
