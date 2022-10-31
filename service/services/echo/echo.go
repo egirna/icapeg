@@ -11,13 +11,18 @@ import (
 )
 
 // Processing is a func used for to processing the http message
-func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
-	logging.Logger.Info(e.serviceName + " service has started processing")
+func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string, map[string]interface{},
+	map[string]interface{}, map[string]interface{}) {
 	serviceHeaders := make(map[string]string)
+	msgHeadersBeforeProcessing := e.generalFunc.LogHTTPMsgHeaders(e.methodName)
+	msgHeadersAfterProcessing := make(map[string]interface{})
+	vendorMsgs := make(map[string]interface{})
+	logging.Logger.Info(e.serviceName + " service has started processing")
+
 	// no need to scan part of the file, this service needs all the file at ine time
 	if partial {
 		logging.Logger.Info(e.serviceName + " service has stopped processing partially")
-		return utils.Continue, nil, nil
+		return utils.Continue, nil, nil, msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 	}
 
 	isGzip := false
@@ -27,7 +32,8 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 	if err != nil {
 		logging.Logger.Error(e.serviceName + " error: " + err.Error())
 		logging.Logger.Info(e.serviceName + " service has stopped processing")
-		return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
+		return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders,
+			msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 	}
 	//getting the extension of the file
 	var contentType []string
@@ -54,7 +60,9 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 		e.serviceName, e.methodName, EchoIdentifier, e.httpMsg.Request.RequestURI, reqContentType, file)
 	if !isProcess {
 		logging.Logger.Info(e.serviceName + " service has stopped processing")
-		return icapStatus, httpMsg, serviceHeaders
+		msgHeadersAfterProcessing = e.generalFunc.LogHTTPMsgHeaders(e.methodName)
+		return icapStatus, httpMsg, serviceHeaders, msgHeadersBeforeProcessing,
+			msgHeadersAfterProcessing, vendorMsgs
 	}
 
 	//check if the file size is greater than max file size of the service
@@ -64,27 +72,34 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string) {
 		fileAfterPrep, httpMsgAfter := e.generalFunc.IfStatusIs204WithFile(e.methodName, status, file, isGzip, reqContentType, httpMsgAfter, true)
 		if fileAfterPrep == nil && httpMsgAfter == nil {
 			logging.Logger.Info(e.serviceName + " service has stopped processing")
-			return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders
+			return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders,
+				msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 		}
 		switch msg := httpMsgAfter.(type) {
+
 		case *http.Request:
 			msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
 			logging.Logger.Info(e.serviceName + " service has stopped processing")
-			return status, msg, nil
+			msgHeadersAfterProcessing = e.generalFunc.LogHTTPMsgHeaders(e.methodName)
+			return status, msg, nil, msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 		case *http.Response:
 			msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
 			logging.Logger.Info(e.serviceName + " service has stopped processing")
-			return status, msg, nil
+			msgHeadersAfterProcessing = e.generalFunc.LogHTTPMsgHeaders(e.methodName)
+			return status, msg, nil, msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 		}
-		return status, nil, nil
+		msgHeadersAfterProcessing = e.generalFunc.LogHTTPMsgHeaders(e.methodName)
+		return status, nil, nil, msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 	}
 
 	scannedFile := file.Bytes()
 
 	//returning the scanned file if everything is ok
 	scannedFile = e.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, e.methodName)
+	msgHeadersAfterProcessing = e.generalFunc.LogHTTPMsgHeaders(e.methodName)
 	logging.Logger.Info(e.serviceName + " service has stopped processing")
-	return utils.OkStatusCodeStr, e.generalFunc.ReturningHttpMessageWithFile(e.methodName, scannedFile), serviceHeaders
+	return utils.OkStatusCodeStr, e.generalFunc.ReturningHttpMessageWithFile(e.methodName, scannedFile),
+		serviceHeaders, msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 }
 
 func (e *Echo) ISTagValue() string {

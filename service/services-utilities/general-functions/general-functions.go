@@ -463,3 +463,31 @@ func (f *GeneralFunc) GetMimeExtension(data []byte, contentType string, filename
 	return kind.Extension
 
 }
+
+func (f *GeneralFunc) LogHTTPMsgHeaders(methodName string) map[string]interface{} {
+	msgHeaders := make(map[string]interface{})
+	if methodName == utils.ICAPModeReq {
+		for key, value := range f.httpMsg.Request.Header {
+			values := ""
+			for i := 0; i < len(value); i++ {
+				values += value[0]
+				if i != len(value)-1 {
+					values += ", "
+				}
+			}
+			msgHeaders[key] = values
+		}
+	} else {
+		for key, value := range f.httpMsg.Response.Header {
+			values := ""
+			for i := 0; i < len(value); i++ {
+				values += value[0]
+				if i != len(value)-1 {
+					values += ", "
+				}
+			}
+			msgHeaders[key] = values
+		}
+	}
+	return msgHeaders
+}

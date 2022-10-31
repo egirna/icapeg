@@ -166,10 +166,19 @@ Assume that the name of the vendor is **abc** and the name of the service **xyz*
 
       ```go
       //Processing is a func used for to processing the http message
-      func (reciever *Abc) Processing() (int, interface{}, map[string]string) {
+      func (reciever *Abc) Processing() (int, interface{}, map[string]string, map[string]interface{}, map[string]interface{}, map[string]interface{}) {
       	// your implementation
       }
       ```
+    
+      The values **Processing() function** returns:
+    
+      - **int**: ICAP response status code.
+      - **interface{}**: HTTP message after processing, It can be HTTP request if the ICAP request methos is REQMOD or HTTP response if the ICAP request methos is RESPMOD.
+      - **map[string]string**: map contains any headers related to the vendor and wanted to be added to ICAP response.
+      -  **map[string]interface{}**: map contains HTTP message headers before the service of the vendor start processing the message.
+      - **map[string]interface{}**: map contains HTTP message headers after the service of the vendor started processing the message.
+      - **map[string]interface{}**: map contains any information the service of the vendor wants to log.
 
 - ### [**service.go**](service/service.go)
 
