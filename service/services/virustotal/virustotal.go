@@ -71,13 +71,6 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 			msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 	}
 
-	if v.generalFunc.ShouldUpdateContentLengthAfterPreview(v.methodName, file.Len()) {
-		if v.methodName == utils.ICAPModeReq {
-			v.httpMsg.Request.Header.Set("Content-Length", strconv.Itoa(file.Len()))
-		} else {
-			v.httpMsg.Response.Header.Set("Content-Length", strconv.Itoa(file.Len()))
-		}
-	}
 	//check if the file size is greater than max file size of the service
 	//if yes we will return 200 ok or 204 no modification, it depends on the configuration of the service
 	if v.maxFileSize != 0 && v.maxFileSize < file.Len() {
