@@ -43,6 +43,12 @@ func (v *Virustotal) Processing(partial bool) (int, interface{}, map[string]stri
 			msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 	}
 
+	//if the http method is Connect, return the request as it is because it has no body
+	if v.httpMsg.Request.Method == http.MethodConnect {
+		return utils.OkStatusCodeStr, v.generalFunc.ReturningHttpMessageWithFile(v.methodName, file.Bytes()),
+			serviceHeaders, msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
+	}
+
 	//getting the extension of the file
 	var contentType []string
 	if len(contentType) == 0 {
