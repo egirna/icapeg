@@ -37,6 +37,12 @@ func (c *Clamav) Processing(partial bool) (int, interface{}, map[string]string, 
 			msgHeadersAfterProcessing, vendorMsgs
 	}
 
+	//if the http method is Connect, return the request as it is because it has no body
+	if c.httpMsg.Request.Method == http.MethodConnect {
+		return utils.OkStatusCodeStr, c.generalFunc.ReturningHttpMessageWithFile(c.methodName, file.Bytes()),
+			serviceHeaders, msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
+	}
+
 	//getting the extension of the file
 	var contentType []string
 	if len(contentType) == 0 {

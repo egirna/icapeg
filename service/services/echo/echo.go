@@ -24,7 +24,6 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string, ma
 		logging.Logger.Info(e.serviceName + " service has stopped processing partially")
 		return utils.Continue, nil, nil, msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 	}
-
 	isGzip := false
 
 	//extracting the file from http message
@@ -35,6 +34,13 @@ func (e *Echo) Processing(partial bool) (int, interface{}, map[string]string, ma
 		return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders,
 			msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 	}
+
+	//if the http method is Connect, return the request as it is because it has no body
+	if e.httpMsg.Request.Method == http.MethodConnect {
+		return utils.OkStatusCodeStr, e.generalFunc.ReturningHttpMessageWithFile(e.methodName, file.Bytes()),
+			serviceHeaders, msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
+	}
+
 	//getting the extension of the file
 	var contentType []string
 	if len(contentType) == 0 {
