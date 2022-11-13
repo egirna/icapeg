@@ -17,6 +17,7 @@ const GrayimagesIdentifier = "GRAYIMAGES ID"
 
 // Grayimages represents the information regarding the grayimages service
 type Grayimages struct {
+	xICAPMetadata              string
 	httpMsg                    *http_message.HttpMsg
 	elapsed                    time.Duration
 	serviceName                string
@@ -49,12 +50,13 @@ func InitGrayimagesConfig(serviceName string) {
 }
 
 // NewGrayimagesService returns a new populated instance of the Grayimages service
-func NewGrayimagesService(serviceName, methodName string, httpMsg *http_message.HttpMsg) *Grayimages {
+func NewGrayimagesService(serviceName, methodName string, httpMsg *http_message.HttpMsg, xICAPMetadata string) *Grayimages {
 	return &Grayimages{
+		xICAPMetadata:              xICAPMetadata,
 		httpMsg:                    httpMsg,
 		serviceName:                serviceName,
 		methodName:                 methodName,
-		generalFunc:                general_functions.NewGeneralFunc(httpMsg),
+		generalFunc:                general_functions.NewGeneralFunc(httpMsg, xICAPMetadata),
 		BaseURL:                    grayimagesConfig.BaseURL,
 		maxFileSize:                grayimagesConfig.maxFileSize,
 		bypassExts:                 grayimagesConfig.bypassExts,

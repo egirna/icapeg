@@ -21,6 +21,7 @@ var clamavConfig *Clamav
 
 // Clamav represents the information regarding the clamav service
 type Clamav struct {
+	xICAPMetadata              string
 	httpMsg                    *http_message.HttpMsg
 	elapsed                    time.Duration
 	serviceName                string
@@ -57,12 +58,13 @@ func InitClamavConfig(serviceName string) {
 	})
 }
 
-func NewClamavService(serviceName, methodName string, httpMsg *http_message.HttpMsg) *Clamav {
+func NewClamavService(serviceName, methodName string, httpMsg *http_message.HttpMsg, xICAPMetadata string) *Clamav {
 	return &Clamav{
+		xICAPMetadata:              xICAPMetadata,
 		httpMsg:                    httpMsg,
 		serviceName:                serviceName,
 		methodName:                 methodName,
-		generalFunc:                general_functions.NewGeneralFunc(httpMsg),
+		generalFunc:                general_functions.NewGeneralFunc(httpMsg, xICAPMetadata),
 		maxFileSize:                clamavConfig.maxFileSize,
 		bypassExts:                 clamavConfig.bypassExts,
 		processExts:                clamavConfig.processExts,

@@ -65,6 +65,7 @@
 ```go
 type GeneralFunc struct {
 	httpMsg *http_message.HttpMsg
+    xICAPMetadata string
 }
 ```
 
@@ -72,6 +73,7 @@ So the developer can add [**GeneralFunc**](./service/services-utilities/general-
 
 ```go
 type Echo struct {
+    xICAPMetadata string
 	httpMsg                    *http_message.HttpMsg
 	elapsed                    time.Duration
 	serviceName                string
@@ -99,6 +101,8 @@ type HttpMsg struct {
 [**HttpMsg**](consts/httpMessage.go) is a struct which contains two fields. The first field is **HTTP reauest** and the second is **HTTP response**. It's used to encapsulate the HTTP request and response with each other because there are two modes in **ICAP**, **REQMOD** and **RESPMOD**.
 
 [**HttpMsg**](consts/httpMessage.go) field in [**GeneralFunc**](./service/services-utilities/general-functions/general-functions.go) struct facilitates [**GeneralFunc**](./service/services-utilities/general-functions/general-functions.go) dealing with HTTP request and response.
+
+**xICAPMetadata** is a string value of the ID of **ICAP** request sent to **ICAPeg**. 
 
 ## Functions
 

@@ -17,6 +17,7 @@ const HashLookupIdentifier = "HASHLOOKUP ID"
 
 // Hashlookup represents the information regarding the Hashlookup service
 type Hashlookup struct {
+	xICAPMetadata              string
 	httpMsg                    *http_message.HttpMsg
 	serviceName                string
 	methodName                 string
@@ -50,8 +51,9 @@ func InitHashlookupConfig(serviceName string) {
 }
 
 // NewHashlookupService returns a new populated instance of the Hashlookup service
-func NewHashlookupService(serviceName, methodName string, httpMsg *http_message.HttpMsg) *Hashlookup {
+func NewHashlookupService(serviceName, methodName string, httpMsg *http_message.HttpMsg, xICAPMetadata string) *Hashlookup {
 	return &Hashlookup{
+		xICAPMetadata:              xICAPMetadata,
 		httpMsg:                    httpMsg,
 		serviceName:                serviceName,
 		methodName:                 methodName,
@@ -64,6 +66,6 @@ func NewHashlookupService(serviceName, methodName string, httpMsg *http_message.
 		Timeout:                    hashLookupConfig.Timeout * time.Second,
 		returnOrigIfMaxSizeExc:     hashLookupConfig.returnOrigIfMaxSizeExc,
 		return400IfFileExtRejected: hashLookupConfig.return400IfFileExtRejected,
-		generalFunc:                general_functions.NewGeneralFunc(httpMsg),
+		generalFunc:                general_functions.NewGeneralFunc(httpMsg, xICAPMetadata),
 	}
 }
