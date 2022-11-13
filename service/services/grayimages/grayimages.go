@@ -16,22 +16,24 @@ import (
 func (g *Grayimages) Processing(partial bool) (int, interface{}, map[string]string, map[string]interface{},
 	map[string]interface{}, map[string]interface{}) {
 
-	logging.Logger.Info(g.serviceName + " service has started processing")
+	logging.Logger.Info(utils.PrepareLogMsg(g.xICAPMetadata, g.serviceName+" service has started processing"))
 	serviceHeaders := make(map[string]string)
+	serviceHeaders["X-ICAP-Metadata"] = g.xICAPMetadata
 	msgHeadersBeforeProcessing := g.generalFunc.LogHTTPMsgHeaders(g.methodName)
 	msgHeadersAfterProcessing := make(map[string]interface{})
 	vendorMsgs := make(map[string]interface{})
 
 	// no need to scan part of the file, this service needs all the file at ine time
 	if partial {
-		logging.Logger.Info(g.serviceName + " service has stopped processing partially")
+		logging.Logger.Info(utils.PrepareLogMsg(g.xICAPMetadata,
+			g.serviceName+" service has stopped processing partially"))
 		return utils.Continue, nil, nil, msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 	}
 	//extracting the file from http message
 	file, reqContentType, err := g.generalFunc.CopyingFileToTheBuffer(g.methodName)
 	if err != nil {
-		logging.Logger.Error(g.serviceName + " error: " + err.Error())
-		logging.Logger.Info(g.serviceName + " service has stopped processing")
+		logging.Logger.Error(utils.PrepareLogMsg(g.xICAPMetadata, g.serviceName+" error: "+err.Error()))
+		logging.Logger.Info(utils.PrepareLogMsg(g.xICAPMetadata, g.serviceName+" service has stopped processing"))
 		return utils.InternalServerErrStatusCodeStr, nil, nil,
 			msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 	}
@@ -73,20 +75,21 @@ func (g *Grayimages) Processing(partial bool) (int, interface{}, map[string]stri
 	scannedFile := file.Bytes()
 	serviceResp, err := g.SendFileToAPI(file, fileExtension, fileName)
 	if err != nil || serviceResp.StatusCode != 200 {
-		logging.Logger.Error(g.serviceName + " error: " + err.Error())
+		logging.Logger.Error(utils.PrepareLogMsg(g.xICAPMetadata, g.serviceName+" error: "+err.Error()))
 		// if file recompress the file if it was compressed
 		if isGzip {
 			scannedFile, err = g.generalFunc.CompressFileGzip(scannedFile)
 			if err != nil {
-				logging.Logger.Error(g.serviceName + " error: " + err.Error())
-				logging.Logger.Info(g.serviceName + " service has stopped processing")
+				logging.Logger.Error(utils.PrepareLogMsg(g.xICAPMetadata, g.serviceName+" error: "+err.Error()))
+				logging.Logger.Info(utils.PrepareLogMsg(g.xICAPMetadata,
+					g.serviceName+" service has stopped processing"))
 				return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders,
 					msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 			}
 		}
 		// send file with no modification code
 		scannedFile = g.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, g.methodName)
-		logging.Logger.Info(g.serviceName + " service has stopped processing")
+		logging.Logger.Info(utils.PrepareLogMsg(g.xICAPMetadata, g.serviceName+" service has stopped processing"))
 		msgHeadersAfterProcessing = g.generalFunc.LogHTTPMsgHeaders(g.methodName)
 		return utils.NoModificationStatusCodeStr,
 			g.generalFunc.ReturningHttpMessageWithFile(g.methodName, scannedFile), serviceHeaders,
@@ -98,14 +101,15 @@ func (g *Grayimages) Processing(partial bool) (int, interface{}, map[string]stri
 		if isGzip {
 			scannedFile, err = g.generalFunc.CompressFileGzip(scannedFile)
 			if err != nil {
-				logging.Logger.Error(g.serviceName + " error: " + err.Error())
-				logging.Logger.Info(g.serviceName + " service has stopped processing")
+				logging.Logger.Error(utils.PrepareLogMsg(g.xICAPMetadata, g.serviceName+" error: "+err.Error()))
+				logging.Logger.Info(utils.PrepareLogMsg(g.xICAPMetadata,
+					g.serviceName+" service has stopped processing"))
 				return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders,
 					msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 			}
 		}
 		scannedFile = g.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, g.methodName)
-		logging.Logger.Info(g.serviceName + " service has stopped processing")
+		logging.Logger.Info(utils.PrepareLogMsg(g.xICAPMetadata, g.serviceName+" service has stopped processing"))
 		msgHeadersAfterProcessing = g.generalFunc.LogHTTPMsgHeaders(g.methodName)
 		return utils.NoModificationStatusCodeStr,
 			g.generalFunc.ReturningHttpMessageWithFile(g.methodName, scannedFile), serviceHeaders,
@@ -115,8 +119,9 @@ func (g *Grayimages) Processing(partial bool) (int, interface{}, map[string]stri
 	if isGzip {
 		scannedFile, err = g.generalFunc.CompressFileGzip(scannedFile)
 		if err != nil {
-			logging.Logger.Error(g.serviceName + " error: " + err.Error())
-			logging.Logger.Info(g.serviceName + " service has stopped processing")
+			logging.Logger.Error(utils.PrepareLogMsg(g.xICAPMetadata, g.serviceName+" error: "+err.Error()))
+			logging.Logger.Info(utils.PrepareLogMsg(g.xICAPMetadata,
+				g.serviceName+" service has stopped processing"))
 			return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders,
 				msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 		}
@@ -124,7 +129,7 @@ func (g *Grayimages) Processing(partial bool) (int, interface{}, map[string]stri
 	// send the image after gray scale
 	scannedFile = g.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, g.methodName)
 	g.generalFunc.LogHTTPMsgHeaders(g.methodName)
-	logging.Logger.Info(g.serviceName + " service has stopped processing")
+	logging.Logger.Info(utils.PrepareLogMsg(g.xICAPMetadata, g.serviceName+" service has stopped processing"))
 	msgHeadersAfterProcessing = g.generalFunc.LogHTTPMsgHeaders(g.methodName)
 	return utils.OkStatusCodeStr, g.generalFunc.ReturningHttpMessageWithFile(g.methodName, scannedFile),
 		serviceHeaders,
@@ -132,7 +137,7 @@ func (g *Grayimages) Processing(partial bool) (int, interface{}, map[string]stri
 }
 
 func (g *Grayimages) SendFileToAPI(f *bytes.Buffer, fileType string, fileName string) (*http.Response, error) {
-	logging.Logger.Debug("sending the image to API to process it")
+	logging.Logger.Debug(utils.PrepareLogMsg(g.xICAPMetadata, "sending the image to API to process it"))
 	var url string
 	switch fileType {
 	case "png":
@@ -157,19 +162,19 @@ func (g *Grayimages) SendFileToAPI(f *bytes.Buffer, fileType string, fileName st
 	}
 	err := writer.Close()
 	if err != nil {
-		logging.Logger.Error(g.serviceName + " error: " + err.Error())
+		logging.Logger.Error(utils.PrepareLogMsg(g.xICAPMetadata, g.serviceName+" error: "+err.Error()))
 		return nil, err
 	}
 	client := &http.Client{}
 	req, err := http.NewRequest(method, url, payload)
 	if err != nil {
-		logging.Logger.Error(g.serviceName + " error: " + err.Error())
+		logging.Logger.Error(utils.PrepareLogMsg(g.xICAPMetadata, g.serviceName+" error: "+err.Error()))
 		return nil, err
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	res, err := client.Do(req)
 	if err != nil {
-		logging.Logger.Error(g.serviceName + " error: " + err.Error())
+		logging.Logger.Error(utils.PrepareLogMsg(g.xICAPMetadata, g.serviceName+" error: "+err.Error()))
 		return nil, err
 	}
 	return res, nil

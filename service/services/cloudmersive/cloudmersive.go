@@ -18,23 +18,25 @@ import (
 
 func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]string, map[string]interface{},
 	map[string]interface{}, map[string]interface{}) {
-	logging.Logger.Info(c.serviceName + " service has started processing")
+	logging.Logger.Info(utils.PrepareLogMsg(c.xICAPMetadata, c.serviceName+" service has started processing"))
 	// ICAP response headers
 	serviceHeaders := make(map[string]string)
+	serviceHeaders["X-ICAP-Metadata"] = c.xICAPMetadata
 	msgHeadersBeforeProcessing := c.generalFunc.LogHTTPMsgHeaders(c.methodName)
 	msgHeadersAfterProcessing := make(map[string]interface{})
 	vendorMsgs := make(map[string]interface{})
 	// no need to scan part of the file, this service needs all the file at one time
 	if partial {
-		logging.Logger.Info(c.serviceName + " service has stopped processing partially")
+		logging.Logger.Info(utils.PrepareLogMsg(c.xICAPMetadata,
+			c.serviceName+" service has stopped processing partially"))
 		return utils.Continue, nil, nil, msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 	}
 
 	//extracting the file from http message
 	file, reqContentType, err := c.generalFunc.CopyingFileToTheBuffer(c.methodName)
 	if err != nil {
-		logging.Logger.Error(c.serviceName + " error: " + err.Error())
-		logging.Logger.Info(c.serviceName + " service has stopped processing")
+		logging.Logger.Error(utils.PrepareLogMsg(c.xICAPMetadata, c.serviceName+" error: "+err.Error()))
+		logging.Logger.Info(utils.PrepareLogMsg(c.xICAPMetadata, c.serviceName+" service has stopped processing"))
 		return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders,
 			msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 	}
@@ -71,7 +73,7 @@ func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]st
 		c.processExts, c.rejectExts, c.bypassExts, c.return400IfFileExtRejected, isGzip,
 		c.serviceName, c.methodName, CloudMersiveIdentifier, c.httpMsg.Request.RequestURI, reqContentType, file)
 	if !isProcess {
-		logging.Logger.Info(c.serviceName + " service has stopped processing")
+		logging.Logger.Info(utils.PrepareLogMsg(c.xICAPMetadata, c.serviceName+" service has stopped processing"))
 		msgHeadersAfterProcessing = c.generalFunc.LogHTTPMsgHeaders(c.methodName)
 		return icapStatus, httpMsg, serviceHeaders,
 			msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
@@ -82,20 +84,23 @@ func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]st
 		status, file, httpMsg := c.generalFunc.IfMaxFileSizeExc(c.returnOrigIfMaxSizeExc, c.serviceName, c.methodName, file, c.maxFileSize)
 		fileAfterPrep, httpMsg := c.generalFunc.IfStatusIs204WithFile(c.methodName, status, file, isGzip, reqContentType, httpMsg, true)
 		if fileAfterPrep == nil && httpMsg == nil {
-			logging.Logger.Info(c.serviceName + " service has stopped processing")
+			logging.Logger.Info(utils.PrepareLogMsg(c.xICAPMetadata,
+				c.serviceName+" service has stopped processing"))
 			return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders,
 				msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 		}
 		switch msg := httpMsg.(type) {
 		case *http.Request:
 			msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
-			logging.Logger.Info(c.serviceName + " service has stopped processing")
+			logging.Logger.Info(utils.PrepareLogMsg(c.xICAPMetadata,
+				c.serviceName+" service has stopped processing"))
 			msgHeadersAfterProcessing = c.generalFunc.LogHTTPMsgHeaders(c.methodName)
 			return status, msg, nil,
 				msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 		case *http.Response:
 			msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
-			logging.Logger.Info(c.serviceName + " service has stopped processing")
+			logging.Logger.Info(utils.PrepareLogMsg(c.xICAPMetadata,
+				c.serviceName+" service has stopped processing"))
 			msgHeadersAfterProcessing = c.generalFunc.LogHTTPMsgHeaders(c.methodName)
 			return status, msg, nil,
 				msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
@@ -107,16 +112,16 @@ func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]st
 	// sending request to cloudmersive api
 	serviceResp, err := c.SendFileToAPI(file, fileName)
 	if err != nil {
-		logging.Logger.Error(c.serviceName + " error: " + err.Error())
-		logging.Logger.Info(c.serviceName + " service has stopped processing")
+		logging.Logger.Error(utils.PrepareLogMsg(c.xICAPMetadata, c.serviceName+" error: "+err.Error()))
+		logging.Logger.Info(utils.PrepareLogMsg(c.xICAPMetadata, c.serviceName+" service has stopped processing"))
 		return serviceResp.StatusCode, nil, serviceHeaders,
 			msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 	}
 	// getting response body
 	body, err := ioutil.ReadAll(serviceResp.Body)
 	if err != nil {
-		logging.Logger.Error(c.serviceName + " error: " + err.Error())
-		logging.Logger.Info(c.serviceName + " service has stopped processing")
+		logging.Logger.Error(utils.PrepareLogMsg(c.xICAPMetadata, c.serviceName+" error: "+err.Error()))
+		logging.Logger.Info(utils.PrepareLogMsg(c.xICAPMetadata, c.serviceName+" service has stopped processing"))
 		return serviceResp.StatusCode, nil, serviceHeaders,
 			msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 	}
@@ -125,12 +130,13 @@ func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]st
 	// msg used to read error messages when status is not 200
 	msg := string(body)
 	if serviceResp.StatusCode == 400 && msg == "Invalid input: Input file was empty." {
-		logging.Logger.Error(c.serviceName + " error: Invalid input: Input file was empty")
+		logging.Logger.Error(utils.PrepareLogMsg(c.xICAPMetadata,
+			c.serviceName+" error: Invalid input: Input file was empty"))
 		errPage := c.generalFunc.GenHtmlPage(utils.BlockPagePath, msg, c.serviceName, serviceResp.Header["Request-Context"][0], c.httpMsg.Request.RequestURI)
 		c.httpMsg.Response = c.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
 		c.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
 		msgHeadersAfterProcessing = c.generalFunc.LogHTTPMsgHeaders(c.methodName)
-		logging.Logger.Info(c.serviceName + " service has stopped processing")
+		logging.Logger.Info(utils.PrepareLogMsg(c.xICAPMetadata, c.serviceName+" service has stopped processing"))
 		return utils.OkStatusCodeStr, c.httpMsg.Response, serviceHeaders,
 			msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 	}
@@ -139,7 +145,7 @@ func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]st
 	reason = ""
 	if data["CleanResult"].(bool) == false {
 		serviceHeaders["CleanResult"] = "false"
-		logging.Logger.Debug(c.serviceName + ": CleanResult equals false")
+		logging.Logger.Debug(utils.PrepareLogMsg(c.xICAPMetadata, c.serviceName+": CleanResult equals false"))
 		if data["ContainsExecutable"].(bool) == true && !c.allowExecutables {
 			reason = "executable files not allowed"
 		} else if data["ContainsScript"].(bool) == true && !c.allowScripts {
@@ -159,18 +165,20 @@ func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]st
 		}
 		if reason != "" {
 			if c.return400IfFileExtRejected {
-				logging.Logger.Info(c.serviceName + " service has stopped processing")
+				logging.Logger.Info(utils.PrepareLogMsg(c.xICAPMetadata,
+					c.serviceName+" service has stopped processing"))
 				return utils.BadRequestStatusCodeStr, nil, serviceHeaders,
 					msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 			}
 			errPage := c.generalFunc.GenHtmlPage(utils.BlockPagePath, reason, c.serviceName, serviceResp.Header["Request-Context"][0], c.httpMsg.Request.RequestURI)
 			c.httpMsg.Response = c.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
 			c.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
-			logging.Logger.Info(c.serviceName + " service has stopped processing")
+			logging.Logger.Info(utils.PrepareLogMsg(c.xICAPMetadata,
+				c.serviceName+" service has stopped processing"))
 			return utils.OkStatusCodeStr, c.httpMsg.Response, serviceHeaders,
 				msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 		}
-		logging.Logger.Debug(c.serviceName + " error: " + reason)
+		logging.Logger.Debug(utils.PrepareLogMsg(c.xICAPMetadata, c.serviceName+" error: "+reason))
 	}
 	// check if viruses found, and return virus information in error page
 	if data["FoundViruses"] != nil {
@@ -182,12 +190,13 @@ func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]st
 			reason += v
 			serviceHeaders["FoundViruses"] += v
 		}
-		logging.Logger.Debug(c.serviceName + " error: " + reason)
+		logging.Logger.Debug(utils.PrepareLogMsg(c.xICAPMetadata, c.serviceName+" error: "+reason))
 		if c.methodName == utils.ICAPModeResp {
 			errPage := c.generalFunc.GenHtmlPage(utils.BlockPagePath, reason, c.serviceName, serviceResp.Header["Request-Context"][0], c.httpMsg.Request.RequestURI)
 			c.httpMsg.Response = c.generalFunc.ErrPageResp(http.StatusForbidden, errPage.Len())
 			c.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
-			logging.Logger.Info(c.serviceName + " service has stopped processing")
+			logging.Logger.Info(utils.PrepareLogMsg(c.xICAPMetadata,
+				c.serviceName+" service has stopped processing"))
 			msgHeadersAfterProcessing = c.generalFunc.LogHTTPMsgHeaders(c.methodName)
 			return utils.OkStatusCodeStr, c.httpMsg.Response, serviceHeaders,
 				msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
@@ -206,14 +215,15 @@ func (c *CloudMersive) Processing(partial bool) (int, interface{}, map[string]st
 	serviceHeaders["CleanResult"] = "true"
 	scannedFile := c.generalFunc.PreparingFileAfterScanning(file.Bytes(), reqContentType, c.methodName)
 	c.generalFunc.LogHTTPMsgHeaders(c.methodName)
-	logging.Logger.Info(c.serviceName + " service has stopped processing")
+	logging.Logger.Info(utils.PrepareLogMsg(c.xICAPMetadata, c.serviceName+" service has stopped processing"))
 	msgHeadersAfterProcessing = c.generalFunc.LogHTTPMsgHeaders(c.methodName)
 	return utils.OkStatusCodeStr, c.generalFunc.ReturningHttpMessageWithFile(c.methodName, scannedFile), serviceHeaders,
 		msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 }
 
 func (c *CloudMersive) SendFileToAPI(f *bytes.Buffer, filename string) (*http.Response, error) {
-	logging.Logger.Debug("sending the HTTP message body to " + c.serviceName + " API")
+	logging.Logger.Debug(utils.PrepareLogMsg(c.xICAPMetadata,
+		"sending the HTTP message body to "+c.serviceName+" API"))
 	url := c.BaseURL + c.ScanEndPoint
 	bodyBuf := &bytes.Buffer{}
 
@@ -221,18 +231,18 @@ func (c *CloudMersive) SendFileToAPI(f *bytes.Buffer, filename string) (*http.Re
 
 	part, err := bodyWriter.CreateFormFile("file", filename)
 	if err != nil {
-		logging.Logger.Error(c.serviceName + " error: " + err.Error())
+		logging.Logger.Error(utils.PrepareLogMsg(c.xICAPMetadata, c.serviceName+" error: "+err.Error()))
 		return nil, err
 	}
 
 	io.Copy(part, bytes.NewReader(f.Bytes()))
 	if err := bodyWriter.Close(); err != nil {
-		logging.Logger.Error(c.serviceName + " error: " + err.Error())
+		logging.Logger.Error(utils.PrepareLogMsg(c.xICAPMetadata, c.serviceName+" error: "+err.Error()))
 		return nil, err
 	}
 	req, err := http.NewRequest(http.MethodPost, url, bodyBuf)
 	if err != nil {
-		logging.Logger.Error(c.serviceName + " error: " + err.Error())
+		logging.Logger.Error(utils.PrepareLogMsg(c.xICAPMetadata, c.serviceName+" error: "+err.Error()))
 		return nil, err
 	}
 	req.Header.Add("allowExecutables", strconv.FormatBool(c.allowExecutables))
@@ -258,7 +268,7 @@ func (c *CloudMersive) SendFileToAPI(f *bytes.Buffer, filename string) (*http.Re
 
 	res, err := client.Do(req)
 	if err != nil {
-		logging.Logger.Error(c.serviceName + " error: " + err.Error())
+		logging.Logger.Error(utils.PrepareLogMsg(c.xICAPMetadata, c.serviceName+" error: "+err.Error()))
 		return nil, err
 	}
 	return res, nil

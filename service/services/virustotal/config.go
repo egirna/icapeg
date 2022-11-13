@@ -17,6 +17,7 @@ const VirustotalIdentifier = "VIRUSTOTAL ID"
 
 // Virustotal represents the information regarding the Virustotal service
 type Virustotal struct {
+	xICAPMetadata              string
 	httpMsg                    *http_message.HttpMsg
 	serviceName                string
 	methodName                 string
@@ -54,8 +55,9 @@ func InitVirustotalConfig(serviceName string) {
 }
 
 // NewVirustotalService returns a new populated instance of the Virustotal service
-func NewVirustotalService(serviceName, methodName string, httpMsg *http_message.HttpMsg) *Virustotal {
+func NewVirustotalService(serviceName, methodName string, httpMsg *http_message.HttpMsg, xICAPMetadata string) *Virustotal {
 	return &Virustotal{
+		xICAPMetadata:              xICAPMetadata,
 		httpMsg:                    httpMsg,
 		serviceName:                serviceName,
 		methodName:                 methodName,
@@ -70,6 +72,6 @@ func NewVirustotalService(serviceName, methodName string, httpMsg *http_message.
 		APIKey:                     virustoalConfig.APIKey,
 		returnOrigIfMaxSizeExc:     virustoalConfig.returnOrigIfMaxSizeExc,
 		return400IfFileExtRejected: virustoalConfig.return400IfFileExtRejected,
-		generalFunc:                general_functions.NewGeneralFunc(httpMsg),
+		generalFunc:                general_functions.NewGeneralFunc(httpMsg, xICAPMetadata),
 	}
 }

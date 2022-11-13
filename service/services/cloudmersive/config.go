@@ -16,6 +16,7 @@ var cloudMersiveConfig *CloudMersive
 const CloudMersiveIdentifier = "CLOUDMERSIVE ID"
 
 type CloudMersive struct {
+	xICAPMetadata                string
 	httpMsg                      *http_message.HttpMsg
 	serviceName                  string
 	methodName                   string
@@ -70,8 +71,9 @@ func InitCloudMersiveConfig(serviceName string) {
 	})
 }
 
-func NewCloudMersiveService(serviceName, methodName string, httpMsg *http_message.HttpMsg) *CloudMersive {
+func NewCloudMersiveService(serviceName, methodName string, httpMsg *http_message.HttpMsg, xICAPMetadata string) *CloudMersive {
 	return &CloudMersive{
+		xICAPMetadata:               xICAPMetadata,
 		httpMsg:                     httpMsg,
 		serviceName:                 serviceName,
 		methodName:                  methodName,
@@ -89,7 +91,7 @@ func NewCloudMersiveService(serviceName, methodName string, httpMsg *http_messag
 		APIKey:                      cloudMersiveConfig.APIKey,
 		returnOrigIfMaxSizeExc:      cloudMersiveConfig.returnOrigIfMaxSizeExc,
 		return400IfFileExtRejected:  cloudMersiveConfig.return400IfFileExtRejected,
-		generalFunc:                 general_functions.NewGeneralFunc(httpMsg),
+		generalFunc:                 general_functions.NewGeneralFunc(httpMsg, xICAPMetadata),
 		bypassExts:                  cloudMersiveConfig.bypassExts,
 		processExts:                 cloudMersiveConfig.processExts,
 		rejectExts:                  cloudMersiveConfig.rejectExts,

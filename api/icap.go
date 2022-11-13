@@ -13,10 +13,10 @@ func ToICAPEGServe(w icap.ResponseWriter, req *icap.Request) {
 
 	//calling RequestInitialization to retrieve the important information from the ICAP request
 	//and initialize the ICAP response
-	err := ICAPRequest.RequestInitialization()
+	xICAPMetadata, err := ICAPRequest.RequestInitialization()
 	if err != nil {
 		return
 	}
 	// after initialization, we call RequestProcessing func to process the ICAP request with a service
-	ICAPRequest.RequestProcessing()
+	ICAPRequest.RequestProcessing(xICAPMetadata)
 }

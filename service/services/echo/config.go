@@ -17,6 +17,7 @@ const EchoIdentifier = "ECHO ID"
 
 // Echo represents the information regarding the Echo service
 type Echo struct {
+	xICAPMetadata              string
 	httpMsg                    *http_message.HttpMsg
 	elapsed                    time.Duration
 	serviceName                string
@@ -47,12 +48,13 @@ func InitEchoConfig(serviceName string) {
 }
 
 // NewEchoService returns a new populated instance of the Echo service
-func NewEchoService(serviceName, methodName string, httpMsg *http_message.HttpMsg) *Echo {
+func NewEchoService(serviceName, methodName string, httpMsg *http_message.HttpMsg, xICAPMetadata string) *Echo {
 	return &Echo{
+		xICAPMetadata:              xICAPMetadata,
 		httpMsg:                    httpMsg,
 		serviceName:                serviceName,
 		methodName:                 methodName,
-		generalFunc:                general_functions.NewGeneralFunc(httpMsg),
+		generalFunc:                general_functions.NewGeneralFunc(httpMsg, xICAPMetadata),
 		maxFileSize:                echoConfig.maxFileSize,
 		bypassExts:                 echoConfig.bypassExts,
 		processExts:                echoConfig.processExts,
