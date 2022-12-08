@@ -3,22 +3,29 @@ title = "ICAPEG configuration file"
 [app]
 debug = false
 port = 1344
-max_filesize = 10000000 #bytes
+max_filesize = 100000000  #bytes
 resp_scanner_vendor = "clamav" # Supported vendors for respmod of ICAP: "virustotal", "metadefender" , "vmray" , "clamav" , ""- empty specifies, respmod will be bypassing everything
 req_scanner_vendor = "" # Supported vendors for reqmod of ICAP: "virustotal" , "vmray",
 bypass_extensions = ["*"]
-process_extensions = ["txt" , "pdf" , "dmg" , "exe" , "com", "rar" , "unknown"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
+process_extensions = ["*"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
 preview_bytes = "0" #bytes
 propagate_error = true
 
 [remote_icap]
 enabled = true
-base_url = "icap://127.0.0.1:1345"
+base_url = "icap://10.0.80.30:1344"
+reqmod_endpoint = "/reqmod-icapeg"
+respmod_endpoint = "/respmod"
+options_endpoint = ""
+timeout = 600# seconds, the whole allowed life span of an ICAP request
+
+[shadow_icap]
+enabled = true
+base_url = "icap://206.189.22.56:1344"
 reqmod_endpoint = "/reqmod-icapeg"
 respmod_endpoint = "/respmod-icapeg"
 options_endpoint = ""
-timeout = 50# seconds, the whole allowed life span of an ICAP request
-
+timeout = 600# seconds, the whole allowed life span of an ICAP request
 
 [virustotal]
 base_url = "https://www.virustotal.com/vtapi/v2"

@@ -31,7 +31,9 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 
 	appCfg := config.App()
 	riCfg := config.RemoteICAP()
+	siCfg := config.ShadowICAP()
 	var riSvc *service.RemoteICAPService
+	var siSvc *service.ShadowICAPService
 
 	if riCfg.Enabled {
 		riSvc = &service.RemoteICAPService{
@@ -104,6 +106,73 @@ func ToICAPEGResp(w icap.ResponseWriter, req *icap.Request) {
 			riSvc.Endpoint = riCfg.RespmodEndpoint
 			riSvc.HTTPRequest = req.Request
 			riSvc.HTTPResponse = req.Response
+
+			if req.Request.URL.Scheme == "" {
+				fmt.Println("Scheme not found, changing the url")
+				u, _ := url.Parse("http://" + req.Request.Host + req.Request.URL.Path)
+				req.Request.URL = u
+			}
+
+			b, err := ioutil.ReadAll(req.Response.Body)
+
+			if err != nil {
+				log.Println("Error reading the body: ", err.Error())
+			}
+
+			bdyStr := string(b)
+			if len(b) > int(req.Response.ContentLength) {
+				if strings.HasSuffix(bdyStr, "\n\n") {
+					bdyStr = strings.TrimSuffix(bdyStr, "\n\n")
+				}
+			}
+
+			req.Response.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(bdyStr)))
+
+			resp, err := service.RemoteICAPRespmod(*riSvc)
+
+			if err != nil {
+				log.Printf("Failed to make RESPMOD call to remote icap server: %s\n", err.Error())
+				w.WriteHeader(utils.IfPropagateError(http.StatusFailedDependency, http.StatusNoContent), nil, false)
+				return
+			}
+
+			for header, values := range resp.Header {
+				for _, value := range values {
+					h.Set(header, value)
+				}
+			}
+
+			log.Printf("Received response from the remote ICAP server with status code: %d...\n", resp.StatusCode)
+
+			if resp.StatusCode == http.StatusOK { // NOTE: this is done to render the error html page, not sure this is the proper way
+
+				if resp.ContentResponse != nil && resp.ContentResponse.Body != nil {
+
+					bdyByte, err := ioutil.ReadAll(resp.ContentResponse.Body)
+					if err != nil && err != io.ErrUnexpectedEOF {
+						log.Println("Failed to read body from the remote icap response: ", err.Error())
+						w.WriteHeader(utils.IfPropagateError(http.StatusInternalServerError, http.StatusNoContent), nil, false)
+						return
+					}
+
+					defer resp.ContentResponse.Body.Close()
+
+					w.WriteHeader(resp.StatusCode, resp.ContentResponse, true)
+
+					w.Write(bdyByte)
+					return
+				}
+			}
+			w.WriteHeader(resp.StatusCode, nil, false)
+			
+		}
+
+		//Shadow ICAP stuff
+		if siSvc != nil && siCfg.RespmodEndpoint != "" {
+
+			siSvc.Endpoint = siCfg.RespmodEndpoint
+			siSvc.HTTPRequest = req.Request
+			siSvc.HTTPResponse = req.Response
 
 			if req.Request.URL.Scheme == "" {
 				fmt.Println("Scheme not found, changing the url")
