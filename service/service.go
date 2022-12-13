@@ -3,7 +3,7 @@ package service
 import (
 	http_message "icapeg/http-message"
 	"icapeg/logging"
-	CLhashlookuppackage "icapeg/service/services/CLhashlookup"
+	hashlookuppackage "icapeg/service/services/cl-hashlookup"
 	"icapeg/service/services/clamav"
 	"icapeg/service/services/cloudmersive"
 	"icapeg/service/services/echo"
@@ -18,7 +18,7 @@ const (
 	VendorVirustotal   = "virustotal"
 	VendorCloudMersive = "cloudmersive"
 	VendorGrayimages   = "grayimages"
-	VendorCLHashlookup = "CLhashlookup"
+	VendorCLHashlookup = "cl-hashlookup"
 )
 
 type (
@@ -45,7 +45,7 @@ func GetService(vendor, serviceName, methodName string, httpMsg *http_message.Ht
 	case VendorGrayimages:
 		return grayimages.NewGrayimagesService(serviceName, methodName, httpMsg)
 	case VendorCLHashlookup:
-		return CLhashlookuppackage.NewHashlookupService(serviceName, methodName, httpMsg)
+		return hashlookuppackage.NewHashlookupService(serviceName, methodName, httpMsg)
 	}
 
 	return nil
@@ -66,6 +66,6 @@ func InitServiceConfig(vendor, serviceName string) {
 	case VendorGrayimages:
 		grayimages.InitGrayimagesConfig(serviceName)
 	case VendorCLHashlookup:
-		CLhashlookuppackage.InitHashlookupConfig(serviceName)
+		hashlookuppackage.InitHashlookupConfig(serviceName)
 	}
 }
