@@ -135,10 +135,10 @@ max_filesize = 0 #bytes
 return_original_if_max_file_size_exceeded=true
 return_400_if_file_ext_rejected=false
 
-[cl-hashlookup]
-vendor = "hashlookup"
-service_caption= "hash lookup"   #Service
-service_tag = "HASHLOOKUP ICAP"  #ISTAG
+[CLhashlookup]
+vendor = "CLhashlookup"
+service_caption= "CLhashlookup"   #Service
+service_tag = "CLhashlookup ICAP"  #ISTAG
 req_mode=true
 resp_mode=true
 shadow_service=false
@@ -147,7 +147,7 @@ preview_enabled = true# options send preview header or not
 bypass_extensions = ["*"]
 process_extensions = ["pdf","exe", "zip"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
 reject_extensions = ["docx"]
-scan_url = "http://23.106.36.101:5555/is-malicious" #
+scan_url = "https://hashlookup.circl.lu/lookup/sha256/" #
 timeout  = 300 #seconds , ICAP will return 408 - Request timeout
 fail_threshold = 2
 max_filesize = 0 #bytes
