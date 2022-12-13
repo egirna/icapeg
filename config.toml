@@ -135,7 +135,7 @@ max_filesize = 0 #bytes
 return_original_if_max_file_size_exceeded=true
 return_400_if_file_ext_rejected=false
 
-[hashlookup]
+[cl-hashlookup]
 vendor = "hashlookup"
 service_caption= "hash lookup"   #Service
 service_tag = "HASHLOOKUP ICAP"  #ISTAG
