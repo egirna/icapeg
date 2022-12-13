@@ -126,30 +126,22 @@ func (h *Hashlookup) sendFileToScan(f *bytes.Buffer) (bool, error) {
 	hash := sha256.New()
 	_, _ = io.Copy(hash, f)
 	fileHash := hex.EncodeToString(hash.Sum([]byte(nil)))
-	//fileHash = "E8E123812167819F0D1AD572C85094F13369413A6E3D1127E4A786CC0A31FD0D"
-	//var jsonStr = []byte(`{"hash":"` + fileHash + `"}`)
 	req, err := http.NewRequest("GET", h.ScanUrl+fileHash, nil)
 	client := &http.Client{}
 	ctx, cancel := context.WithTimeout(context.Background(), h.Timeout)
 	defer cancel()
 	req = req.WithContext(ctx)
 	resp, err := client.Do(req)
-	println(resp)
 	if err != nil {
 		return false, err
 	}
 	defer resp.Body.Close()
 	var data map[string]interface{}
 	err = json.NewDecoder(resp.Body).Decode(&data)
-	fmt.Println(err)
 	y, err := (fmt.Sprint(data["KnownMalicious"])), nil
-	fmt.Println(len(y))
-	fmt.Println(err)
 	if len(y) > 0 {
-		fmt.Println("Malicious")
 		return true, nil
 	} else {
-		fmt.Println("non")
 		return false, nil
 
 	}
