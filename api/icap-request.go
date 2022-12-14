@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"icapeg/config"
-	"icapeg/consts"
-	"icapeg/http-message"
+	utils "icapeg/consts"
+	http_message "icapeg/http-message"
 	"icapeg/icap"
 	"icapeg/logging"
 	"icapeg/service"
@@ -202,7 +202,7 @@ func (i *ICAPRequest) RespAndReqMods(partial bool, xICAPMetadata string) {
 		"calling Processing func to process the http message which encapsulated inside the ICAP request"))
 	//calling Processing func to process the http message which encapsulated inside the ICAP request
 	IcapStatusCode, httpMsg, serviceHeaders, httpMshHeadersBeforeProcessing, httpMshHeadersAfterProcessing,
-		vendorMsgs := requiredService.Processing(partial)
+		vendorMsgs := requiredService.Processing(partial, i.req.Header)
 
 	// adding the headers which the service wants to add them in the ICAP response
 	logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata,

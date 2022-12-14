@@ -9,6 +9,7 @@ import (
 	"icapeg/service/services/echo"
 	"icapeg/service/services/grayimages"
 	"icapeg/service/services/virustotal"
+	"net/textproto"
 )
 
 // Vendors names
@@ -24,7 +25,7 @@ const (
 type (
 	// Service holds the info to distinguish a service
 	Service interface {
-		Processing(bool) (int, interface{}, map[string]string,
+		Processing(bool, textproto.MIMEHeader) (int, interface{}, map[string]string,
 			map[string]interface{}, map[string]interface{}, map[string]interface{})
 		ISTagValue() string
 	}
