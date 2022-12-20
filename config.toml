@@ -43,39 +43,6 @@ max_filesize = 0 #bytes
 return_original_if_max_file_size_exceeded=false
 return_400_if_file_ext_rejected=false
 
-[demo]
-vendor = "demo"
-service_caption= "demo"   #Service
-service_tag = "demo ICAP"  #ISTAG
-req_mode=true
-resp_mode=true
-shadow_service=false
-preview_bytes = "1024" #byte
-preview_enabled = false # options send preview header or not
-bypass_extensions = ["*"]
-process_extensions = ["pptx","ppt","xlsx","xls","docx", "doc","pdf","exe","zip"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
-reject_extensions = []
-openJob_url = "https://apiv4.egirna.net/scanner.svc/v4/OpenJob" #
-upload_url = "https://apiv4.egirna.net/scanner.svc/v4/upload/file" #
-activate_url = "https://apiv4.egirna.net/scanner.svc/v4/ActivateJob" #
-result_url =  "https://apiv4.egirna.net/scanner.svc/v4/scan" #
-result_interval_req=3000 #Millisecond
-split_size=10000000  #byte where size should be > than 10000, else will send one part
-timeout  = 3000 #seconds , ICAP will return 408 - Request timeout
-fail_threshold = 2
-max_filesize = 0 #bytes , value from 1 to 9223372036854775807, and value of zero means unlimited
-return_original_if_max_file_size_exceeded=true
-return_400_if_file_ext_rejected=false
-AppInfo="test icap"
-GS-Key="873ca294-2684-4d71-8613-82581b691df8"
-profileID="11"
-verify_server_cert=true
-bypass_on_api_error=false
-http_exception_response_code = 403
-http_exception_has_body = true
-exception_page = "./temp/exception-page.html" # Location of the exception page for this service
-
-
 
 [clhashlookup]
 vendor = "clhashlookup"
