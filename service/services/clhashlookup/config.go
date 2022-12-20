@@ -1,4 +1,4 @@
-package hashlookuppackage
+package clhashlookup
 
 import (
 	http_message "icapeg/http-message"
@@ -6,14 +6,13 @@ import (
 	"icapeg/readValues"
 	services_utilities "icapeg/service/services-utilities"
 	general_functions "icapeg/service/services-utilities/general-functions"
+	"net/textproto"
 	"sync"
 	"time"
 )
 
 var doOnce sync.Once
-var hashLookupConfig *Hashlookup
-
-const HashLookupIdentifier = "HASHLOOKUP ID"
+var HashLookupConfig *Hashlookup
 
 // Hashlookup represents the information regarding the Hashlookup service
 type Hashlookup struct {
@@ -31,12 +30,19 @@ type Hashlookup struct {
 	returnOrigIfMaxSizeExc     bool
 	return400IfFileExtRejected bool
 	generalFunc                *general_functions.GeneralFunc
+	BypassOnApiError           bool
+	verifyServerCert           bool
+	FileHash                   string
+	CaseBlockHttpResponseCode  int
+	CaseBlockHttpBody          bool
+	ExceptionPage              string
+	IcapHeaders                textproto.MIMEHeader
 }
 
 func InitHashlookupConfig(serviceName string) {
 	logging.Logger.Debug("loading " + serviceName + " service configurations")
 	doOnce.Do(func() {
-		hashLookupConfig = &Hashlookup{
+		HashLookupConfig = &Hashlookup{
 			maxFileSize:                readValues.ReadValuesInt(serviceName + ".max_filesize"),
 			bypassExts:                 readValues.ReadValuesSlice(serviceName + ".bypass_extensions"),
 			processExts:                readValues.ReadValuesSlice(serviceName + ".process_extensions"),
@@ -45,8 +51,13 @@ func InitHashlookupConfig(serviceName string) {
 			Timeout:                    readValues.ReadValuesDuration(serviceName + ".timeout"),
 			returnOrigIfMaxSizeExc:     readValues.ReadValuesBool(serviceName + ".return_original_if_max_file_size_exceeded"),
 			return400IfFileExtRejected: readValues.ReadValuesBool(serviceName + ".return_400_if_file_ext_rejected"),
+			BypassOnApiError:           readValues.ReadBoolFromEnv(serviceName + ".bypass_on_api_error"),
+			verifyServerCert:           readValues.ReadValuesBool(serviceName + ".verify_server_cert"),
+			CaseBlockHttpResponseCode:  readValues.ReadValuesInt(serviceName + ".http_exception_response_code"),
+			CaseBlockHttpBody:          readValues.ReadValuesBool(serviceName + ".http_exception_has_body"),
+			ExceptionPage:              readValues.ReadValuesString(serviceName + ".exception_page"),
 		}
-		hashLookupConfig.extArrs = services_utilities.InitExtsArr(hashLookupConfig.processExts, hashLookupConfig.rejectExts, hashLookupConfig.bypassExts)
+		HashLookupConfig.extArrs = services_utilities.InitExtsArr(HashLookupConfig.processExts, HashLookupConfig.rejectExts, HashLookupConfig.bypassExts)
 	})
 }
 
@@ -57,15 +68,20 @@ func NewHashlookupService(serviceName, methodName string, httpMsg *http_message.
 		httpMsg:                    httpMsg,
 		serviceName:                serviceName,
 		methodName:                 methodName,
-		maxFileSize:                hashLookupConfig.maxFileSize,
-		bypassExts:                 hashLookupConfig.bypassExts,
-		processExts:                hashLookupConfig.processExts,
-		rejectExts:                 hashLookupConfig.rejectExts,
-		extArrs:                    hashLookupConfig.extArrs,
-		ScanUrl:                    hashLookupConfig.ScanUrl,
-		Timeout:                    hashLookupConfig.Timeout * time.Second,
-		returnOrigIfMaxSizeExc:     hashLookupConfig.returnOrigIfMaxSizeExc,
-		return400IfFileExtRejected: hashLookupConfig.return400IfFileExtRejected,
+		maxFileSize:                HashLookupConfig.maxFileSize,
+		bypassExts:                 HashLookupConfig.bypassExts,
+		processExts:                HashLookupConfig.processExts,
+		rejectExts:                 HashLookupConfig.rejectExts,
+		extArrs:                    HashLookupConfig.extArrs,
+		ScanUrl:                    HashLookupConfig.ScanUrl,
+		Timeout:                    HashLookupConfig.Timeout * time.Second,
+		returnOrigIfMaxSizeExc:     HashLookupConfig.returnOrigIfMaxSizeExc,
+		return400IfFileExtRejected: HashLookupConfig.return400IfFileExtRejected,
 		generalFunc:                general_functions.NewGeneralFunc(httpMsg, xICAPMetadata),
+		verifyServerCert:           HashLookupConfig.verifyServerCert,
+		BypassOnApiError:           HashLookupConfig.BypassOnApiError,
+		CaseBlockHttpResponseCode:  HashLookupConfig.CaseBlockHttpResponseCode,
+		CaseBlockHttpBody:          HashLookupConfig.CaseBlockHttpBody,
+		ExceptionPage:              HashLookupConfig.ExceptionPage,
 	}
 }

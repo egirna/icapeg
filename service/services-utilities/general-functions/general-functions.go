@@ -4,10 +4,9 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
-	"github.com/h2non/filetype"
 	"html/template"
-	"icapeg/consts"
-	"icapeg/http-message"
+	utils "icapeg/consts"
+	http_message "icapeg/http-message"
 	"icapeg/logging"
 	"icapeg/readValues"
 	services_utilities "icapeg/service/services-utilities"
@@ -16,18 +15,23 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/url"
+	"path"
 	"strconv"
 	"strings"
+
+	"github.com/h2non/filetype"
 )
 
 // error page struct
 type (
 	ErrorPage struct {
-		Reason       string `json:"reason"`
-		ServiceName  string `json:"service_name"`
-		RequestedURL string `json:"requested_url"`
-		IdentifierId string `json:"identifier_id"`
+		Reason        string `json:"reason"`
+		ServiceName   string `json:"service_name"`
+		RequestedURL  string `json:"requested_url"`
+		IdentifierId  string `json:"identifier_id"`
+		ExceptionPage string `json:"exception_page"`
+		Size          string `json:"size"`
+		XICAPMetadata string `json:"X-ICAP-Metadata"`
 	}
 )
 
@@ -69,7 +73,7 @@ func (f *GeneralFunc) CopyingFileToTheBuffer(methodName string) (*bytes.Buffer, 
 
 func (f *GeneralFunc) CheckTheExtension(fileExtension string, extArrs []services_utilities.Extension, processExts,
 	rejectExts, bypassExts []string, return400IfFileExtRejected, isGzip bool, serviceName, methodName, identifier,
-	requestURI string, reqContentType ContentTypes.ContentType, file *bytes.Buffer) (bool, int, interface{}) {
+	requestURI string, reqContentType ContentTypes.ContentType, file *bytes.Buffer, BlockPagePath string, fileSize string) (bool, int, interface{}) {
 	logging.Logger.Info(utils.PrepareLogMsg(f.xICAPMetadata,
 		"checking the extension (reject or bypass or process))"))
 	for i := 0; i < 3; i++ {
@@ -85,12 +89,12 @@ func (f *GeneralFunc) CheckTheExtension(fileExtension string, extArrs []services
 					return false, utils.BadRequestStatusCodeStr, nil
 				}
 				if methodName == "RESPMOD" {
-					errPage := f.GenHtmlPage(utils.BlockPagePath, utils.ErrPageReasonFileRejected, serviceName, identifier, requestURI)
+					errPage := f.GenHtmlPage(BlockPagePath, utils.ErrPageReasonFileRejected, serviceName, identifier, requestURI, fileSize, f.xICAPMetadata)
 					f.httpMsg.Response = f.ErrPageResp(http.StatusForbidden, errPage.Len())
 					f.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
 					return false, utils.OkStatusCodeStr, f.httpMsg.Response
 				} else {
-					htmlPage, req, err := f.ReqModErrPage(utils.ErrPageReasonFileRejected, serviceName, "NO ID")
+					htmlPage, req, err := f.ReqModErrPage(utils.ErrPageReasonFileRejected, serviceName, "-", fileSize)
 					if err != nil {
 						return false, utils.InternalServerErrStatusCodeStr, nil
 					}
@@ -193,7 +197,7 @@ func (f *GeneralFunc) DecompressGzipBody(file *bytes.Buffer) (*bytes.Buffer, err
 	return bytes.NewBuffer(result), nil
 }
 
-func (f *GeneralFunc) ReqModErrPage(reason, serviceName, IdentifierId string) (*bytes.Buffer, *http.Request, error) {
+func (f *GeneralFunc) ReqModErrPage(reason, serviceName, IdentifierId string, fileSize string) (*bytes.Buffer, *http.Request, error) {
 	host := readValues.ReadValuesString("app.web_server_host")
 	endpoint := readValues.ReadValuesString("app.web_server_endpoint")
 	url := host + endpoint
@@ -214,6 +218,7 @@ func (f *GeneralFunc) ReqModErrPage(reason, serviceName, IdentifierId string) (*
 		ServiceName:  serviceName,
 		RequestedURL: reqUri,
 		IdentifierId: IdentifierId,
+		Size:         fileSize,
 	}
 	req := &http.Request{
 		URL:        f.httpMsg.Request.URL,
@@ -236,7 +241,7 @@ func (f *GeneralFunc) ReqModErrPage(reason, serviceName, IdentifierId string) (*
 // IfMaxFileSizeExc is a functions which used for deciding the right http message should be returned
 // if the file size is greater than the max file size of the service
 func (f *GeneralFunc) IfMaxFileSizeExc(returnOrigIfMaxSizeExc bool, serviceName, methodName string,
-	file *bytes.Buffer, maxFileSize int) (int, *bytes.Buffer, interface{}) {
+	file *bytes.Buffer, maxFileSize int, BlockPagePath string, fileSize string) (int, *bytes.Buffer, interface{}) {
 	logging.Logger.Debug(utils.PrepareLogMsg(f.xICAPMetadata, "HTTP message body size exceeds the limit"))
 	logging.Logger.Debug(utils.PrepareLogMsg(f.xICAPMetadata, "HTTP message body size: "+strconv.Itoa(file.Len())+
 		" MB, the allowed max file size: "+strconv.Itoa(maxFileSize)+" MB")) //check if returning the original file option is enabled in this case or not
@@ -246,12 +251,13 @@ func (f *GeneralFunc) IfMaxFileSizeExc(returnOrigIfMaxSizeExc bool, serviceName,
 		return utils.NoModificationStatusCodeStr, file, nil
 	} else {
 		if methodName == utils.ICAPModeResp {
-			htmlErrPage := f.GenHtmlPage(utils.BlockPagePath,
-				utils.ErrPageReasonMaxFileExceeded, serviceName, "NO ID", f.httpMsg.Request.RequestURI)
+
+			htmlErrPage := f.GenHtmlPage(BlockPagePath,
+				utils.ErrPageReasonMaxFileExceeded, serviceName, "-", f.httpMsg.Request.RequestURI, fileSize, f.xICAPMetadata)
 			f.httpMsg.Response = f.ErrPageResp(http.StatusForbidden, htmlErrPage.Len())
 			return utils.OkStatusCodeStr, htmlErrPage, f.httpMsg.Response
 		} else {
-			htmlPage, req, err := f.ReqModErrPage(utils.ErrPageReasonMaxFileExceeded, serviceName, "NO ID")
+			htmlPage, req, err := f.ReqModErrPage(utils.ErrPageReasonMaxFileExceeded, serviceName, "-", fileSize)
 			if err != nil {
 				return utils.InternalServerErrStatusCodeStr, htmlPage, req
 			}
@@ -263,28 +269,29 @@ func (f *GeneralFunc) IfMaxFileSizeExc(returnOrigIfMaxSizeExc bool, serviceName,
 // GetFileName returns the filename from the http request
 func (f *GeneralFunc) GetFileName() string {
 	logging.Logger.Info(utils.PrepareLogMsg(f.xICAPMetadata, "getting the file name"))
+	var filename string
 
-	//req.RequestURI  inserting dummy response if the http request is nil
-	var Requrl string
-	if f.httpMsg.Request == nil || f.httpMsg.Request.RequestURI == "" {
-		Requrl = "http://www.example/images/unnamed_file"
+	if f.httpMsg.Response != nil && f.httpMsg.Response.Request != nil {
+		if f.httpMsg.Response.Request.RequestURI != "" {
+			r := f.httpMsg.Response.Request.URL
+			filename = path.Base(r.Path)
+		}
+	} else if f.httpMsg.Request != nil {
+		if f.httpMsg.Request.RequestURI != "" {
+			r := f.httpMsg.Request.URL
+			filename = path.Base(r.Path)
+		}
 
 	} else {
-		Requrl = f.httpMsg.Request.RequestURI
-		if Requrl[len(Requrl)-1] == '/' {
-			Requrl = Requrl[0 : len(Requrl)-1]
-		} else {
-			Requrl = "http://www.example/images/unnamed_file"
-		}
+		return "unnamed_file"
 	}
-	u, _ := url.Parse(Requrl)
 
-	uu := strings.Split(u.EscapedPath(), "/")
-
-	if len(uu) > 0 {
-		return uu[len(uu)-1]
+	if len(filename) < 2 {
+		return "unnamed_file"
 	}
-	return "unnamed_file"
+
+	return filename
+
 }
 
 // CompressFileGzip is a func which used for compress files in gzip
@@ -313,15 +320,21 @@ func (f *GeneralFunc) ErrPageResp(status int, pageContentLength int) *http.Respo
 }
 
 // GenHtmlPage is a func used for generating an error page
-func (f *GeneralFunc) GenHtmlPage(path, reason, serviceName, identifierId, reqUrl string) *bytes.Buffer {
+func (f *GeneralFunc) GenHtmlPage(path, reason, serviceName, identifierId, reqUrl string, fileSize string, xICAPMetadata string) *bytes.Buffer {
 	logging.Logger.Info(utils.PrepareLogMsg(f.xICAPMetadata, "preparing a block page"))
-	htmlTmpl, _ := template.ParseFiles(path)
+	htmlTmpl, err := template.ParseFiles(path)
+	if err != nil {
+		logging.Logger.Error("exception page path not exist and replaced with default page")
+		htmlTmpl, _ = template.ParseFiles(utils.BlockPagePath)
+	}
 	htmlErrPage := &bytes.Buffer{}
 	htmlTmpl.Execute(htmlErrPage, &ErrorPage{
-		Reason:       reason,
-		ServiceName:  serviceName,
-		RequestedURL: reqUrl,
-		IdentifierId: identifierId,
+		Reason:        reason,
+		ServiceName:   serviceName,
+		RequestedURL:  reqUrl,
+		IdentifierId:  identifierId,
+		Size:          fileSize,
+		XICAPMetadata: xICAPMetadata,
 	})
 	return htmlErrPage
 }

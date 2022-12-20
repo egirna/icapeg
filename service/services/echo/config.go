@@ -1,7 +1,7 @@
 package echo
 
 import (
-	"icapeg/http-message"
+	http_message "icapeg/http-message"
 	"icapeg/logging"
 	"icapeg/readValues"
 	services_utilities "icapeg/service/services-utilities"
