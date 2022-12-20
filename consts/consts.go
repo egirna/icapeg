@@ -37,7 +37,7 @@ const (
 	BlockPagePath                     = "block-page.html"
 	ErrPageReasonFileRejected         = "fileRejected"
 	ErrPageReasonMaxFileExceeded      = "maxFileSizeExceeded"
-	ErrPageReasonFileIsNotSafe        = "FileIsNotSafe"
+	ErrPageReasonFileIsNotSafe        = "fileIsNotSafe"
 	ICAPRequestIdLen                  = 20
 	IdentifierString                  = "abcdefghijklmnopqrstuvwxyz0123456789"
 )

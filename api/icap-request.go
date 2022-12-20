@@ -10,7 +10,6 @@ import (
 	"icapeg/icap"
 	"icapeg/logging"
 	"icapeg/service"
-	"icapeg/service/services-utilities/ContentTypes"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -123,19 +122,31 @@ func (i *ICAPRequest) RequestProcessing(xICAPMetadata string) {
 	if i.methodName != utils.ICAPModeOptions {
 		file := &bytes.Buffer{}
 		fileLen := 0
+
 		if i.methodName == utils.ICAPModeResp {
 			io.Copy(file, i.req.Response.Body)
 			fileLen = file.Len()
 			i.req.Response.Header.Set(utils.ContentLength, strconv.Itoa(len(file.Bytes())))
 			i.req.Response.Body = io.NopCloser(bytes.NewBuffer(file.Bytes()))
+
 		} else {
-			reqContentType := ContentTypes.GetContentType(i.req.Request)
-			// getting the file from request and store it in buf as a type of bytes.Buffer
-			file = reqContentType.GetFileFromRequest()
-			fileLen = file.Len()
-			fileBytes := []byte(reqContentType.BodyAfterScanning(file.Bytes()))
-			i.req.Request.Header.Set(utils.ContentLength, strconv.Itoa(len(fileBytes)))
-			i.req.Request.Body = io.NopCloser(bytes.NewBuffer(fileBytes))
+			if i.req.Method == utils.ICAPModeReq {
+
+				new, err := http.NewRequest(i.req.Request.Method, i.req.Request.URL.String(), nil)
+				if err != nil {
+					i.req.OrgRequest = i.req.Request
+
+				} else {
+					i.req.OrgRequest = new
+				}
+				body, _ := ioutil.ReadAll(i.req.Request.Body)
+				i.req.OrgRequest.Body = io.NopCloser(bytes.NewBuffer(body))
+				i.req.OrgRequest.Header = i.req.Request.Header
+				i.req.OrgRequest.Header.Set(utils.ContentLength, strconv.Itoa(len(body)))
+				i.req.Request.Body = io.NopCloser(bytes.NewBuffer(body))
+
+			}
+
 		}
 		if fileLen == 0 {
 			partial = false
@@ -184,10 +195,18 @@ func (i *ICAPRequest) HostHeader() {
 }
 
 func (i *ICAPRequest) RespAndReqMods(partial bool, xICAPMetadata string) {
+
 	if i.methodName == utils.ICAPModeReq {
 		defer i.req.Request.Body.Close()
+		defer i.req.OrgRequest.Body.Close()
+
 	} else {
 		defer i.req.Response.Body.Close()
+		//someString := "hello world nand hello go and more"
+		//r := strings.NewReader(someString)
+
+		//defer Original_rsp.Body.Close()
+
 	}
 	if i.req.Request == nil {
 		i.req.Request = &http.Request{}
@@ -201,6 +220,10 @@ func (i *ICAPRequest) RespAndReqMods(partial bool, xICAPMetadata string) {
 	logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata,
 		"calling Processing func to process the http message which encapsulated inside the ICAP request"))
 	//calling Processing func to process the http message which encapsulated inside the ICAP request
+	// send request to services
+	///////////////// start service ////////////////////////////////////////////////////////////////////
+
+	//icap.Request.Response
 	IcapStatusCode, httpMsg, serviceHeaders, httpMshHeadersBeforeProcessing, httpMshHeadersAfterProcessing,
 		vendorMsgs := requiredService.Processing(partial, i.req.Header)
 
@@ -238,6 +261,7 @@ func (i *ICAPRequest) RespAndReqMods(partial bool, xICAPMetadata string) {
 		i.methodName = i.req.Method
 		if i.req.Method == utils.ICAPModeReq {
 			i.req.Request.Body = io.NopCloser(bytes.NewBuffer(httpMsgBody.Bytes()))
+			i.req.OrgRequest.Body = io.NopCloser(bytes.NewBuffer(httpMsgBody.Bytes()))
 		} else {
 			i.req.Response.Body = io.NopCloser(bytes.NewBuffer(httpMsgBody.Bytes()))
 		}
@@ -254,8 +278,21 @@ func (i *ICAPRequest) RespAndReqMods(partial bool, xICAPMetadata string) {
 		if i.Is204Allowed {
 			i.w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
 		} else {
+
 			IcapStatusCode = utils.OkStatusCodeStr
-			i.w.WriteHeader(utils.OkStatusCodeStr, httpMsg, true)
+			if i.methodName == utils.ICAPModeReq {
+				IcapStatusCode = utils.OkStatusCodeStr
+				body, _ := ioutil.ReadAll(i.req.OrgRequest.Body)
+				i.req.Request.Body = io.NopCloser(bytes.NewBuffer(body))
+				i.req.Request.Header.Set(utils.ContentLength, strconv.Itoa(len(body)))
+				defer i.req.Request.Body.Close()
+				i.w.WriteHeader(utils.OkStatusCodeStr, i.req.Request, true)
+			} else {
+				IcapStatusCode = utils.OkStatusCodeStr
+				i.w.WriteHeader(utils.OkStatusCodeStr, httpMsg, true)
+			}
+
+			//i.w.WriteHeader(utils.OkStatusCodeStr, httpMsg, true)
 		}
 	case utils.OkStatusCodeStr:
 		logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata,
@@ -372,7 +409,15 @@ func (i *ICAPRequest) is204Allowed(xICAPMetadata string) bool {
 	Is204Allowed := false
 	if _, exist := i.req.Header["Allow"]; exist &&
 		i.req.Header.Get("Allow") == strconv.Itoa(utils.NoModificationStatusCodeStr) {
+		logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata,
+			"Allow : 204 header exists in ICAP request"))
 		Is204Allowed = true
+	} else if _, exist := i.req.Header["Allow"]; exist &&
+		strings.Contains(i.req.Header.Get("Allow"), strconv.Itoa(utils.NoModificationStatusCodeStr)) {
+		logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata,
+			"Allow : 204 header exists in ICAP request"))
+		Is204Allowed = true
+
 	}
 	return Is204Allowed
 }
