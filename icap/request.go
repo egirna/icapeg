@@ -38,7 +38,7 @@ type Request struct {
 	RemoteAddr   string               // the address of the computer sending the request
 	Preview      []byte               // the body data for an ICAP preview
 	EndIndicator string
-
+	OrgRequest   *http.Request
 	// The HTTP messages.
 	Request  *http.Request
 	Response *http.Response

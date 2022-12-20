@@ -35,9 +35,9 @@ const (
 	RejectExts                        = "reject"
 	BypassExts                        = "bypass"
 	BlockPagePath                     = "block-page.html"
-	ErrPageReasonFileRejected         = "File rejected"
-	ErrPageReasonMaxFileExceeded      = "The Max file size is exceeded"
-	ErrPageReasonFileIsNotSafe        = "File is not safe"
+	ErrPageReasonFileRejected         = "fileRejected"
+	ErrPageReasonMaxFileExceeded      = "maxFileSizeExceeded"
+	ErrPageReasonFileIsNotSafe        = "fileIsNotSafe"
 	ICAPRequestIdLen                  = 20
 	IdentifierString                  = "abcdefghijklmnopqrstuvwxyz0123456789"
 )
