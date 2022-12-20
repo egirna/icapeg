@@ -136,7 +136,7 @@ func (c *Clamav) Processing(partial bool, IcapHeader textproto.MIMEHeader) (int,
 			msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 	}
 	clmd := clamd.NewClamd(c.SocketPath)
-	logging.Logger.Debug(utils.PrepareLogMsg(c.xICAPMetadata,
+	logging.Logger.Debug(utils.PrepareLogMsg(c.xICAPMetadata, c.serviceName+
 		"sending the HTTP msg body to the ClamAV through antivirus socket"))
 	response, err := clmd.ScanStream(bytes.NewReader(file.Bytes()), make(chan bool))
 	if err != nil {
@@ -206,8 +206,14 @@ func (c *Clamav) Processing(partial bool, IcapHeader textproto.MIMEHeader) (int,
 		file, false, reqContentType, c.httpMsg)
 	if fileAfterPrep == nil && httpMsg == nil {
 		logging.Logger.Info(utils.PrepareLogMsg(c.xICAPMetadata, c.serviceName+" service has stopped processing"))
-		return utils.InternalServerErrStatusCodeStr, nil, nil, msgHeadersBeforeProcessing,
-			msgHeadersAfterProcessing, vendorMsgs
+		msgHeadersAfterProcessing = c.generalFunc.LogHTTPMsgHeaders(c.methodName)
+		fileAfterPrep = c.generalFunc.PreparingFileAfterScanning(fileAfterPrep, reqContentType, c.methodName)
+
+		/* return utils.InternalServerErrStatusCodeStr, nil, nil, msgHeadersBeforeProcessing,
+		msgHeadersAfterProcessing, vendorMsgs */
+		return utils.NoModificationStatusCodeStr, c.generalFunc.ReturningHttpMessageWithFile(c.methodName, fileAfterPrep),
+			serviceHeaders, msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
+
 	}
 
 	//returning the http message and the ICAP status code
@@ -230,6 +236,7 @@ func (c *Clamav) Processing(partial bool, IcapHeader textproto.MIMEHeader) (int,
 	msgHeadersAfterProcessing = c.generalFunc.LogHTTPMsgHeaders(c.methodName)
 	return utils.NoModificationStatusCodeStr, nil, serviceHeaders, msgHeadersBeforeProcessing,
 		msgHeadersAfterProcessing, vendorMsgs
+
 }
 
 func (c *Clamav) ISTagValue() string {
