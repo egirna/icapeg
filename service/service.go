@@ -14,7 +14,6 @@ const (
 	VendorEcho       = "echo"
 	VendorClamav     = "clamav"
 	VendorHashlookup = "clhashlookup"
-	VendorDemo       = "demo"
 )
 
 type (
