@@ -142,7 +142,7 @@ func (c *Clamav) Processing(partial bool, IcapHeader textproto.MIMEHeader) (int,
 	if err != nil {
 		logging.Logger.Error(utils.PrepareLogMsg(c.xICAPMetadata, c.serviceName+" error: "+err.Error()))
 		logging.Logger.Info(utils.PrepareLogMsg(c.xICAPMetadata, c.serviceName+" service has stopped processing"))
-		return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders, msgHeadersBeforeProcessing,
+		return utils.InternalServerErrStatusCodeStr, fileHash, serviceHeaders, msgHeadersBeforeProcessing,
 			msgHeadersAfterProcessing, vendorMsgs
 	}
 
@@ -222,19 +222,24 @@ func (c *Clamav) Processing(partial bool, IcapHeader textproto.MIMEHeader) (int,
 		msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
 		logging.Logger.Info(utils.PrepareLogMsg(c.xICAPMetadata, c.serviceName+" service has stopped processing"))
 		msgHeadersAfterProcessing = c.generalFunc.LogHTTPMsgHeaders(c.methodName)
+		fileHash := hex.EncodeToString(hash.Sum([]byte(nil)))
+		c.FileHash = fileHash
 		return utils.NoModificationStatusCodeStr, msg, serviceHeaders, msgHeadersBeforeProcessing,
 			msgHeadersAfterProcessing, vendorMsgs
 	case *http.Response:
 		msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
 		logging.Logger.Info(utils.PrepareLogMsg(c.xICAPMetadata, c.serviceName+" service has stopped processing"))
 		msgHeadersAfterProcessing = c.generalFunc.LogHTTPMsgHeaders(c.methodName)
+		fileHash := hex.EncodeToString(hash.Sum([]byte(nil)))
+		c.FileHash = fileHash
+		println(c.FileHash)
 		return utils.NoModificationStatusCodeStr, msg, serviceHeaders, msgHeadersBeforeProcessing,
 			msgHeadersAfterProcessing, vendorMsgs
 	}
 	c.generalFunc.LogHTTPMsgHeaders(c.methodName)
 	logging.Logger.Info(utils.PrepareLogMsg(c.xICAPMetadata, c.serviceName+" service has stopped processing"))
 	msgHeadersAfterProcessing = c.generalFunc.LogHTTPMsgHeaders(c.methodName)
-	return utils.NoModificationStatusCodeStr, nil, serviceHeaders, msgHeadersBeforeProcessing,
+	return utils.NoModificationStatusCodeStr, fileHash, serviceHeaders, msgHeadersBeforeProcessing,
 		msgHeadersAfterProcessing, vendorMsgs
 
 }
