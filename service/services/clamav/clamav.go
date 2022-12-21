@@ -238,7 +238,6 @@ func (c *Clamav) Processing(partial bool, IcapHeader textproto.MIMEHeader) (int,
 		c.FileHash = fileHash
 		logging.Logger.Info(utils.PrepareLogMsg(c.xICAPMetadata, c.serviceName+" service has stopped processing"))
 		msgHeadersAfterProcessing = c.generalFunc.LogHTTPMsgHeaders(c.methodName)
-		println(c.FileHash)
 		return utils.NoModificationStatusCodeStr, msg, serviceHeaders, msgHeadersBeforeProcessing,
 			msgHeadersAfterProcessing, vendorMsgs
 	}
