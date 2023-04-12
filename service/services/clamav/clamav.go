@@ -196,6 +196,7 @@ func (c *Clamav) Processing(partial bool, IcapHeader textproto.MIMEHeader) (int,
 					msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 			}
 			req.Body = io.NopCloser(htmlPage)
+			serviceHeaders["X-Virus-ID"] = result.Description
 			msgHeadersAfterProcessing = c.generalFunc.LogHTTPMsgHeaders(c.methodName)
 			return utils.OkStatusCodeStr, req, serviceHeaders,
 				msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
