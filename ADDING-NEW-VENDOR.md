@@ -65,15 +65,18 @@ Assume that the name of the vendor is **abc** and the name of the service **xyz*
     - Create a struct named **Abc** with the required attributes of any service to this vendor.
 
       - **Mandatory fields**:
+        - **xICAPMetadata**: It's the id of every **ICAP** request sent to **ICAPeg**.
         - **httpMsg**: It's an instance from [**HttpMsg**](http-message/httpMessage.go) struct which groups two field (**HTTP request** and **HTTP response**). The developer can process the **HTTP message(request or response)** through this instance.
         - **serviceName**: It's the service name value.
         - **methodName**: It's method name value.
+
       - **Optional fields**:
         - **generalFunc**: It's an instance from [**GeneralFunc**](service/services-utilities/general-functions/general-functions.go) struct which has a lot of function that may help the developer in processing **HTTP messages**.
 
       ```go
       type Abc struct {
           //mandatory
+          xICAPMetadata              string
       	httpMsg                *utils.HttpMsg
       	serviceName            string
       	methodName             string
@@ -137,9 +140,10 @@ Assume that the name of the vendor is **abc** and the name of the service **xyz*
       It extracts service configuration from **abcConfig** variable.
 
       ```go
-      func NewAbcService(serviceName, methodName string, httpMsg *utils.HttpMsg) *abc {
+      func NewAbcService(serviceName, methodName string, httpMsg *utils.HttpMsg, xICAPMetadata string) *abc {
       	return &Abc{
               	//mandatory
+              xICAPMetadata:              xICAPMetadata, //the id of the ICAP request
       		httpMsg:                httpMsg,
       		serviceName:            serviceName,
       		methodName:             methodName,
@@ -166,10 +170,23 @@ Assume that the name of the vendor is **abc** and the name of the service **xyz*
 
       ```go
       //Processing is a func used for to processing the http message
-      func (reciever *Abc) Processing() (int, interface{}, map[string]string) {
+      func (reciever *Abc) Processing(partial bool) (int, interface{}, map[string]string, map[string]interface{}, map[string]interface{}, map[string]interface{}) {
       	// your implementation
       }
       ```
+    
+      The values **Processing() function** paramaters:
+    
+      - **partial bool**: Boolean variable refer to wether the content is partial content or complete content.
+      
+      The values **Processing() function** returns:
+      
+      - **int**: ICAP response status code.
+      - **interface{}**: HTTP message after processing, It can be HTTP request if the ICAP request methos is REQMOD or HTTP response if the ICAP request methos is RESPMOD.
+      - **map[string]string**: map contains any headers related to the vendor and wanted to be added to ICAP response.
+      -  **map[string]interface{}**: map contains HTTP message headers before the service of the vendor start processing the message.
+      - **map[string]interface{}**: map contains HTTP message headers after the service of the vendor started processing the message.
+      - **map[string]interface{}**: map contains any information the service of the vendor wants to log.
 
 - ### [**service.go**](service/service.go)
 
@@ -186,12 +203,12 @@ const (
 - Add a case in the switch case in **GetService** function by the new vendor
 
   ```go
-  func GetService(vendor, serviceName, methodName string, httpMsg *utils.HttpMsg) Service {
+  func GetService(vendor, serviceName, methodName string, httpMsg *utils.HttpMsg, xICAPMetadata string) Service {
   	switch vendor {
   	case VendorEcho:
-  		return echo.NewEchoService(serviceName, methodName, httpMsg)
+  		return echo.NewEchoService(serviceName, methodName, httpMsg, xICAPMetadata)
   	case VendorABC:
-  		return abc.NewAbcService(serviceName, methodName, httpMsg)
+  		return abc.NewAbcService(serviceName, methodName, httpMsg, xICAPMetadata)
   	}
   	return nil
   }

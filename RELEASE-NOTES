@@ -4,7 +4,7 @@ Features:
 - Shadow service
 - Preview bytes
 - Supports multiple services (ClamAV, Cloudmersive and Virustotal)
-- Responses with blick page incase of unsafe file
+- Responses with block page incase of unsafe file
 - Supports adding specific extensions to be processed
 - Supports adding specific extensions to be bypassed
 - Supports adding specific extensions to be rejected
@@ -12,5 +12,4 @@ Features:
 
 Known issues: 
 - Logs
-- Block page in request mode
 - Sending file with zero bytes while preview bytes is greater than zero

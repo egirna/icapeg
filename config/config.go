@@ -2,10 +2,11 @@ package config
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
 	"icapeg/logging"
 	"icapeg/readValues"
 	"os"
+
+	"github.com/spf13/viper"
 )
 
 type serviceIcapInfo struct {
@@ -39,6 +40,9 @@ var AppCfg AppConfig
 func Init() {
 	viper.SetConfigName("config")
 	viper.SetConfigType("toml")
+	viper.AddConfigPath("/etc/icapeg/")
+	viper.AddConfigPath("/usr/local/etc/icapeg/")
+	viper.AddConfigPath("$HOME/.config/icapeg")
 	viper.AddConfigPath(".")
 	if readValues.IsSecExists("app") {
 		fmt.Println("app section doesn't exist in config file")
