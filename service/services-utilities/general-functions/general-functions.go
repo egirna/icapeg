@@ -89,7 +89,7 @@ func (f *GeneralFunc) CheckTheExtension(fileExtension string, extArrs []services
 					return false, utils.BadRequestStatusCodeStr, nil
 				}
 				if methodName == "RESPMOD" {
-					errPage := f.GenHtmlPage(BlockPagePath, utils.ErrPageReasonFileRejected, serviceName, identifier, requestURI, fileSize, f.xICAPMetadata)
+					errPage := f.GenHtmlPage(BlockPagePath, utils.ErrPageReasonFileRejected, serviceName, identifier, requestURI)
 					f.httpMsg.Response = f.ErrPageResp(http.StatusForbidden, errPage.Len())
 					f.httpMsg.Response.Body = io.NopCloser(bytes.NewBuffer(errPage.Bytes()))
 					return false, utils.OkStatusCodeStr, f.httpMsg.Response

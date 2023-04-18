@@ -6,14 +6,20 @@ import (
 	"icapeg/service/services/clamav"
 	"icapeg/service/services/clhashlookup"
 	"icapeg/service/services/echo"
+	"icapeg/service/services/cloudmersive"
+	"icapeg/service/services/grayimages"
+	"icapeg/service/services/virustotal"
 	"net/textproto"
 )
 
 // Vendors names
 const (
-	VendorEcho       = "echo"
-	VendorClamav     = "clamav"
-	VendorHashlookup = "clhashlookup"
+	VendorEcho         = "echo"
+	VendorClamav       = "clamav"
+	VendorVirustotal   = "virustotal"
+	VendorCloudMersive = "cloudmersive"
+	VendorGrayimages   = "grayimages"
+	VendorHashlookup   = "hashlookup"
 )
 
 type (
@@ -32,10 +38,17 @@ func GetService(vendor, serviceName, methodName string, httpMsg *http_message.Ht
 	switch vendor {
 	case VendorEcho:
 		return echo.NewEchoService(serviceName, methodName, httpMsg, xICAPMetadata)
-	case VendorHashlookup:
-		return clhashlookup.NewHashlookupService(serviceName, methodName, httpMsg, xICAPMetadata)
+	case VendorVirustotal:
+		return virustotal.NewVirustotalService(serviceName, methodName, httpMsg, xICAPMetadata)
 	case VendorClamav:
 		return clamav.NewClamavService(serviceName, methodName, httpMsg, xICAPMetadata)
+	case VendorCloudMersive:
+		return cloudmersive.NewCloudMersiveService(serviceName, methodName, httpMsg, xICAPMetadata)
+	case VendorGrayimages:
+		return grayimages.NewGrayimagesService(serviceName, methodName, httpMsg, xICAPMetadata)
+	case VendorHashlookup:
+		return hashlookuppackage.NewHashlookupService(serviceName, methodName, httpMsg, xICAPMetadata)
+	}
 
 	}
 	return nil
@@ -47,9 +60,15 @@ func InitServiceConfig(vendor, serviceName string) {
 	switch vendor {
 	case VendorEcho:
 		echo.InitEchoConfig(serviceName)
-	case VendorHashlookup:
-		clhashlookup.InitHashlookupConfig(serviceName)
 	case VendorClamav:
 		clamav.InitClamavConfig(serviceName)
+	case VendorVirustotal:
+		virustotal.InitVirustotalConfig(serviceName)
+	case VendorCloudMersive:
+		cloudmersive.InitCloudMersiveConfig(serviceName)
+	case VendorGrayimages:
+		grayimages.InitGrayimagesConfig(serviceName)
+	case VendorHashlookup:
+		hashlookuppackage.InitHashlookupConfig(serviceName)
 	}
 }
