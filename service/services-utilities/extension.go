@@ -1,8 +1,8 @@
 package services_utilities
 
 import (
-	"icapeg/consts"
-	"icapeg/logging"
+	"github.com/egirna/icapeg/logging"
+	"github.com/egirna/icapeg/utils"
 )
 
 // Extension struct is used for storing the name of the extension array (bypass, reject, process)

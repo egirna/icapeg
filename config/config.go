@@ -2,9 +2,10 @@ package config
 
 import (
 	"fmt"
-	"icapeg/logging"
-	"icapeg/readValues"
 	"os"
+
+	"github.com/egirna/icapeg/logging"
+	"github.com/egirna/icapeg/readValues"
 
 	"github.com/spf13/viper"
 )

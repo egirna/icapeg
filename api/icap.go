@@ -1,8 +1,8 @@
 package api
 
 import (
-	"icapeg/icap"
-	"icapeg/logging"
+	"github.com/egirna/icapeg/icap"
+	"github.com/egirna/icapeg/logging"
 )
 
 // ToICAPEGServe is the ICAsP Request Handler for all modes and services:

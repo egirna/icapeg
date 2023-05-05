@@ -1,4 +1,4 @@
-module icapeg
+module github.com/egirna/icapeg
 
 go 1.19
 

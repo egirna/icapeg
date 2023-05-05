@@ -4,12 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"icapeg/config"
-	utils "icapeg/consts"
-	http_message "icapeg/http-message"
-	"icapeg/icap"
-	"icapeg/logging"
-	"icapeg/service"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -17,6 +11,13 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/egirna/icapeg/config"
+	http_message "github.com/egirna/icapeg/http-message"
+	"github.com/egirna/icapeg/icap"
+	"github.com/egirna/icapeg/logging"
+	"github.com/egirna/icapeg/service"
+	utils "github.com/egirna/icapeg/utils"
 )
 
 // ICAPRequest struct is used to encapsulate important information of the ICAP request like method name, etc

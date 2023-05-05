@@ -5,14 +5,15 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	utils "icapeg/consts"
-	"icapeg/logging"
 	"io"
 	"net/http"
 	"net/textproto"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/egirna/icapeg/logging"
+	utils "github.com/egirna/icapeg/utils"
 
 	"github.com/dutchcoders/go-clamd"
 )

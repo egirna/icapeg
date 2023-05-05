@@ -3,13 +3,14 @@ package echo
 import (
 	"bytes"
 	"fmt"
-	utils "icapeg/consts"
-	"icapeg/logging"
 	"io"
 	"net/http"
 	"net/textproto"
 	"strconv"
 	"time"
+
+	"github.com/egirna/icapeg/logging"
+	utils "github.com/egirna/icapeg/utils"
 )
 
 // Processing is a func used for to processing the http message

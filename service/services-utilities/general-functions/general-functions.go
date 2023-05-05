@@ -5,12 +5,6 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"html/template"
-	utils "icapeg/consts"
-	http_message "icapeg/http-message"
-	"icapeg/logging"
-	"icapeg/readValues"
-	services_utilities "icapeg/service/services-utilities"
-	"icapeg/service/services-utilities/ContentTypes"
 	"image"
 	"io"
 	"io/ioutil"
@@ -19,6 +13,13 @@ import (
 	"path"
 	"strconv"
 	"strings"
+
+	http_message "github.com/egirna/icapeg/http-message"
+	"github.com/egirna/icapeg/logging"
+	"github.com/egirna/icapeg/readValues"
+	services_utilities "github.com/egirna/icapeg/service/services-utilities"
+	"github.com/egirna/icapeg/service/services-utilities/ContentTypes"
+	utils "github.com/egirna/icapeg/utils"
 
 	"github.com/h2non/filetype"
 )

@@ -2,8 +2,6 @@ package server
 
 import (
 	"fmt"
-	"icapeg/logging"
-	http_server "icapeg/server/http-server"
 	"net/http"
 	"os"
 	"os/signal"
@@ -11,9 +9,12 @@ import (
 	"syscall"
 	"time"
 
-	"icapeg/api"
-	"icapeg/config"
-	"icapeg/icap"
+	"github.com/egirna/icapeg/logging"
+	http_server "github.com/egirna/icapeg/server/http-server"
+
+	"github.com/egirna/icapeg/api"
+	"github.com/egirna/icapeg/config"
+	"github.com/egirna/icapeg/icap"
 )
 
 // https://github.com/k8-proxy/k8-rebuild-rest-api
