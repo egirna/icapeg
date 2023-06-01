@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -18,6 +19,8 @@ import (
 	"github.com/egirna/icapeg/logging"
 	"github.com/egirna/icapeg/service"
 	utils "github.com/egirna/icapeg/utils"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 // ICAPRequest struct is used to encapsulate important information of the ICAP request like method name, etc
@@ -55,7 +58,7 @@ func NewICAPRequest(w icap.ResponseWriter, req *icap.Request) *ICAPRequest {
 // and initialize the ICAP response
 func (i *ICAPRequest) RequestInitialization() (string, error) {
 	xICAPMetadata := i.generateICAPReqMetaData(utils.ICAPRequestIdLen)
-	logging.Logger.Info(utils.PrepareLogMsg(xICAPMetadata, "Validating the received ICAP request"))
+	logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata, "Validating the received ICAP request"))
 	logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata, "Creating an instance from ICAPeg configuration"))
 	i.appCfg = config.App()
 
@@ -118,7 +121,7 @@ func (i *ICAPRequest) RequestInitialization() (string, error) {
 
 // RequestProcessing is a func to process the ICAP request upon the service and method required
 func (i *ICAPRequest) RequestProcessing(xICAPMetadata string) {
-	logging.Logger.Info(utils.PrepareLogMsg(xICAPMetadata,
+	logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata,
 		"processing ICAP request upon the service and method required"))
 	partial := false
 	if i.methodName != utils.ICAPModeOptions {
@@ -228,6 +231,24 @@ func (i *ICAPRequest) RespAndReqMods(partial bool, xICAPMetadata string) {
 	//icap.Request.Response
 	IcapStatusCode, httpMsg, serviceHeaders, httpMshHeadersBeforeProcessing, httpMshHeadersAfterProcessing,
 		vendorMsgs := requiredService.Processing(partial, i.req.Header)
+	// Create an array of zap.String Fields from the service headers map
+	// and add them to the logger
+	fields := make([]zapcore.Field, 0, 5+len(serviceHeaders)+len(httpMshHeadersBeforeProcessing)+len(httpMshHeadersAfterProcessing))
+	fields = append(fields, zap.String("X-ICAP-Metadata", xICAPMetadata))
+	fields = append(fields, zap.String("mode", i.methodName))
+	fields = append(fields, zap.String("vendor", i.vendor))
+	fields = append(fields, zap.String("service", i.serviceName))
+	fields = append(fields, zap.Int("icap_status", IcapStatusCode))
+	for k, v := range serviceHeaders {
+		fields = append(fields, zap.String(fmt.Sprintf("icap_header_%s", k), v))
+	}
+	for k, v := range httpMshHeadersBeforeProcessing {
+		fields = append(fields, zap.String(fmt.Sprintf("http_header_before_%s", k), fmt.Sprintf("%v", v)))
+	}
+	for k, v := range httpMshHeadersAfterProcessing {
+		fields = append(fields, zap.String(fmt.Sprintf("http_header_after_%s", k), fmt.Sprintf("%v", v)))
+	}
+	logging.Logger.Info(i.req.URL.String(), fields...)
 
 	// adding the headers which the service wants to add them in the ICAP response
 	logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata,

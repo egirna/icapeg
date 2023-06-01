@@ -35,7 +35,7 @@ func StartServer() error {
 
 	icap.HandleFunc("/", api.ToICAPEGServe)
 
-	logging.Logger.Info("starting the ICAP server")
+	logging.Logger.Debug("starting the ICAP server")
 
 	stop := make(chan os.Signal, 1)
 
@@ -59,12 +59,12 @@ func StartServer() error {
 
 	time.Sleep(5 * time.Millisecond)
 	port := strconv.Itoa(config.App().Port)
-	logging.Logger.Info("ICAP server is running on localhost: " + port)
+	logging.Logger.Debug("ICAP server is running on localhost: " + port)
 
 	<-stop
 	ticker.Stop()
 
-	logging.Logger.Info("ICAP server gracefully shut down")
+	logging.Logger.Debug("ICAP server gracefully shut down")
 
 	return nil
 }
