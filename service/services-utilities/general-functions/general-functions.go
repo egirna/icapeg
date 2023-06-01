@@ -20,8 +20,7 @@ import (
 	services_utilities "github.com/egirna/icapeg/service/services-utilities"
 	"github.com/egirna/icapeg/service/services-utilities/ContentTypes"
 	utils "github.com/egirna/icapeg/utils"
-
-	"github.com/h2non/filetype"
+	"github.com/gabriel-vasile/mimetype"
 )
 
 // error page struct
@@ -205,7 +204,7 @@ func (f *GeneralFunc) ReqModErrPage(reason, serviceName, IdentifierId string, fi
 	f.httpMsg.Request.URL.Opaque = url
 	f.httpMsg.Request.URL.Path = ""
 	f.httpMsg.Request.URL.Host = host
-	for key, _ := range f.httpMsg.Request.Header {
+	for key := range f.httpMsg.Request.Header {
 		f.httpMsg.Request.Header.Del(key)
 	}
 	reqUri := f.httpMsg.Request.RequestURI
@@ -478,32 +477,32 @@ func (f *GeneralFunc) GetMimeExtension(data []byte, contentType string, filename
 	filename = strings.ToLower(filename)
 	logging.Logger.Info(utils.PrepareLogMsg(f.xICAPMetadata,
 		"getting the mime extension of the HTTP message body"))
-	kind, _ := filetype.Match(data)
+	mimetype.SetLimit(0)
+	kind := mimetype.Detect(data)
 	exts := map[string]string{"application/xml": "xml", "application/html": "html", "text/html": "html", "text/json": "html", "application/json": "json", "text/plain": "txt"}
 	contentType = strings.Split(contentType, ";")[0]
-	if kind == filetype.Unknown {
+	if kind.Extension() == "" {
 		if _, ok := exts[contentType]; ok {
 			logging.Logger.Debug(utils.PrepareLogMsg(f.xICAPMetadata,
-				"HTTP message body mime extension is "+kind.Extension))
+				"HTTP message body mime extension is "+kind.Extension()))
 			return exts[contentType]
 		}
 	}
 
-	if kind == filetype.Unknown {
+	if kind.Extension() == "" {
 		filenameArr := strings.Split(filename, ".")
 		if len(filenameArr) > 1 {
 			return filenameArr[len(filenameArr)-1]
 		}
 	}
-	if kind == filetype.Unknown {
+	if kind.Extension() == "" {
 		logging.Logger.Debug(utils.PrepareLogMsg(f.xICAPMetadata,
-			"HTTP message body mime extension is "+kind.Extension))
+			"HTTP message body mime extension is "+kind.Extension()))
 		return utils.Unknown
 	}
 	logging.Logger.Debug(utils.PrepareLogMsg(f.xICAPMetadata,
-		"HTTP message body mime extension is "+kind.Extension))
-	return kind.Extension
-
+		"HTTP message body mime extension is "+kind.Extension()))
+	return kind.Extension()[1:]
 }
 
 func (f *GeneralFunc) LogHTTPMsgHeaders(methodName string) map[string]interface{} {
