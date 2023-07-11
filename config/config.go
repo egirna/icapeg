@@ -55,7 +55,17 @@ func Init() {
 		DebuggingHeaders:   readValues.ReadValuesBool("app.debugging_headers"),
 		Services:           readValues.ReadValuesSlice("app.services"),
 	}
-	logging.InitializeLogger(AppCfg.LogLevel, AppCfg.WriteLogsToConsole)
+
+	loggerSettings := logging.LoggerSettings{
+		LogLevel:         readValues.ReadValuesString("logging.log_level"),
+		LogFilePath:      readValues.ReadValuesString("logging.log_file_path"),
+		LogFileMaxSize:   readValues.ReadValuesInt("logging.log_file_max_size"),
+		LogFileMaxBackus: readValues.ReadValuesInt("logging.log_file_max_backups"),
+		LogFileMaxAge:    readValues.ReadValuesInt("logging.log_file_max_age"),
+		LogToSyslog:      readValues.ReadValuesBool("logging.log_to_syslog"),
+		LogToConsole:     readValues.ReadValuesBool("logging.log_to_console"),
+	}
+	logging.InitializeLogger(loggerSettings)
 	logging.Logger.Info("Reading config.toml file")
 
 	//this loop to make sure that all services in the array of services has sections in the config file and from request mode and response mode

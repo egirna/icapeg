@@ -1,32 +1,69 @@
 package logging
 
 import (
+	"log/syslog"
+	"os"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"os"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
+
+type LoggerSettings struct {
+	LogLevel         string
+	LogFilePath      string
+	LogFileMaxSize   int
+	LogFileMaxBackus int
+	LogFileMaxAge    int
+	LogToSyslog      bool
+	LogToConsole     bool
+}
 
 var Logger *zap.Logger
 
-func InitializeLogger(logLevel string, writeLogsToConsole bool) {
+func InitializeLogger(loggerSettings LoggerSettings) {
+	logLevel, _ := zapcore.ParseLevel(loggerSettings.LogLevel)
+
+	fileWriter := zapcore.AddSync(&lumberjack.Logger{
+		Filename:   loggerSettings.LogFilePath,
+		MaxSize:    loggerSettings.LogFileMaxSize,
+		MaxBackups: loggerSettings.LogFileMaxBackus,
+		MaxAge:     loggerSettings.LogFileMaxAge,
+	})
+	syslogWriter, _ := syslog.New(syslog.LOG_ERR|syslog.LOG_LOCAL0, "icapeg")
+
 	config := zap.NewProductionEncoderConfig()
 	config.EncodeTime = zapcore.ISO8601TimeEncoder
-	fileEncoder := zapcore.NewJSONEncoder(config)
-	os.Mkdir("./logs", os.ModePerm)
 
-	logFile, _ := os.OpenFile("logs/logs.json", os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
-	writer := zapcore.AddSync(logFile)
-	defaultLogLevel, _ := zapcore.ParseLevel(logLevel)
-	var core zapcore.Core
-	if writeLogsToConsole {
-		consoleEncoder := zapcore.NewConsoleEncoder(config)
+	fileCore := zapcore.NewCore(
+		zapcore.NewJSONEncoder(config),
+		fileWriter,
+		logLevel,
+	)
+	syslogCore := zapcore.NewCore(
+		zapcore.NewJSONEncoder(config),
+		zapcore.AddSync(syslogWriter),
+		logLevel,
+	)
+	consoleCore := zapcore.NewCore(
+		zapcore.NewConsoleEncoder(config),
+		zapcore.AddSync(zapcore.Lock(os.Stdout)),
+		logLevel,
+	)
+
+	core := zapcore.NewTee(
+		fileCore,
+	)
+	if loggerSettings.LogToSyslog {
 		core = zapcore.NewTee(
-			zapcore.NewCore(fileEncoder, writer, defaultLogLevel),
-			zapcore.NewCore(consoleEncoder, zapcore.AddSync(os.Stdout), defaultLogLevel),
+			core,
+			syslogCore,
 		)
-	} else {
+	}
+	if loggerSettings.LogToConsole {
 		core = zapcore.NewTee(
-			zapcore.NewCore(fileEncoder, writer, defaultLogLevel),
+			core,
+			consoleCore,
 		)
 	}
 

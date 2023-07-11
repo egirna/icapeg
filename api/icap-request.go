@@ -18,6 +18,7 @@ import (
 	"github.com/egirna/icapeg/logging"
 	"github.com/egirna/icapeg/service"
 	utils "github.com/egirna/icapeg/utils"
+	"go.uber.org/zap"
 )
 
 // ICAPRequest struct is used to encapsulate important information of the ICAP request like method name, etc
@@ -55,13 +56,13 @@ func NewICAPRequest(w icap.ResponseWriter, req *icap.Request) *ICAPRequest {
 // and initialize the ICAP response
 func (i *ICAPRequest) RequestInitialization() (string, error) {
 	xICAPMetadata := i.generateICAPReqMetaData(utils.ICAPRequestIdLen)
-	logging.Logger.Info(utils.PrepareLogMsg(xICAPMetadata, "Validating the received ICAP request"))
-	logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata, "Creating an instance from ICAPeg configuration"))
+	logging.Logger.Info("Validating the received ICAP request", zap.String("X-ICAP-Metadata", xICAPMetadata))
+	logging.Logger.Debug("Creating an instance from ICAPeg configuration", zap.String("X-ICAP-Metadata", xICAPMetadata))
 	i.appCfg = config.App()
 
 	// checking if the service doesn't exist in toml file
 	// if it does not exist, the response will be 404 ICAP Service Not Found
-	logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata, "checking if the service doesn't exist in toml file"))
+	logging.Logger.Debug("checking if the service doesn't exist in toml file", zap.String("X-ICAP-Metadata", xICAPMetadata))
 	i.serviceName = i.req.URL.Path[1:len(i.req.URL.Path)]
 	if !i.isServiceExists(xICAPMetadata) {
 		i.w.WriteHeader(utils.ICAPServiceNotFoundCodeStr, nil, false)
@@ -71,7 +72,7 @@ func (i *ICAPRequest) RequestInitialization() (string, error) {
 	}
 
 	// checking if request method is allowed or not
-	logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata, "checking if request method is allowed or not"))
+	logging.Logger.Debug("checking if request method is allowed or not", zap.String("X-ICAP-Metadata", xICAPMetadata))
 	i.methodName = i.req.Method
 	if i.methodName != "options" {
 		if !i.isMethodAllowed(xICAPMetadata) {
@@ -89,26 +90,25 @@ func (i *ICAPRequest) RequestInitialization() (string, error) {
 	//adding important headers to options ICAP response
 	requiredService := service.GetService(i.vendor, i.serviceName, i.methodName,
 		&http_message.HttpMsg{Request: i.req.Request, Response: i.req.Response}, xICAPMetadata)
-	logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata, "adding ISTAG Service Headers"))
+	logging.Logger.Debug("adding ISTAG Service Headers", zap.String("X-ICAP-Metadata", xICAPMetadata))
 	i.addingISTAGServiceHeaders(requiredService.ISTagValue())
 
-	logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata, "checking if returning 24 to ICAP client is allowed or not"))
+	logging.Logger.Debug("checking if returning 24 to ICAP client is allowed or not", zap.String("X-ICAP-Metadata", xICAPMetadata))
 	i.Is204Allowed = i.is204Allowed(xICAPMetadata)
 
 	i.isShadowServiceEnabled = config.AppCfg.ServicesInstances[i.serviceName].ShadowService
 
 	//checking if the shadow service is enabled or not to apply shadow service mode
-	logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata,
-		"checking if the shadow service is enabled or not to apply shadow service mode"))
+	logging.Logger.Debug("checking if the shadow service is enabled or not to apply shadow service mode", zap.String("X-ICAP-Metadata", xICAPMetadata))
 	if i.isShadowServiceEnabled && i.methodName != "OPTIONS" {
-		logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata, "shadow service mode i on"))
+		logging.Logger.Debug("shadow service mode i on", zap.String("X-ICAP-Metadata", xICAPMetadata))
 		i.shadowService(xICAPMetadata)
 		go i.RequestProcessing(xICAPMetadata)
 		return xICAPMetadata, errors.New("shadow service")
 	} else {
 		if i.appCfg.DebuggingHeaders {
-			logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata,
-				"adding header to ICAP response in OPTIONS mode indicates that shadow service is off"))
+			logging.Logger.Debug(
+				"adding header to ICAP response in OPTIONS mode indicates that shadow service is off", zap.String("X-ICAP-Metadata", xICAPMetadata))
 			i.h["X-ICAPeg-Shadow-Service"] = []string{"false"}
 		}
 	}
@@ -118,8 +118,7 @@ func (i *ICAPRequest) RequestInitialization() (string, error) {
 
 // RequestProcessing is a func to process the ICAP request upon the service and method required
 func (i *ICAPRequest) RequestProcessing(xICAPMetadata string) {
-	logging.Logger.Info(utils.PrepareLogMsg(xICAPMetadata,
-		"processing ICAP request upon the service and method required"))
+	logging.Logger.Info("processing ICAP request upon the service and method required", zap.String("X-ICAP-Metadata", xICAPMetadata))
 	partial := false
 	if i.methodName != utils.ICAPModeOptions {
 		file := &bytes.Buffer{}
@@ -169,7 +168,7 @@ func (i *ICAPRequest) RequestProcessing(xICAPMetadata string) {
 	switch i.methodName {
 	// for options mode
 	case utils.ICAPModeOptions:
-		logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata, "OPTIONS mode"))
+		logging.Logger.Debug("OPTIONS mode", zap.String("X-ICAP-Metadata", xICAPMetadata))
 		i.optionsReqHeaders = i.LogICAPReqHeaders()
 		i.optionsMode(i.serviceName, xICAPMetadata)
 		optionsReqResp := make(map[string]interface{})
@@ -178,12 +177,12 @@ func (i *ICAPRequest) RequestProcessing(xICAPMetadata string) {
 		jsonHeaders, _ := json.Marshal(optionsReqResp)
 		final := string(jsonHeaders)
 		final = strings.ReplaceAll(final, `\`, "")
-		logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata, final))
+		logging.Logger.Debug(final, zap.String("X-ICAP-Metadata", xICAPMetadata))
 		break
 
 	//for reqmod and respmod
 	default:
-		logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata, "Response or Request mode"))
+		logging.Logger.Debug("Response or Request mode", zap.String("X-ICAP-Metadata", xICAPMetadata))
 		i.generalReqHeaders = i.LogICAPReqHeaders()
 		i.RespAndReqMods(partial, xICAPMetadata)
 	}
@@ -214,13 +213,11 @@ func (i *ICAPRequest) RespAndReqMods(partial bool, xICAPMetadata string) {
 		i.req.Request = &http.Request{}
 	}
 	//initialize the service by creating instance from the required service
-	logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata,
-		"initialize the service by creating instance from the required service"))
+	logging.Logger.Debug("initialize the service by creating instance from the required service", zap.String("X-ICAP-Metadata", xICAPMetadata))
 	requiredService := service.GetService(i.vendor, i.serviceName, i.methodName,
 		&http_message.HttpMsg{Request: i.req.Request, Response: i.req.Response}, xICAPMetadata)
 
-	logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata,
-		"calling Processing func to process the http message which encapsulated inside the ICAP request"))
+	logging.Logger.Debug("calling Processing func to process the http message which encapsulated inside the ICAP request", zap.String("X-ICAP-Metadata", xICAPMetadata))
 	//calling Processing func to process the http message which encapsulated inside the ICAP request
 	// send request to services
 	///////////////// start service ////////////////////////////////////////////////////////////////////
@@ -230,8 +227,7 @@ func (i *ICAPRequest) RespAndReqMods(partial bool, xICAPMetadata string) {
 		vendorMsgs := requiredService.Processing(partial, i.req.Header)
 
 	// adding the headers which the service wants to add them in the ICAP response
-	logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata,
-		"adding the headers which the service wants to add them in the ICAP response"))
+	logging.Logger.Debug("adding the headers which the service wants to add them in the ICAP response", zap.String("X-ICAP-Metadata", xICAPMetadata))
 	if serviceHeaders != nil {
 		for key, value := range serviceHeaders {
 			i.h[key] = []string{value}
@@ -240,8 +236,7 @@ func (i *ICAPRequest) RespAndReqMods(partial bool, xICAPMetadata string) {
 
 	//checking if shadow service mode is enabled to add logs instead of returning another
 	//ICAP response beside the one who was sent to the client in line 88
-	logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata,
-		"checking if shadow service mode is enabled to add logs instead of returning another"))
+	logging.Logger.Debug("checking if shadow service mode is enabled to add logs instead of returning another", zap.String("X-ICAP-Metadata", xICAPMetadata))
 	if i.isShadowServiceEnabled {
 		//add logs here
 		return
@@ -251,12 +246,10 @@ func (i *ICAPRequest) RespAndReqMods(partial bool, xICAPMetadata string) {
 	//how should be the ICAP response
 	switch IcapStatusCode {
 	case utils.InternalServerErrStatusCodeStr:
-		logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata,
-			i.serviceName+" returned ICAP response with status code "+strconv.Itoa(utils.InternalServerErrStatusCodeStr)))
+		logging.Logger.Debug(i.serviceName+" returned ICAP response with status code "+strconv.Itoa(utils.InternalServerErrStatusCodeStr), zap.String("X-ICAP-Metadata", xICAPMetadata))
 		i.w.WriteHeader(IcapStatusCode, nil, false)
 	case utils.Continue:
-		logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata,
-			i.serviceName+" returned ICAP response with status code "+strconv.Itoa(utils.Continue)))
+		logging.Logger.Debug(i.serviceName+" returned ICAP response with status code "+strconv.Itoa(utils.Continue), zap.String("X-ICAP-Metadata", xICAPMetadata))
 		//in case the service returned 100 continue
 		//we will get the rest of the body from the client
 		httpMsgBody := i.preview(xICAPMetadata)
@@ -271,12 +264,10 @@ func (i *ICAPRequest) RespAndReqMods(partial bool, xICAPMetadata string) {
 			xICAPMetadata)
 		i.RespAndReqMods(false, xICAPMetadata)
 	case utils.RequestTimeOutStatusCodeStr:
-		logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata,
-			i.serviceName+" returned ICAP response with status code "+strconv.Itoa(utils.RequestTimeOutStatusCodeStr)))
+		logging.Logger.Debug(i.serviceName+" returned ICAP response with status code "+strconv.Itoa(utils.RequestTimeOutStatusCodeStr), zap.String("X-ICAP-Metadata", xICAPMetadata))
 		i.w.WriteHeader(IcapStatusCode, nil, false)
 	case utils.NoModificationStatusCodeStr:
-		logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata,
-			i.serviceName+" returned ICAP response with status code "+strconv.Itoa(utils.NoModificationStatusCodeStr)))
+		logging.Logger.Debug(i.serviceName+" returned ICAP response with status code "+strconv.Itoa(utils.NoModificationStatusCodeStr), zap.String("X-ICAP-Metadata", xICAPMetadata))
 		if i.Is204Allowed {
 			i.w.WriteHeader(utils.NoModificationStatusCodeStr, nil, false)
 		} else {
@@ -297,12 +288,10 @@ func (i *ICAPRequest) RespAndReqMods(partial bool, xICAPMetadata string) {
 			//i.w.WriteHeader(utils.OkStatusCodeStr, httpMsg, true)
 		}
 	case utils.OkStatusCodeStr:
-		logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata,
-			i.serviceName+" returned ICAP response with status code "+strconv.Itoa(utils.OkStatusCodeStr)))
+		logging.Logger.Debug(i.serviceName+" returned ICAP response with status code "+strconv.Itoa(utils.OkStatusCodeStr), zap.String("X-ICAP-Metadata", xICAPMetadata))
 		i.w.WriteHeader(utils.OkStatusCodeStr, httpMsg, true)
 	case utils.BadRequestStatusCodeStr:
-		logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata,
-			i.serviceName+" returned ICAP response with status code "+strconv.Itoa(utils.BadRequestStatusCodeStr)))
+		logging.Logger.Debug(i.serviceName+" returned ICAP response with status code "+strconv.Itoa(utils.BadRequestStatusCodeStr), zap.String("X-ICAP-Metadata", xICAPMetadata))
 		i.w.WriteHeader(IcapStatusCode, httpMsg, true)
 	}
 	i.allHeaders(IcapStatusCode, httpMshHeadersBeforeProcessing, httpMshHeadersAfterProcessing, vendorMsgs, xICAPMetadata)
@@ -328,12 +317,12 @@ func (i *ICAPRequest) allHeaders(IcapStatusCode int, httpMshHeadersBeforeProcess
 	jsonHeaders, _ := json.Marshal(generalReqResp)
 	final := string(jsonHeaders)
 	final = strings.ReplaceAll(final, `\`, "")
-	logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata, final))
+	logging.Logger.Debug(final, zap.String("X-ICAP-Metadata", xICAPMetadata))
 }
 
 // adding headers to the logging
 func (i *ICAPRequest) addHeadersToLogs(xICAPMetadata string) {
-	logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata, "printing ICAP request headers in logs"))
+	logging.Logger.Debug("printing ICAP request headers in logs", zap.String("X-ICAP-Metadata", xICAPMetadata))
 	for key, element := range i.req.Header {
 		res := key + " : "
 		innerRes := ""
@@ -344,7 +333,7 @@ func (i *ICAPRequest) addHeadersToLogs(xICAPMetadata string) {
 			}
 		}
 		res += innerRes
-		logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata, "An ICAP request header -> "+res))
+		logging.Logger.Debug("An ICAP request header -> "+res, zap.String("X-ICAP-Metadata", xICAPMetadata))
 		res = ""
 	}
 }
@@ -353,8 +342,7 @@ func (i *ICAPRequest) addHeadersToLogs(xICAPMetadata string) {
 // request is existing in the config.go file
 func (i *ICAPRequest) isServiceExists(xICAPMetadata string) bool {
 	services := i.appCfg.Services
-	logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata,
-		"looping over services exist in config.toml file to checking if the service doesn't exist or exist"))
+	logging.Logger.Debug("looping over services exist in config.toml file to checking if the service doesn't exist or exist", zap.String("X-ICAP-Metadata", xICAPMetadata))
 	for r := 0; r < len(services); r++ {
 		if i.serviceName == services[r] {
 			return true
@@ -366,7 +354,7 @@ func (i *ICAPRequest) isServiceExists(xICAPMetadata string) bool {
 
 // getMethodName is a func to get the name of the method of the ICAP request
 func (i *ICAPRequest) getMethodName(xICAPMetadata string) string {
-	logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata, "getting the method name"))
+	logging.Logger.Debug("getting the method name", zap.String("X-ICAP-Metadata", xICAPMetadata))
 	if i.methodName == "REQMOD" {
 		i.methodName = "req_mode"
 	} else if i.methodName == "RESPMOD" {
@@ -377,8 +365,7 @@ func (i *ICAPRequest) getMethodName(xICAPMetadata string) string {
 
 // isMethodAllowed is a func to check if the method in the ICAP request is allowed in config.go file or not
 func (i *ICAPRequest) isMethodAllowed(xICAPMetadata string) bool {
-	logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata,
-		"checking if the method in the ICAP request is allowed in config.go file or not"))
+	logging.Logger.Debug("checking if the method in the ICAP request is allowed in config.go file or not", zap.String("X-ICAP-Metadata", xICAPMetadata))
 	if i.methodName == "RESPMOD" {
 		return i.appCfg.ServicesInstances[i.serviceName].RespMode
 	} else if i.methodName == "REQMOD" {
@@ -393,8 +380,7 @@ func (i *ICAPRequest) isMethodAllowed(xICAPMetadata string) bool {
 
 // getVendorName is a func to get the vendor of the service which in the ICAP request
 func (i *ICAPRequest) getVendorName(xICAPMetadata string) string {
-	logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata,
-		"getting the vendor of the service which in the ICAP request"))
+	logging.Logger.Debug("getting the vendor of the service which in the ICAP request", zap.String("X-ICAP-Metadata", xICAPMetadata))
 	return i.appCfg.ServicesInstances[i.serviceName].Vendor
 }
 
@@ -406,18 +392,15 @@ func (i *ICAPRequest) addingISTAGServiceHeaders(ISTgValue string) {
 
 // is204Allowed is a func to check if ICAP request has the header "204 : Allowed" or not
 func (i *ICAPRequest) is204Allowed(xICAPMetadata string) bool {
-	logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata,
-		"checking if (Allow : 204) header exists in ICAP request"))
+	logging.Logger.Debug("checking if (Allow : 204) header exists in ICAP request", zap.String("X-ICAP-Metadata", xICAPMetadata))
 	Is204Allowed := false
 	if _, exist := i.req.Header["Allow"]; exist &&
 		i.req.Header.Get("Allow") == strconv.Itoa(utils.NoModificationStatusCodeStr) {
-		logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata,
-			"Allow : 204 header exists in ICAP request"))
+		logging.Logger.Debug("Allow : 204 header exists in ICAP request", zap.String("X-ICAP-Metadata", xICAPMetadata))
 		Is204Allowed = true
 	} else if _, exist := i.req.Header["Allow"]; exist &&
 		strings.Contains(i.req.Header.Get("Allow"), strconv.Itoa(utils.NoModificationStatusCodeStr)) {
-		logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata,
-			"Allow : 204 header exists in ICAP request"))
+		logging.Logger.Debug("Allow : 204 header exists in ICAP request", zap.String("X-ICAP-Metadata", xICAPMetadata))
 		Is204Allowed = true
 
 	}
@@ -426,12 +409,11 @@ func (i *ICAPRequest) is204Allowed(xICAPMetadata string) bool {
 
 // shadowService is a func to apply the shadow service
 func (i *ICAPRequest) shadowService(xICAPMetadata string) {
-	logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata,
-		"applying shadow service"))
+	logging.Logger.Debug("applying shadow service", zap.String("X-ICAP-Metadata", xICAPMetadata))
 	if i.appCfg.DebuggingHeaders {
-		logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata,
+		logging.Logger.Debug(
 			"adding (X-ICAPeg-Shadow-Service : true) to ICAP response because this"+
-				" configuration is enabled in config.toml file"))
+				" configuration is enabled in config.toml file", zap.String("X-ICAP-Metadata", xICAPMetadata))
 		i.h["X-ICAPeg-Shadow-Service"] = []string{"true"}
 	}
 	if i.Is204Allowed { // following RFC3507, if the request has Allow: 204 header, it is to be checked and if it doesn't exists, return the request as it is to the ICAP client, https://tools.ietf.org/html/rfc3507#section-4.6
@@ -453,8 +435,7 @@ func (i *ICAPRequest) shadowService(xICAPMetadata string) {
 
 // getEnabledMethods is a func get all enable method of a specific service
 func (i *ICAPRequest) getEnabledMethods(xICAPMetadata string) string {
-	logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata,
-		"getting all enable method of a specific service)"))
+	logging.Logger.Debug("getting all enable method of a specific service)", zap.String("X-ICAP-Metadata", xICAPMetadata))
 	var allMethods []string
 	if i.appCfg.ServicesInstances[i.serviceName].RespMode {
 		allMethods = append(allMethods, "RESPMOD")
@@ -475,8 +456,7 @@ func (i *ICAPRequest) servicePreview() (bool, string) {
 
 // optionsMode is a func to return an ICAP response in OPTIONS mode
 func (i *ICAPRequest) optionsMode(serviceName, xICAPMetadata string) {
-	logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata,
-		"preparing headers in OPTIONS mode response"))
+	logging.Logger.Debug("preparing headers in OPTIONS mode response", zap.String("X-ICAP-Metadata", xICAPMetadata))
 	i.h.Set("Methods", i.getEnabledMethods(xICAPMetadata))
 	i.h.Set("Allow", "204")
 	// Add preview if preview_enabled is true in config.go
@@ -494,9 +474,9 @@ func (i *ICAPRequest) optionsMode(serviceName, xICAPMetadata string) {
 // preview function is used to get the rest of the http message from the client after sending
 // a preview about the body first
 func (i *ICAPRequest) preview(xICAPMetadata string) *bytes.Buffer {
-	logging.Logger.Debug(utils.PrepareLogMsg(xICAPMetadata,
+	logging.Logger.Debug(
 		"getting the rest of the body from client after the service returned ICAP "+
-			"response with status code"+strconv.Itoa(utils.Continue)))
+			"response with status code"+strconv.Itoa(utils.Continue), zap.String("X-ICAP-Metadata", xICAPMetadata))
 	r := icap.GetTheRest()
 	c := io.NopCloser(r)
 	buf := new(bytes.Buffer)
