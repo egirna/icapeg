@@ -1,3 +1,4 @@
-icap-eg is an implementation of an ICAP server. It can be used with HTTP proxies
-that support the ICAP protocol to implement content adaptation and filtering
-services.
+ICAPeg is an Open Source implementation of ICAP (RFC 3507) server,
+designed to enable web proxies to utilize the function of API based
+services along with standalone executables and databases in order to
+provide content inspection and manipulation services.
