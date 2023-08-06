@@ -1,0 +1,35 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        
+      - name: executing remote ssh commands using ssh key
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.DEMO_SERVER_HOST }}
+          username: ${{ secrets.DEMO_SERVER_USERNAME }}
+          password: ${{ secrets.DEMO_SERVER_PASSWORD }}
+          port: ${{ secrets.DEMO_SERVER_PORT }}
+          script: |
+           ./icapeg-setup.sh &
+            
+           
+
+
+           
+           
+            
+   
+           
+  
+
