@@ -27,7 +27,7 @@ func (c *Clamav) Processing(partial bool, IcapHeader textproto.MIMEHeader) (int,
 	vendorMsgs := make(map[string]interface{})
 	c.IcapHeaders = IcapHeader
 	c.IcapHeaders.Add("X-ICAP-Metadata", c.xICAPMetadata)
-	// no need to scan part of the file, this service needs all the file at ine time
+	// no need to scan part of the file, this service needs all the file at one time
 	if partial {
 		logging.Logger.Info(utils.PrepareLogMsg(c.xICAPMetadata,
 			c.serviceName+" service has stopped processing partially"))
@@ -49,9 +49,9 @@ func (c *Clamav) Processing(partial bool, IcapHeader textproto.MIMEHeader) (int,
 	if c.ExceptionPage != "" {
 		ExceptionPagePath = c.ExceptionPage
 	}
+
 	//extracting the file from http message
 	file, reqContentType, err := c.generalFunc.CopyingFileToTheBuffer(c.methodName)
-
 	if err != nil {
 		logging.Logger.Error(utils.PrepareLogMsg(c.xICAPMetadata, c.serviceName+" error: "+err.Error()))
 		logging.Logger.Info(utils.PrepareLogMsg(c.xICAPMetadata, c.serviceName+" service has stopped processing"))
@@ -73,10 +73,10 @@ func (c *Clamav) Processing(partial bool, IcapHeader textproto.MIMEHeader) (int,
 	var fileName string
 	if c.methodName == utils.ICAPModeReq {
 		contentType = c.httpMsg.Request.Header["Content-Type"]
-		fileName = c.generalFunc.GetFileName()
+		fileName = c.generalFunc.GetFileName(c.serviceName, c.xICAPMetadata)
 	} else {
 		contentType = c.httpMsg.Response.Header["Content-Type"]
-		fileName = c.generalFunc.GetFileName()
+		fileName = c.generalFunc.GetFileName(c.serviceName, c.xICAPMetadata)
 	}
 	if len(contentType) == 0 {
 		contentType = append(contentType, "")
@@ -136,6 +136,7 @@ func (c *Clamav) Processing(partial bool, IcapHeader textproto.MIMEHeader) (int,
 		return status, nil, nil,
 			msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 	}
+
 	clmd := clamd.NewClamd(c.SocketPath)
 	logging.Logger.Debug(utils.PrepareLogMsg(c.xICAPMetadata, c.serviceName+
 		"sending the HTTP msg body to the ClamAV through antivirus socket"))
@@ -202,6 +203,7 @@ func (c *Clamav) Processing(partial bool, IcapHeader textproto.MIMEHeader) (int,
 					msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 			}
 			req.Body = io.NopCloser(htmlPage)
+			serviceHeaders["X-Virus-ID"] = result.Description
 			msgHeadersAfterProcessing = c.generalFunc.LogHTTPMsgHeaders(c.methodName)
 			return utils.OkStatusCodeStr, req, serviceHeaders,
 				msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs

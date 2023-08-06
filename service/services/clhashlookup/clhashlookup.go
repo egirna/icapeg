@@ -75,10 +75,10 @@ func (h *Hashlookup) Processing(partial bool, IcapHeader textproto.MIMEHeader) (
 	var fileName string
 	if h.methodName == utils.ICAPModeReq {
 		contentType = h.httpMsg.Request.Header["Content-Type"]
-		fileName = h.generalFunc.GetFileName()
+		fileName = h.generalFunc.GetFileName(h.serviceName, h.xICAPMetadata)
 	} else {
 		contentType = h.httpMsg.Response.Header["Content-Type"]
-		fileName = h.generalFunc.GetFileName()
+		fileName = h.generalFunc.GetFileName(h.serviceName, h.xICAPMetadata)
 	}
 	if len(contentType) == 0 {
 		contentType = append(contentType, "")

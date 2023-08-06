@@ -32,12 +32,12 @@ func GetService(vendor, serviceName, methodName string, httpMsg *http_message.Ht
 	switch vendor {
 	case VendorEcho:
 		return echo.NewEchoService(serviceName, methodName, httpMsg, xICAPMetadata)
-	case VendorHashlookup:
-		return clhashlookup.NewHashlookupService(serviceName, methodName, httpMsg, xICAPMetadata)
 	case VendorClamav:
 		return clamav.NewClamavService(serviceName, methodName, httpMsg, xICAPMetadata)
-
+	case VendorHashlookup:
+		return clhashlookup.NewHashlookupService(serviceName, methodName, httpMsg, xICAPMetadata)
 	}
+
 	return nil
 }
 
@@ -47,9 +47,9 @@ func InitServiceConfig(vendor, serviceName string) {
 	switch vendor {
 	case VendorEcho:
 		echo.InitEchoConfig(serviceName)
-	case VendorHashlookup:
-		clhashlookup.InitHashlookupConfig(serviceName)
 	case VendorClamav:
 		clamav.InitClamavConfig(serviceName)
+	case VendorHashlookup:
+		clhashlookup.InitHashlookupConfig(serviceName)
 	}
 }

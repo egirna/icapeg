@@ -14,6 +14,7 @@ import (
 	"image"
 	"io"
 	"io/ioutil"
+	"mime"
 	"net/http"
 	"path"
 	"strconv"
@@ -177,10 +178,8 @@ func (f *GeneralFunc) IsBodyGzipCompressed(methodName string) bool {
 	switch methodName {
 	case utils.ICAPModeReq:
 		return f.httpMsg.Request.Header.Get("Content-Encoding") == "gzip"
-		break
 	case utils.ICAPModeResp:
 		return f.httpMsg.Response.Header.Get("Content-Encoding") == "gzip"
-		break
 	}
 	return false
 }
@@ -267,22 +266,40 @@ func (f *GeneralFunc) IfMaxFileSizeExc(returnOrigIfMaxSizeExc bool, serviceName,
 }
 
 // GetFileName returns the filename from the http request
-func (f *GeneralFunc) GetFileName() string {
+func (f *GeneralFunc) GetFileName(serviceName string, xICAPMetadata string) string {
+
 	logging.Logger.Info(utils.PrepareLogMsg(f.xICAPMetadata, "getting the file name"))
 	var filename string
+	if f.httpMsg.Response != nil {
+		dispositionHeader := f.httpMsg.Response.Header.Get("Content-Disposition")
+		if dispositionHeader != "" {
+			_, params, _ := mime.ParseMediaType(dispositionHeader)
+			fileName, ok := params["filename"]
+			if ok && fileName != "" {
+				logging.Logger.Info(utils.PrepareLogMsg(xICAPMetadata, serviceName+" file name get form  disposition header: "+fileName))
 
+				return fileName
+			}
+		}
+	}
 	if f.httpMsg.Response != nil && f.httpMsg.Response.Request != nil {
 		if f.httpMsg.Response.Request.RequestURI != "" {
 			r := f.httpMsg.Response.Request.URL
 			filename = path.Base(r.Path)
 		}
+		logging.Logger.Info(utils.PrepareLogMsg(xICAPMetadata, serviceName+" file name get form httpMsg Response.Request.RequestURI  : "+filename))
+
 	} else if f.httpMsg.Request != nil {
 		if f.httpMsg.Request.RequestURI != "" {
 			r := f.httpMsg.Request.URL
 			filename = path.Base(r.Path)
+			logging.Logger.Info(utils.PrepareLogMsg(xICAPMetadata, serviceName+" file name  get form httpMsg Request.RequestURI  : "+filename))
+
 		}
 
 	} else {
+		logging.Logger.Info(utils.PrepareLogMsg(xICAPMetadata, serviceName+" file name  get form httpMsg return unnamed_file  : "+filename))
+
 		return "unnamed_file"
 	}
 
@@ -457,6 +474,7 @@ func (f *GeneralFunc) InitSecure(VerifyServerCert bool) bool {
 
 // GetMimeExtension returns the mime type extension of the data
 func (f *GeneralFunc) GetMimeExtension(data []byte, contentType string, filename string) string {
+	filename = strings.ToLower(filename)
 	logging.Logger.Info(utils.PrepareLogMsg(f.xICAPMetadata,
 		"getting the mime extension of the HTTP message body"))
 	kind, _ := filetype.Match(data)
@@ -469,6 +487,7 @@ func (f *GeneralFunc) GetMimeExtension(data []byte, contentType string, filename
 			return exts[contentType]
 		}
 	}
+
 	if kind == filetype.Unknown {
 		filenameArr := strings.Split(filename, ".")
 		if len(filenameArr) > 1 {

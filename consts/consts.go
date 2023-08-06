@@ -38,6 +38,9 @@ const (
 	ErrPageReasonFileRejected         = "fileRejected"
 	ErrPageReasonMaxFileExceeded      = "maxFileSizeExceeded"
 	ErrPageReasonFileIsNotSafe        = "fileIsNotSafe"
+	ErrPageReasonPartialContent       = "partialContent"
+	ErrPageBypassNoExtension          = "bypassNoExtension"
+	ErrPageReasonFileNotFound         = "fileIsNotFound"
 	ICAPRequestIdLen                  = 20
 	IdentifierString                  = "abcdefghijklmnopqrstuvwxyz0123456789"
 )

@@ -135,6 +135,7 @@
         <p><strong>Requested URL: </strong>{{.RequestedURL}}</p>
         <p><strong>Service Name: </strong>{{.ServiceName}}</p>
         <p><strong>File size: </strong>{{.Size}}</p>
+        <p><strong>X-ICAP-Metadata: </strong>{{.XICAPMetadata}}</p>
         <p><strong>File Hash: </strong>{{.IdentifierId}}</p>
     </div>
 
@@ -147,7 +148,10 @@
         const ReasonMsg = {
             maxFileSizeExceeded: 'The Max file size is exceeded',
             fileRejected: 'File rejected',
-            fileIsNotSafe: "file is not safe"
+            fileIsNotSafe: "file is not safe",
+            partialContent:"partial content error",
+            bypassNoExtension:"bypass no extension error",
+            ErrPageReasonFileNotFound:"file not found"
         };
 
         var r = document.getElementById("Reason");
@@ -161,6 +165,12 @@
             msg.innerText = "Access denied ! file type not allowed "
         } else if (res == "fileIsNotSafe") {
             msg.innerText = "Access denied ! file contains various"
+        }else if (res == "fileIsNotFound") {
+            msg.innerText = "Access denied ! file not found"
+        }else if (res == "partialContent") {
+            msg.innerText = "partial content"
+        }else if (res == "bypassNoExtension") {
+            msg.innerText = "bypass No Extension"
         }
 
 

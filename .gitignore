@@ -25,7 +25,10 @@ vendor/
 logs.txt
 log.json
 logs
+logs/logs.json
+*.json
 
 # Env file
 app.env
+
 .vscode
