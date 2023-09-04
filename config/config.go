@@ -2,9 +2,10 @@ package config
 
 import (
 	"fmt"
-	"icapeg/logging"
-	"icapeg/readValues"
 	"os"
+
+	"github.com/egirna/icapeg/logging"
+	"github.com/egirna/icapeg/readValues"
 
 	"github.com/spf13/viper"
 )
@@ -55,7 +56,7 @@ func Init() {
 		Services:           readValues.ReadValuesSlice("app.services"),
 	}
 	logging.InitializeLogger(AppCfg.LogLevel, AppCfg.WriteLogsToConsole)
-	logging.Logger.Info("Reading config.toml file")
+	logging.Logger.Debug("Reading config.toml file")
 
 	//this loop to make sure that all services in the array of services has sections in the config file and from request mode and response mode
 	//there is one at least from them are enabled in every service

@@ -1,8 +1,9 @@
 package http_message
 
 import (
-	"icapeg/logging"
 	"net/http"
+
+	"github.com/egirna/icapeg/logging"
 )
 
 // HttpMsg is a struct used for encapsulating http message (http request, http response)

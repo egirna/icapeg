@@ -14,7 +14,7 @@ import (
 	"syscall"
 	"time"
 
-	"icapeg/icap"
+	"github.com/egirna/icapeg/icap"
 )
 
 var (

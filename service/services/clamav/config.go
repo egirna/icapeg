@@ -1,14 +1,15 @@
 package clamav
 
 import (
-	http_message "icapeg/http-message"
-	"icapeg/logging"
-	"icapeg/readValues"
-	services_utilities "icapeg/service/services-utilities"
-	general_functions "icapeg/service/services-utilities/general-functions"
 	"net/textproto"
 	"sync"
 	"time"
+
+	http_message "github.com/egirna/icapeg/http-message"
+	"github.com/egirna/icapeg/logging"
+	"github.com/egirna/icapeg/readValues"
+	services_utilities "github.com/egirna/icapeg/service/services-utilities"
+	general_functions "github.com/egirna/icapeg/service/services-utilities/general-functions"
 )
 
 // the clamav constants

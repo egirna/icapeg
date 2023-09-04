@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"html/template"
-	utils "icapeg/consts"
-	general_functions "icapeg/service/services-utilities/general-functions"
 	"net/http"
+
+	general_functions "github.com/egirna/icapeg/service/services-utilities/general-functions"
+	utils "github.com/egirna/icapeg/utils"
 )
 
 func HtmlMessage(w http.ResponseWriter, r *http.Request) {

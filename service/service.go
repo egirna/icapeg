@@ -1,12 +1,13 @@
 package service
 
 import (
-	http_message "icapeg/http-message"
-	"icapeg/logging"
-	"icapeg/service/services/clamav"
-	"icapeg/service/services/clhashlookup"
-	"icapeg/service/services/echo"
 	"net/textproto"
+
+	http_message "github.com/egirna/icapeg/http-message"
+	"github.com/egirna/icapeg/logging"
+	"github.com/egirna/icapeg/service/services/clamav"
+	"github.com/egirna/icapeg/service/services/clhashlookup"
+	"github.com/egirna/icapeg/service/services/echo"
 )
 
 // Vendors names
@@ -28,7 +29,7 @@ type (
 // GetService returns a service based on the service name
 // change name to vendor and add parameter service name
 func GetService(vendor, serviceName, methodName string, httpMsg *http_message.HttpMsg, xICAPMetadata string) Service {
-	logging.Logger.Info("getting instance from " + serviceName + " struct")
+	logging.Logger.Debug("getting instance from " + serviceName + " struct")
 	switch vendor {
 	case VendorEcho:
 		return echo.NewEchoService(serviceName, methodName, httpMsg, xICAPMetadata)
@@ -43,7 +44,7 @@ func GetService(vendor, serviceName, methodName string, httpMsg *http_message.Ht
 
 // InitServiceConfig is used to load the services configuration
 func InitServiceConfig(vendor, serviceName string) {
-	logging.Logger.Info("loading all the services configuration")
+	logging.Logger.Debug("loading all the services configuration")
 	switch vendor {
 	case VendorEcho:
 		echo.InitEchoConfig(serviceName)

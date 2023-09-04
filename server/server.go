@@ -2,8 +2,6 @@ package server
 
 import (
 	"fmt"
-	"icapeg/logging"
-	http_server "icapeg/server/http-server"
 	"net/http"
 	"os"
 	"os/signal"
@@ -11,9 +9,12 @@ import (
 	"syscall"
 	"time"
 
-	"icapeg/api"
-	"icapeg/config"
-	"icapeg/icap"
+	"github.com/egirna/icapeg/logging"
+	http_server "github.com/egirna/icapeg/server/http-server"
+
+	"github.com/egirna/icapeg/api"
+	"github.com/egirna/icapeg/config"
+	"github.com/egirna/icapeg/icap"
 )
 
 // https://github.com/k8-proxy/k8-rebuild-rest-api
@@ -34,7 +35,7 @@ func StartServer() error {
 
 	icap.HandleFunc("/", api.ToICAPEGServe)
 
-	logging.Logger.Info("starting the ICAP server")
+	logging.Logger.Debug("starting the ICAP server")
 
 	stop := make(chan os.Signal, 1)
 
@@ -58,12 +59,12 @@ func StartServer() error {
 
 	time.Sleep(5 * time.Millisecond)
 	port := strconv.Itoa(config.App().Port)
-	logging.Logger.Info("ICAP server is running on localhost: " + port)
+	logging.Logger.Debug("ICAP server is running on localhost: " + port)
 
 	<-stop
 	ticker.Stop()
 
-	logging.Logger.Info("ICAP server gracefully shut down")
+	logging.Logger.Debug("ICAP server gracefully shut down")
 
 	return nil
 }
