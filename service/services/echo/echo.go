@@ -3,13 +3,15 @@ package echo
 import (
 	"bytes"
 	"fmt"
-	utils "icapeg/consts"
-	"icapeg/logging"
 	"io"
 	"net/http"
 	"net/textproto"
 	"strconv"
 	"time"
+
+	"github.com/egirna/icapeg/logging"
+	utils "github.com/egirna/icapeg/utils"
+	"go.uber.org/zap"
 )
 
 // Processing is a func used for to processing the http message
@@ -20,12 +22,11 @@ func (e *Echo) Processing(partial bool, IcapHeader textproto.MIMEHeader) (int, i
 	msgHeadersBeforeProcessing := e.generalFunc.LogHTTPMsgHeaders(e.methodName)
 	msgHeadersAfterProcessing := make(map[string]interface{})
 	vendorMsgs := make(map[string]interface{})
-	logging.Logger.Info(utils.PrepareLogMsg(e.xICAPMetadata, e.serviceName+" service has started processing"))
+	logging.Logger.Info(e.serviceName+" service has started processing", zap.String("X-ICAP-Metadata", e.xICAPMetadata))
 
 	// no need to scan part of the file, this service needs all the file at ine time
 	if partial {
-		logging.Logger.Info(utils.PrepareLogMsg(e.xICAPMetadata,
-			e.serviceName+" service has stopped processing partially"))
+		logging.Logger.Info(e.serviceName+" service has stopped processing partially", zap.String("X-ICAP-Metadata", e.xICAPMetadata))
 		return utils.Continue, nil, nil, msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 	}
 	isGzip := false
@@ -33,8 +34,8 @@ func (e *Echo) Processing(partial bool, IcapHeader textproto.MIMEHeader) (int, i
 	//extracting the file from http message
 	file, reqContentType, err := e.generalFunc.CopyingFileToTheBuffer(e.methodName)
 	if err != nil {
-		logging.Logger.Error(utils.PrepareLogMsg(e.xICAPMetadata, e.serviceName+" error: "+err.Error()))
-		logging.Logger.Info(utils.PrepareLogMsg(e.xICAPMetadata, e.serviceName+" service has stopped processing"))
+		logging.Logger.Error(e.serviceName+" error: "+err.Error(), zap.String("X-ICAP-Metadata", e.xICAPMetadata))
+		logging.Logger.Info(e.serviceName+" service has stopped processing", zap.String("X-ICAP-Metadata", e.xICAPMetadata))
 		return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders,
 			msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 	}
@@ -70,7 +71,7 @@ func (e *Echo) Processing(partial bool, IcapHeader textproto.MIMEHeader) (int, i
 		e.processExts, e.rejectExts, e.bypassExts, e.return400IfFileExtRejected, isGzip,
 		e.serviceName, e.methodName, EchoIdentifier, e.httpMsg.Request.RequestURI, reqContentType, file, utils.BlockPagePath, fileSize)
 	if !isProcess {
-		logging.Logger.Info(utils.PrepareLogMsg(e.xICAPMetadata, e.serviceName+" service has stopped processing"))
+		logging.Logger.Info(e.serviceName+" service has stopped processing", zap.String("X-ICAP-Metadata", e.xICAPMetadata))
 		msgHeadersAfterProcessing = e.generalFunc.LogHTTPMsgHeaders(e.methodName)
 		return icapStatus, httpMsg, serviceHeaders, msgHeadersBeforeProcessing,
 			msgHeadersAfterProcessing, vendorMsgs
@@ -82,7 +83,7 @@ func (e *Echo) Processing(partial bool, IcapHeader textproto.MIMEHeader) (int, i
 		status, file, httpMsgAfter := e.generalFunc.IfMaxFileSizeExc(e.returnOrigIfMaxSizeExc, e.serviceName, e.methodName, file, e.maxFileSize, utils.BlockPagePath, fileSize)
 		fileAfterPrep, httpMsgAfter := e.generalFunc.IfStatusIs204WithFile(e.methodName, status, file, isGzip, reqContentType, httpMsgAfter, true)
 		if fileAfterPrep == nil && httpMsgAfter == nil {
-			logging.Logger.Info(utils.PrepareLogMsg(e.xICAPMetadata, e.serviceName+" service has stopped processing"))
+			logging.Logger.Info(e.serviceName+" service has stopped processing", zap.String("X-ICAP-Metadata", e.xICAPMetadata))
 			return utils.InternalServerErrStatusCodeStr, nil, serviceHeaders,
 				msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 		}
@@ -90,12 +91,12 @@ func (e *Echo) Processing(partial bool, IcapHeader textproto.MIMEHeader) (int, i
 
 		case *http.Request:
 			msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
-			logging.Logger.Info(utils.PrepareLogMsg(e.xICAPMetadata, e.serviceName+" service has stopped processing"))
+			logging.Logger.Info(e.serviceName+" service has stopped processing", zap.String("X-ICAP-Metadata", e.xICAPMetadata))
 			msgHeadersAfterProcessing = e.generalFunc.LogHTTPMsgHeaders(e.methodName)
 			return status, msg, nil, msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 		case *http.Response:
 			msg.Body = io.NopCloser(bytes.NewBuffer(fileAfterPrep))
-			logging.Logger.Info(utils.PrepareLogMsg(e.xICAPMetadata, e.serviceName+" service has stopped processing"))
+			logging.Logger.Info(e.serviceName+" service has stopped processing", zap.String("X-ICAP-Metadata", e.xICAPMetadata))
 			msgHeadersAfterProcessing = e.generalFunc.LogHTTPMsgHeaders(e.methodName)
 			return status, msg, nil, msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 		}
@@ -108,7 +109,7 @@ func (e *Echo) Processing(partial bool, IcapHeader textproto.MIMEHeader) (int, i
 	//returning the scanned file if everything is ok
 	scannedFile = e.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, e.methodName)
 	msgHeadersAfterProcessing = e.generalFunc.LogHTTPMsgHeaders(e.methodName)
-	logging.Logger.Info(utils.PrepareLogMsg(e.xICAPMetadata, e.serviceName+" service has stopped processing"))
+	logging.Logger.Info(e.serviceName+" service has stopped processing", zap.String("X-ICAP-Metadata", e.xICAPMetadata))
 	return utils.OkStatusCodeStr, e.generalFunc.ReturningHttpMessageWithFile(e.methodName, scannedFile),
 		serviceHeaders, msgHeadersBeforeProcessing, msgHeadersAfterProcessing, vendorMsgs
 }

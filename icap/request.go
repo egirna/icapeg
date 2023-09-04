@@ -220,6 +220,14 @@ func ReadRequest(b *bufio.ReadWriter) (req *Request, err error) {
 		}
 	}
 
+	// logging.Logger.Info("ICAP request parsed", zap.String("method", req.Method), zap.String("uri", req.Request.RequestURI), zap.String("host", req.Request.Host), zap.String("preview", string(req.Preview)))
+	// // Log ICAP Headers as zap.String in one line
+	// var icapHeaders string
+	// for k, v := range req.Header {
+	// 	icapHeaders += fmt.Sprintf("%s: %s, ", k, v)
+	// }
+	// logging.Logger.Info("ICAP Headers", zap.String("headers", icapHeaders))
+
 	return
 }
 

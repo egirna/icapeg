@@ -1,4 +1,4 @@
-module icapeg
+module github.com/egirna/icapeg
 
 go 1.19
 
@@ -9,6 +9,7 @@ require (
 	github.com/spf13/viper v1.9.0
 	github.com/xhit/go-str2duration/v2 v2.0.0
 	go.uber.org/zap v1.22.0
+	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
 require (

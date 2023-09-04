@@ -1,7 +1,7 @@
 package main
 
 import (
-	"icapeg/server"
+	"github.com/egirna/icapeg/server"
 )
 
 func main() {

@@ -1,12 +1,13 @@
 package service
 
 import (
-	http_message "icapeg/http-message"
-	"icapeg/logging"
-	"icapeg/service/services/clamav"
-	"icapeg/service/services/clhashlookup"
-	"icapeg/service/services/echo"
 	"net/textproto"
+
+	http_message "github.com/egirna/icapeg/http-message"
+	"github.com/egirna/icapeg/logging"
+	"github.com/egirna/icapeg/service/services/clamav"
+	"github.com/egirna/icapeg/service/services/clhashlookup"
+	"github.com/egirna/icapeg/service/services/echo"
 )
 
 // Vendors names

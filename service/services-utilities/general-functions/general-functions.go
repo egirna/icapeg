@@ -5,12 +5,6 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"html/template"
-	utils "icapeg/consts"
-	http_message "icapeg/http-message"
-	"icapeg/logging"
-	"icapeg/readValues"
-	services_utilities "icapeg/service/services-utilities"
-	"icapeg/service/services-utilities/ContentTypes"
 	"image"
 	"io"
 	"io/ioutil"
@@ -19,6 +13,14 @@ import (
 	"path"
 	"strconv"
 	"strings"
+
+	http_message "github.com/egirna/icapeg/http-message"
+	"github.com/egirna/icapeg/logging"
+	"github.com/egirna/icapeg/readValues"
+	services_utilities "github.com/egirna/icapeg/service/services-utilities"
+	"github.com/egirna/icapeg/service/services-utilities/ContentTypes"
+	utils "github.com/egirna/icapeg/utils"
+	"go.uber.org/zap"
 
 	"github.com/h2non/filetype"
 )
@@ -53,7 +55,7 @@ func NewGeneralFunc(httpMsg *http_message.HttpMsg, xICAPMetadata string) *Genera
 
 // CopyingFileToTheBuffer is a func which used for extracting a file from the body of the http message
 func (f *GeneralFunc) CopyingFileToTheBuffer(methodName string) (*bytes.Buffer, ContentTypes.ContentType, error) {
-	logging.Logger.Info(utils.PrepareLogMsg(f.xICAPMetadata, "extracting the body of HTTP message"))
+	logging.Logger.Info("extracting the body of HTTP message", zap.String("X-ICAP-Metadata", f.xICAPMetadata))
 	file := &bytes.Buffer{}
 	var err error
 	var reqContentType ContentTypes.ContentType
@@ -75,17 +77,16 @@ func (f *GeneralFunc) CopyingFileToTheBuffer(methodName string) (*bytes.Buffer, 
 func (f *GeneralFunc) CheckTheExtension(fileExtension string, extArrs []services_utilities.Extension, processExts,
 	rejectExts, bypassExts []string, return400IfFileExtRejected, isGzip bool, serviceName, methodName, identifier,
 	requestURI string, reqContentType ContentTypes.ContentType, file *bytes.Buffer, BlockPagePath string, fileSize string) (bool, int, interface{}) {
-	logging.Logger.Info(utils.PrepareLogMsg(f.xICAPMetadata,
-		"checking the extension (reject or bypass or process))"))
+	logging.Logger.Info("checking the extension (reject or bypass or process))", zap.String("X-ICAP-Metadata", f.xICAPMetadata))
 	for i := 0; i < 3; i++ {
 		if extArrs[i].Name == utils.ProcessExts {
 			if f.ifFileExtIsX(fileExtension, processExts) {
-				logging.Logger.Debug(utils.PrepareLogMsg(f.xICAPMetadata, "extension is process"))
+				logging.Logger.Debug("extension is process", zap.String("X-ICAP-Metadata", f.xICAPMetadata))
 				break
 			}
 		} else if extArrs[i].Name == utils.RejectExts {
 			if f.ifFileExtIsX(fileExtension, rejectExts) {
-				logging.Logger.Debug(utils.PrepareLogMsg(f.xICAPMetadata, "extension is reject"))
+				logging.Logger.Debug("extension is reject", zap.String("X-ICAP-Metadata", f.xICAPMetadata))
 				if return400IfFileExtRejected {
 					return false, utils.BadRequestStatusCodeStr, nil
 				}
@@ -110,7 +111,7 @@ func (f *GeneralFunc) CheckTheExtension(fileExtension string, extArrs []services
 			}
 		} else if extArrs[i].Name == utils.BypassExts {
 			if f.ifFileExtIsX(fileExtension, bypassExts) {
-				logging.Logger.Debug(utils.PrepareLogMsg(f.xICAPMetadata, "extension is bypass"))
+				logging.Logger.Debug("extension is bypass", zap.String("X-ICAP-Metadata", f.xICAPMetadata))
 				fileAfterPrep, httpMsg := f.IfICAPStatusIs204(methodName, utils.NoModificationStatusCodeStr,
 					file, isGzip, reqContentType, f.httpMsg)
 				if fileAfterPrep == nil && httpMsg == nil {
@@ -174,7 +175,7 @@ func (f *GeneralFunc) ifFileExtIsX(fileExtension string, arr []string) bool {
 // IsBodyGzipCompressed is a func used for checking if the body of
 // the http message is compressed ing Gzip or not
 func (f *GeneralFunc) IsBodyGzipCompressed(methodName string) bool {
-	logging.Logger.Info(utils.PrepareLogMsg(f.xICAPMetadata, "checking if the body is compressed in GZIP"))
+	logging.Logger.Info("checking if the body is compressed in GZIP", zap.String("X-ICAP-Metadata", f.xICAPMetadata))
 	switch methodName {
 	case utils.ICAPModeReq:
 		return f.httpMsg.Request.Header.Get("Content-Encoding") == "gzip"
@@ -186,7 +187,7 @@ func (f *GeneralFunc) IsBodyGzipCompressed(methodName string) bool {
 
 // DecompressGzipBody is a func used for decompress files which compressed in Gzip
 func (f *GeneralFunc) DecompressGzipBody(file *bytes.Buffer) (*bytes.Buffer, error) {
-	logging.Logger.Info(utils.PrepareLogMsg(f.xICAPMetadata, "decompressing the HTTP message body"))
+	logging.Logger.Info("decompressing the HTTP message body", zap.String("X-ICAP-Metadata", f.xICAPMetadata))
 	reader, err := gzip.NewReader(file)
 	defer reader.Close()
 	result, err := ioutil.ReadAll(reader)
@@ -204,7 +205,7 @@ func (f *GeneralFunc) ReqModErrPage(reason, serviceName, IdentifierId string, fi
 	f.httpMsg.Request.URL.Opaque = url
 	f.httpMsg.Request.URL.Path = ""
 	f.httpMsg.Request.URL.Host = host
-	for key, _ := range f.httpMsg.Request.Header {
+	for key := range f.httpMsg.Request.Header {
 		f.httpMsg.Request.Header.Del(key)
 	}
 	reqUri := f.httpMsg.Request.RequestURI
@@ -241,9 +242,8 @@ func (f *GeneralFunc) ReqModErrPage(reason, serviceName, IdentifierId string, fi
 // if the file size is greater than the max file size of the service
 func (f *GeneralFunc) IfMaxFileSizeExc(returnOrigIfMaxSizeExc bool, serviceName, methodName string,
 	file *bytes.Buffer, maxFileSize int, BlockPagePath string, fileSize string) (int, *bytes.Buffer, interface{}) {
-	logging.Logger.Debug(utils.PrepareLogMsg(f.xICAPMetadata, "HTTP message body size exceeds the limit"))
-	logging.Logger.Debug(utils.PrepareLogMsg(f.xICAPMetadata, "HTTP message body size: "+strconv.Itoa(file.Len())+
-		" MB, the allowed max file size: "+strconv.Itoa(maxFileSize)+" MB")) //check if returning the original file option is enabled in this case or not
+	logging.Logger.Debug("HTTP message body size exceeds the limit", zap.String("X-ICAP-Metadata", f.xICAPMetadata))
+	logging.Logger.Debug("HTTP message body size: "+strconv.Itoa(file.Len())+" MB, the allowed max file size: "+strconv.Itoa(maxFileSize)+" MB", zap.String("X-ICAP-Metadata", f.xICAPMetadata)) //check if returning the original file option is enabled in this case or not
 	//if yes, return no modification status code
 	//if not, return an error page
 	if returnOrigIfMaxSizeExc {
@@ -268,7 +268,7 @@ func (f *GeneralFunc) IfMaxFileSizeExc(returnOrigIfMaxSizeExc bool, serviceName,
 // GetFileName returns the filename from the http request
 func (f *GeneralFunc) GetFileName(serviceName string, xICAPMetadata string) string {
 
-	logging.Logger.Info(utils.PrepareLogMsg(f.xICAPMetadata, "getting the file name"))
+	logging.Logger.Info("getting the file name", zap.String("X-ICAP-Metadata", f.xICAPMetadata))
 	var filename string
 	if f.httpMsg.Response != nil {
 		dispositionHeader := f.httpMsg.Response.Header.Get("Content-Disposition")
@@ -276,7 +276,7 @@ func (f *GeneralFunc) GetFileName(serviceName string, xICAPMetadata string) stri
 			_, params, _ := mime.ParseMediaType(dispositionHeader)
 			fileName, ok := params["filename"]
 			if ok && fileName != "" {
-				logging.Logger.Info(utils.PrepareLogMsg(xICAPMetadata, serviceName+" file name get form  disposition header: "+fileName))
+				logging.Logger.Info(serviceName+" file name get form  disposition header: "+fileName, zap.String("X-ICAP-Metadata", xICAPMetadata))
 
 				return fileName
 			}
@@ -287,18 +287,18 @@ func (f *GeneralFunc) GetFileName(serviceName string, xICAPMetadata string) stri
 			r := f.httpMsg.Response.Request.URL
 			filename = path.Base(r.Path)
 		}
-		logging.Logger.Info(utils.PrepareLogMsg(xICAPMetadata, serviceName+" file name get form httpMsg Response.Request.RequestURI  : "+filename))
+		logging.Logger.Info(serviceName+" file name get form httpMsg Response.Request.RequestURI  : "+filename, zap.String("X-ICAP-Metadata", xICAPMetadata))
 
 	} else if f.httpMsg.Request != nil {
 		if f.httpMsg.Request.RequestURI != "" {
 			r := f.httpMsg.Request.URL
 			filename = path.Base(r.Path)
-			logging.Logger.Info(utils.PrepareLogMsg(xICAPMetadata, serviceName+" file name  get form httpMsg Request.RequestURI  : "+filename))
+			logging.Logger.Info(serviceName+" file name  get form httpMsg Request.RequestURI  : "+filename, zap.String("X-ICAP-Metadata", xICAPMetadata))
 
 		}
 
 	} else {
-		logging.Logger.Info(utils.PrepareLogMsg(xICAPMetadata, serviceName+" file name  get form httpMsg return unnamed_file  : "+filename))
+		logging.Logger.Info(serviceName+" file name  get form httpMsg return unnamed_file  : "+filename, zap.String("X-ICAP-Metadata", xICAPMetadata))
 
 		return "unnamed_file"
 	}
@@ -313,7 +313,7 @@ func (f *GeneralFunc) GetFileName(serviceName string, xICAPMetadata string) stri
 
 // CompressFileGzip is a func which used for compress files in gzip
 func (f *GeneralFunc) CompressFileGzip(scannedFile []byte) ([]byte, error) {
-	logging.Logger.Info(utils.PrepareLogMsg(f.xICAPMetadata, "compressing the file in GZIP"))
+	logging.Logger.Info("compressing the file in GZIP", zap.String("X-ICAP-Metadata", f.xICAPMetadata))
 	var newBuf bytes.Buffer
 	gz := gzip.NewWriter(&newBuf)
 	if _, err := gz.Write(scannedFile); err != nil {
@@ -325,7 +325,7 @@ func (f *GeneralFunc) CompressFileGzip(scannedFile []byte) ([]byte, error) {
 
 // ErrPageResp is a func used for creating http response for returning an error page
 func (f *GeneralFunc) ErrPageResp(status int, pageContentLength int) *http.Response {
-	logging.Logger.Info(utils.PrepareLogMsg(f.xICAPMetadata, "preparing http response with the block page"))
+	logging.Logger.Info("preparing http response with the block page", zap.String("X-ICAP-Metadata", f.xICAPMetadata))
 	return &http.Response{
 		StatusCode: status,
 		Status:     strconv.Itoa(status) + " " + http.StatusText(status),
@@ -338,7 +338,7 @@ func (f *GeneralFunc) ErrPageResp(status int, pageContentLength int) *http.Respo
 
 // GenHtmlPage is a func used for generating an error page
 func (f *GeneralFunc) GenHtmlPage(path, reason, serviceName, identifierId, reqUrl string, fileSize string, xICAPMetadata string) *bytes.Buffer {
-	logging.Logger.Info(utils.PrepareLogMsg(f.xICAPMetadata, "preparing a block page"))
+	logging.Logger.Info("preparing a block page", zap.String("X-ICAP-Metadata", f.xICAPMetadata))
 	htmlTmpl, err := template.ParseFiles(path)
 	if err != nil {
 		logging.Logger.Error("exception page path not exist and replaced with default page")
@@ -359,8 +359,7 @@ func (f *GeneralFunc) GenHtmlPage(path, reason, serviceName, identifierId, reqUr
 // PreparingFileAfterScanning is a func used for preparing the http response before returning it
 // preparing means converting the file to the original structure before scanning
 func (f *GeneralFunc) PreparingFileAfterScanning(scannedFile []byte, reqContentType ContentTypes.ContentType, methodName string) []byte {
-	logging.Logger.Info(utils.PrepareLogMsg(f.xICAPMetadata,
-		"preparing body after the service finished processing"))
+	logging.Logger.Info("preparing body after the service finished processing", zap.String("X-ICAP-Metadata", f.xICAPMetadata))
 	switch methodName {
 	case utils.ICAPModeReq:
 		return []byte(reqContentType.BodyAfterScanning(scannedFile))
@@ -400,8 +399,7 @@ func (f *GeneralFunc) IfStatusIs204WithFile(methodName string, status int, file 
 
 // ReturningHttpMessageWithFile function to return the suitable http message (http request, http response)
 func (f *GeneralFunc) ReturningHttpMessageWithFile(methodName string, file []byte) interface{} {
-	logging.Logger.Info(utils.PrepareLogMsg(f.xICAPMetadata,
-		"returning the HTTP message after processing by the service"))
+	logging.Logger.Info("returning the HTTP message after processing by the service", zap.String("X-ICAP-Metadata", f.xICAPMetadata))
 	switch methodName {
 	case utils.ICAPModeReq:
 		f.httpMsg.Request.Header.Set(utils.ContentLength, strconv.Itoa(len(string(file))))
@@ -443,7 +441,7 @@ func (f *GeneralFunc) IfICAPStatusIs204(methodName string, status int, file *byt
 
 // function to return the suitable http message (http request, http response)
 func (f *GeneralFunc) returningHttpMessage(methodName string, file []byte) interface{} {
-	logging.Logger.Info(utils.PrepareLogMsg(f.xICAPMetadata, "returning the HTTP message after processing by the service"))
+	logging.Logger.Info("returning the HTTP message after processing by the service", zap.String("X-ICAP-Metadata", f.xICAPMetadata))
 	switch methodName {
 	case utils.ICAPModeReq:
 		f.httpMsg.Request.Header.Set(utils.ContentLength, strconv.Itoa(len(string(file))))
@@ -459,7 +457,7 @@ func (f *GeneralFunc) returningHttpMessage(methodName string, file []byte) inter
 
 // GetDecodedImage takes the HTTP file and converts it to an image object
 func (f *GeneralFunc) GetDecodedImage(file *bytes.Buffer) (image.Image, error) {
-	logging.Logger.Info(utils.PrepareLogMsg(f.xICAPMetadata, "getting decoded image"))
+	logging.Logger.Info("getting decoded image", zap.String("X-ICAP-Metadata", f.xICAPMetadata))
 	img, _, err := image.Decode(file)
 	return img, err
 }
@@ -475,15 +473,13 @@ func (f *GeneralFunc) InitSecure(VerifyServerCert bool) bool {
 // GetMimeExtension returns the mime type extension of the data
 func (f *GeneralFunc) GetMimeExtension(data []byte, contentType string, filename string) string {
 	filename = strings.ToLower(filename)
-	logging.Logger.Info(utils.PrepareLogMsg(f.xICAPMetadata,
-		"getting the mime extension of the HTTP message body"))
+	logging.Logger.Info("getting the mime extension of the HTTP message body", zap.String("X-ICAP-Metadata", f.xICAPMetadata))
 	kind, _ := filetype.Match(data)
 	exts := map[string]string{"application/xml": "xml", "application/html": "html", "text/html": "html", "text/json": "html", "application/json": "json", "text/plain": "txt"}
 	contentType = strings.Split(contentType, ";")[0]
 	if kind == filetype.Unknown {
 		if _, ok := exts[contentType]; ok {
-			logging.Logger.Debug(utils.PrepareLogMsg(f.xICAPMetadata,
-				"HTTP message body mime extension is "+kind.Extension))
+			logging.Logger.Debug("HTTP message body mime extension is "+kind.Extension, zap.String("X-ICAP-Metadata", f.xICAPMetadata))
 			return exts[contentType]
 		}
 	}
@@ -495,12 +491,10 @@ func (f *GeneralFunc) GetMimeExtension(data []byte, contentType string, filename
 		}
 	}
 	if kind == filetype.Unknown {
-		logging.Logger.Debug(utils.PrepareLogMsg(f.xICAPMetadata,
-			"HTTP message body mime extension is "+kind.Extension))
+		logging.Logger.Debug("HTTP message body mime extension is "+kind.Extension, zap.String("X-ICAP-Metadata", f.xICAPMetadata))
 		return utils.Unknown
 	}
-	logging.Logger.Debug(utils.PrepareLogMsg(f.xICAPMetadata,
-		"HTTP message body mime extension is "+kind.Extension))
+	logging.Logger.Debug("HTTP message body mime extension is "+kind.Extension, zap.String("X-ICAP-Metadata", f.xICAPMetadata))
 	return kind.Extension
 
 }

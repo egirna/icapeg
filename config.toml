@@ -19,20 +19,29 @@ title = "ICAP configuration file"
 
 [app]
 port = 1344
-log_level="debug"
-write_logs_to_console= false
-services= ["echo", "clhashlookup", "clamav"]
-debugging_headers=true
+log_level = "debug"
+write_logs_to_console = false
+services = ["echo", "clhashlookup", "clamav"]
+debugging_headers = true
 web_server_host = "$_WEB_SERVER_HOST" #Example: "localhost:8081" , replace localhost with the ICAP server IP address.
-web_server_endpoint = "/service/message"  
+web_server_endpoint = "/service/message"
+
+[logging]
+log_level = "debug"
+log_file_path = "./logs/icap.log"
+log_file_max_size = 100 #MB
+log_file_max_backups = 10
+log_file_max_age = 30 #days
+log_to_syslog = true
+log_to_console = true
 
 [echo]
 vendor = "echo"
-service_caption= "echo service"   #Service
+service_caption = "echo service"   #Service
 service_tag = "ECHO ICAP"  #ISTAG
-req_mode=true
-resp_mode=true
-shadow_service=false
+req_mode =true
+resp_mode =true
+shadow_service =false
 preview_bytes = "1024" #byte
 preview_enabled = true# options send preview header or not
 process_extensions = ["pdf", "zip", "com"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
@@ -40,55 +49,55 @@ reject_extensions = ["docx"]
 bypass_extensions = ["*"]
 #max file size value from 1 to 9223372036854775807, and value of zero means unlimited
 max_filesize = 0 #bytes
-return_original_if_max_file_size_exceeded=false
-return_400_if_file_ext_rejected=false
+return_original_if_max_file_size_exceeded = false
+return_400_if_file_ext_rejected = false
 
 
 [clhashlookup]
 vendor = "clhashlookup"
-service_caption= "cl-hashlookup"   #Service
+service_caption = "cl-hashlookup"   #Service
 service_tag = "cl-hashlookup ICAP"  #ISTAG
-req_mode=true
-resp_mode=true
-shadow_service=false
+req_mode = true
+resp_mode = true
+shadow_service = false
 preview_bytes = "1024" #byte
 preview_enabled = true# options send preview header or not
-bypass_extensions = ["*"]
-process_extensions = ["pdf","exe", "zip"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
-reject_extensions = ["docx"]
+bypass_extensions = []
+process_extensions = ["*"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
+reject_extensions = []
 scan_url = "https://hashlookup.circl.lu/lookup/sha256/" #
 timeout  = 300 #seconds , ICAP will return 408 - Request timeout
 fail_threshold = 2
 max_filesize = 0 #bytes
-return_original_if_max_file_size_exceeded=true
-return_400_if_file_ext_rejected=false
-verify_server_cert=true
-bypass_on_api_error=false
+return_original_if_max_file_size_exceeded = true
+return_400_if_file_ext_rejected = false
+verify_server_cert = true
+bypass_on_api_error = false
 http_exception_response_code = 403
 http_exception_has_body = true
 exception_page = "./temp/exception-page.html" # Location of the exception page for this service
 
 [clamav]
 vendor = "clamav"
-service_caption= "clamav service"   #Service
+service_caption = "clamav service"   #Service
 service_tag = "CLAMAV ICAP"  #ISTAG
-req_mode=true
-resp_mode=true
-shadow_service=false
+req_mode = true
+resp_mode = true
+shadow_service = false
 preview_bytes = "1024" #byte
-preview_enabled = true# options send preview header or not
-process_extensions = ["pdf", "zip", "com"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
-reject_extensions = ["docx"]
-bypass_extensions = ["*"]
-socket_path = "/var/run/clamav/clamd.ctl"
+preview_enabled = false# options send preview header or not
+process_extensions = ["*"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
+reject_extensions = ["doc", "docx"]
+bypass_extensions = []
+socket_path = "/run/clamav/clamd.ctl"
 fail_threshold = 2
-timeout = 10 #seconds, the time upto which the server will wait for clamav to scan the results
+timeout = 30 #seconds, the time upto which the server will wait for clamav to scan the results
 #max file size value from 1 to 9223372036854775807, and value of zero means unlimited
 max_filesize = 0 #bytes
-return_original_if_max_file_size_exceeded=false
-return_400_if_file_ext_rejected=false
-verify_server_cert=true
-bypass_on_api_error=false
+return_original_if_max_file_size_exceeded = false
+return_400_if_file_ext_rejected = false
+verify_server_cert = true
+bypass_on_api_error = false
 http_exception_response_code = 403
 http_exception_has_body = true
 exception_page = "./temp/exception-page.html" # Location of the exception page for this service
