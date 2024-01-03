@@ -188,7 +188,7 @@ func (srv *Server) Serve(l net.Listener) error {
 	for {
 		rw, err := l.Accept()
 		if err != nil {
-			if ne, ok := err.(net.Error); ok && ne.Timeout() {
+			if ne, ok := err.(net.Error); ok && ne.Temporary() {
 				log.Printf("icap: Accept error: %v", err)
 				continue
 			}
@@ -207,7 +207,6 @@ func (srv *Server) Serve(l net.Listener) error {
 		go c.serve(srv.DebugLevel)
 	}
 	// The next line is only there to see one specific edge case which should never happen.
-	fmt.Println("Should never be reached")
 	panic("Should never be reached")
 }
 

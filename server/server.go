@@ -41,7 +41,6 @@ func StartServer() error {
 	signal.Notify(stop, syscall.SIGKILL, syscall.SIGINT, syscall.SIGQUIT)
 
 	go func() {
-		fmt.Println("Starting the ICAP server")
 		if err := icap.ListenAndServe(fmt.Sprintf(":%d", config.App().Port), nil); err != nil {
 			logging.Logger.Fatal(err.Error())
 		}

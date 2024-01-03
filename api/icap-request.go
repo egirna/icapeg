@@ -16,7 +16,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // ICAPRequest struct is used to encapsulate important information of the ICAP request like method name, etc
@@ -539,7 +538,6 @@ func (i *ICAPRequest) generateICAPReqMetaData(size int) string {
 
 	name := make([]rune, size)
 	var letterRunes = []rune(utils.IdentifierString)
-	rand.Seed(time.Now().UnixNano())
 	for i := range name {
 		name[i] += letterRunes[rand.Intn(len(letterRunes))]
 	}
