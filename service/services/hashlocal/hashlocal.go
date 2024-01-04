@@ -1,24 +1,25 @@
-package clhashlookup
+package hashlocal
 
 import (
+	"bufio"
 	"bytes"
-	"context"
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	utils "icapeg/consts"
 	"icapeg/logging"
 	"io"
 	"net/http"
 	"net/textproto"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 )
 
 // Processing is a func used for to processing the http message
-func (h *Hashlookup) Processing(partial bool, IcapHeader textproto.MIMEHeader) (int, interface{}, map[string]string, map[string]interface{},
+func (h *Hashlocal) Processing(partial bool, IcapHeader textproto.MIMEHeader) (int, interface{}, map[string]string, map[string]interface{},
 	map[string]interface{}, map[string]interface{}) {
 	serviceHeaders := make(map[string]string)
 	serviceHeaders["X-ICAP-Metadata"] = h.xICAPMetadata
@@ -211,36 +212,66 @@ func (h *Hashlookup) Processing(partial bool, IcapHeader textproto.MIMEHeader) (
 
 }
 
-// SendFileToScan is a function to send the file to API
-func (h *Hashlookup) sendFileToScan(f *bytes.Buffer) (bool, error) {
-	hash := sha256.New()
-	_, _ = io.Copy(hash, f)
-	fileHash := hex.EncodeToString(hash.Sum([]byte(nil)))
-	h.FileHash = fileHash
-	//var jsonStr = []byte(`{"hash":"` + fileHash + `"}`)
-	req, err := http.NewRequest("GET", h.ScanUrl+fileHash, nil)
-	client := &http.Client{}
-	ctx, cancel := context.WithTimeout(context.Background(), h.Timeout)
-	defer cancel()
-	req = req.WithContext(ctx)
-	resp, err := client.Do(req)
+// new functions
+func checkValueInFile(filePath, targetValue string) (bool, error) {
+	// Open the file
+	file, err := os.Open(filePath)
 	if err != nil {
 		return false, err
 	}
-	defer resp.Body.Close()
-	var data map[string]interface{}
-	err = json.NewDecoder(resp.Body).Decode(&data)
-	y, err := (fmt.Sprint(data["KnownMalicious"])), nil
-	if len(y) > 0 && y != "<nil>" {
-		return true, nil
-	} else {
-		return false, nil
+	defer file.Close()
 
+	// Create a scanner to read the file line by line
+	scanner := bufio.NewScanner(file)
+
+	// Iterate through each line
+	for scanner.Scan() {
+		line := scanner.Text()
+		// for triming white space
+		trimmedLine := strings.TrimSpace(line)
+		//for converting into lowwercase
+		convtolowercase := strings.ToLower(targetValue)
+		// Check if the target value is present in the line
+		if subtle.ConstantTimeCompare([]byte(strings.ToLower(trimmedLine)), []byte(convtolowercase)) == 1 {
+			return true, nil
+		}
 	}
 
-}
+	// Check for errors during scanning
+	if err := scanner.Err(); err != nil {
+		return false, err
+	}
 
-func (e *Hashlookup) ISTagValue() string {
+	// If the value is not found in any line
+	return false, nil
+}
+func (h *Hashlocal) sendFileToScan(f *bytes.Buffer) (bool, error) {
+
+	//hash code
+	hash := sha256.New()
+	_, _ = io.Copy(hash, f)
+	bs := hash.Sum(nil)
+	pass := hex.EncodeToString(bs[:])
+	h.FileHash = pass
+	//  the file path
+	filePath := "./test/testhash.txt"
+	// Check if the target value is present in the file
+	found, err := checkValueInFile(filePath, pass)
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		return false, nil
+	}
+	// Display the result
+	if found {
+		fmt.Printf("Value '%s' found in the file.\n", pass)
+		return false, nil
+
+	} else {
+		fmt.Printf("Value '%s' not found in the file.\n", pass)
+		return false, nil
+	}
+}
+func (e *Hashlocal) ISTagValue() string {
 	epochTime := strconv.FormatInt(time.Now().Unix(), 10)
 	return "epoch-" + epochTime
 }

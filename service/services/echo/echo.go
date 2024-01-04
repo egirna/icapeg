@@ -53,10 +53,10 @@ func (e *Echo) Processing(partial bool, IcapHeader textproto.MIMEHeader) (int, i
 	var fileName string
 	if e.methodName == utils.ICAPModeReq {
 		contentType = e.httpMsg.Request.Header["Content-Type"]
-		fileName = e.generalFunc.GetFileName(e.serviceName, e.xICAPMetadata)
+		fileName = e.generalFunc.GetFileName()
 	} else {
 		contentType = e.httpMsg.Response.Header["Content-Type"]
-		fileName = e.generalFunc.GetFileName(e.serviceName, e.xICAPMetadata)
+		fileName = e.generalFunc.GetFileName()
 	}
 	if len(contentType) == 0 {
 		contentType = append(contentType, "")
