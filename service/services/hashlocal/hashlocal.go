@@ -3,9 +3,11 @@ package hashlocal
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
+	"encoding/json"
 
 	"fmt"
 	utils "icapeg/consts"
@@ -256,8 +258,18 @@ func (h *Hashlocal) sendFileToScan(f *bytes.Buffer) (bool, error) {
 	pass := hex.EncodeToString(bs[:])
 	h.FileHash = pass
 	//  the file path
-	filePath := "./Datalocal/datalocal.txt"
-	//req, err := http.NewRequest("GET", h.ScanUrl+pass, nil)
+	req, err := http.NewRequest("GET", h.ScanUrl+pass, nil)
+	client := &http.Client{}
+	ctx, cancel := context.WithTimeout(context.Background(), h.Timeout)
+	defer cancel()
+	req = req.WithContext(ctx)
+	resp, err := client.Do(req)
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close()
+
+	filePath := "./Localdata/localdata.txt"
 
 	// Check if the target value is present in the file
 	found, err := checkValueInFile(filePath, pass)
@@ -269,14 +281,22 @@ func (h *Hashlocal) sendFileToScan(f *bytes.Buffer) (bool, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	defer logfile.Close()
 	log.SetOutput(logfile)
 	if found {
 		log.Printf("Value '%s' not found in the file.\n", pass)
-		return false, nil
 
 	} else {
 		log.Printf("Value '%s' not found in the file.\n", pass)
+
+	}
+	var data map[string]interface{}
+	err = json.NewDecoder(resp.Body).Decode(&data)
+	y, err := (fmt.Sprint(data["KnownMalicious"])), nil
+	if len(y) > 0 && y != "<nil>" {
+		return true, nil
+	} else {
 		return false, nil
 
 	}
