@@ -297,7 +297,31 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
             - **false**: Returning **400 Bad request**.
         
             Get more details about **request mode** from [here](https://datatracker.ietf.org/doc/html/rfc3507#section-3.1).
-        
+
+     - **[hashlocal] section** 
+        ```toml
+        [hashlocal]
+        vendor = "hashlocal"
+        service_caption= "hashlocal"   #Service
+        service_tag = "hashlocal ICAP"  #ISTAG
+        req_mode=true
+        resp_mode=true
+        shadow_service=false
+        preview_bytes = "1024" #byte
+        preview_enabled = true# options send preview header or not
+        bypass_extensions = ["*"]
+        process_extensions = ["pdf","exe", "zip"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
+        reject_extensions = ["docx"]
+        scan_url = "./hash_file/hash_file_path.txt" #
+        max_filesize = 0 #bytes
+        return_original_if_max_file_size_exceeded=true
+        return_400_if_file_ext_rejected=false
+        http_exception_response_code = 403
+        http_exception_has_body = true
+        exception_page = "./temp/exception-page.html" # Location of the exception page for this service
+        ```
+      - ### **Description of hashlocal service**
+      > - we will pretend that you want to download a file. Still, you don't know if it is safe or not, so using this service helps you calculate the hash value of any file you download through the icapeg, then it checks if this hash value is available or not in hash_file if it is in the hash_file returns back an exception page.
 
 ## Adding a new vendor to ICAPeg
 

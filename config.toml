@@ -80,14 +80,10 @@ preview_enabled = true# options send preview header or not
 bypass_extensions = ["*"]
 process_extensions = ["pdf","exe", "zip"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
 reject_extensions = ["docx"]
-scan_url = "./Localdata/localdata.txt" #
-timeout  = 300 #seconds , ICAP will return 408 - Request timeout
-fail_threshold = 2
+scan_url = "./hash_file/hash_file_path.txt" #
 max_filesize = 0 #bytes
 return_original_if_max_file_size_exceeded=true
 return_400_if_file_ext_rejected=false
-verify_server_cert=true
-bypass_on_api_error=false
 http_exception_response_code = 403
 http_exception_has_body = true
 exception_page = "./temp/exception-page.html" # Location of the exception page for this service
