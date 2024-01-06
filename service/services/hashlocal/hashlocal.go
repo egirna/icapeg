@@ -256,10 +256,7 @@ func (h *Hashlocal) sendFileToScan(f *bytes.Buffer) (bool, error) {
 	pass := hex.EncodeToString(bs[:])
 	h.FileHash = pass
 	//  the file path
-
 	filePath := "./hash_file/hash_file_path.txt"
-	//req, err := http.NewRequest("GET", h.ScanUrl+pass, nil)
-
 	// Check if the target value is present in the file
 	found, err := checkValueInFile(filePath, pass)
 	if err != nil {
@@ -273,8 +270,8 @@ func (h *Hashlocal) sendFileToScan(f *bytes.Buffer) (bool, error) {
 	defer logfile.Close()
 	log.SetOutput(logfile)
 	if found {
-		log.Printf("Value '%s' not found in the file.\n", pass)
-		return false, nil
+		log.Printf("Value '%s'  found in the file.\n", pass)
+		return true, nil
 	} else {
 		log.Printf("Value '%s' not found in the file.\n", pass)
 		return false, nil
