@@ -43,7 +43,6 @@ To know more about the ICAP protocol, [check this out](https://tools.ietf.org/ht
 - [How to Setup Existed Services](#how-to-setup-existed-services)
   - [Echo](#echo)
   - [ClamAV](#clamav)
-  - [hashlocal](#hashlocal)
   
 - [Things to keep in mind](#things-to-keep-in-mind)
 - [More on ICAPeg](#more-on-icapeg)
