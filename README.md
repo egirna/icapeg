@@ -25,7 +25,7 @@
 
 Open Source multi-vendor ICAP server
 
-Scan files requested via a proxy server using ICAPeg ICAP server, ICAPeg is an ICAP server connecting web proxies with API-based scanning services and more soon. ICAPeg currently supports [**VirusTotal**](https://www.virustotal.com/gui/home/upload), [**Cloudmersive**](https://cloudmersive.com/) & [**Clamav**](https://www.clamav.net/)  for scanning the files following the ICAP protocol. If you don't know about the ICAP protocol, here is a bit about it: 
+Scan files requested via a proxy server using ICAPeg ICAP server, ICAPeg is an ICAP server connecting web proxies with API-based scanning services and more soon. ICAPeg currently supports [**hashlocal**], [**clhashlookup**] & [**Clamav**](https://www.clamav.net/)  for scanning the files following the ICAP protocol. If you don't know about the ICAP protocol, here is a bit about it: 
 
 ## What is ICAP?
 
@@ -42,10 +42,9 @@ To know more about the ICAP protocol, [check this out](https://tools.ietf.org/ht
 - [Developer Guide](#developer-guide)
 - [How to Setup Existed Services](#how-to-setup-existed-services)
   - [Echo](#echo)
-  - [Virustotal](#virustotal)
   - [ClamAV](#clamav)
-  - [Cloudmersive](#cloudmersive)
-
+  - [hashlocal](#hashlocal)
+  
 - [Things to keep in mind](#things-to-keep-in-mind)
 - [More on ICAPeg](#more-on-icapeg)
 - [Contributing](#contributing)
@@ -298,7 +297,7 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
         
             Get more details about **request mode** from [here](https://datatracker.ietf.org/doc/html/rfc3507#section-3.1).
 
-     - **[hashlocal] section** 
+    - **[hashlocal] section**
         ```toml
         [hashlocal]
         vendor = "hashlocal"
@@ -312,7 +311,7 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
         bypass_extensions = ["*"]
         process_extensions = ["pdf","exe", "zip"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
         reject_extensions = ["docx"]
-        scan_url = "./hash_file/hash_file_path.txt" #
+        Hash_File = "./hash_file/hash_file_path.txt" #
         max_filesize = 0 #bytes
         return_original_if_max_file_size_exceeded=true
         return_400_if_file_ext_rejected=false
@@ -321,7 +320,13 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
         exception_page = "./temp/exception-page.html" # Location of the exception page for this service
         ```
       - ### **Description of hashlocal service**
-      > - we will pretend that you want to download a file. Still, you don't know if it is safe or not, so using this service helps you calculate the hash value of any file you download through the icapeg, then it checks if this hash value is available or not in hash_file if it is in the hash_file returns back an exception page.
+      > - we will pretend that you want to download a file. Still, you don't know if it is safe or not, so     using this service helps you calculate the hash value of any file you download through the icapeg, then it checks if this hash value is available or not in hash_file if it is in the hash_file returns back an exception page, so if you tried to downloadany file of eicar test vrius it will appear an exception page,cause the hash file of thosefile is foun in our hash_file.
+
+    - ### **New used variables **
+
+    - **HashFile**
+     It is a string variable has the link of the hash_file_path.txt ,where we save the hashes value we want to be compared with any file we try to download through icapeg.
+    
 
 ## Adding a new vendor to ICAPeg
 
