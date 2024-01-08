@@ -25,13 +25,11 @@ type Hashlocal struct {
 	processExts   []string
 	rejectExts    []string
 	extArrs       []services_utilities.Extension
-	ScanUrl       string
-	//Timeout                    time.Duration
+	HashFile       string
 	returnOrigIfMaxSizeExc     bool
 	return400IfFileExtRejected bool
 	generalFunc                *general_functions.GeneralFunc
 	BypassOnApiError           bool
-	//verifyServerCert           bool
 	FileHash                  string
 	CaseBlockHttpResponseCode int
 	CaseBlockHttpBody         bool
@@ -47,12 +45,10 @@ func InitHashlocalConfig(serviceName string) {
 			bypassExts:  readValues.ReadValuesSlice(serviceName + ".bypass_extensions"),
 			processExts: readValues.ReadValuesSlice(serviceName + ".process_extensions"),
 			rejectExts:  readValues.ReadValuesSlice(serviceName + ".reject_extensions"),
-			ScanUrl:     readValues.ReadValuesString(serviceName + ".scan_url"),
-			//Timeout:                    readValues.ReadValuesDuration(serviceName + ".timeout"),
+			HashFile:     readValues.ReadValuesString(serviceName + ".Hash_File"),
 			returnOrigIfMaxSizeExc:     readValues.ReadValuesBool(serviceName + ".return_original_if_max_file_size_exceeded"),
 			return400IfFileExtRejected: readValues.ReadValuesBool(serviceName + ".return_400_if_file_ext_rejected"),
-			//BypassOnApiError:           readValues.ReadBoolFromEnv(serviceName + ".bypass_on_api_error"),
-			//verifyServerCert:           readValues.ReadValuesBool(serviceName + ".verify_server_cert"),
+			BypassOnApiError:           readValues.ReadBoolFromEnv(serviceName + ".bypass_on_api_error"),
 			CaseBlockHttpResponseCode: readValues.ReadValuesInt(serviceName + ".http_exception_response_code"),
 			CaseBlockHttpBody:         readValues.ReadValuesBool(serviceName + ".http_exception_has_body"),
 			ExceptionPage:             readValues.ReadValuesString(serviceName + ".exception_page"),
@@ -73,12 +69,10 @@ func NewHashlocalService(serviceName, methodName string, httpMsg *http_message.H
 		processExts:   HashlocalConfig.processExts,
 		rejectExts:    HashlocalConfig.rejectExts,
 		extArrs:       HashlocalConfig.extArrs,
-		ScanUrl:       HashlocalConfig.ScanUrl,
-		//Timeout:                    HashlocalConfig.Timeout * time.Second,
+		HashFile:       HashlocalConfig.HashFile,
 		returnOrigIfMaxSizeExc:     HashlocalConfig.returnOrigIfMaxSizeExc,
 		return400IfFileExtRejected: HashlocalConfig.return400IfFileExtRejected,
 		generalFunc:                general_functions.NewGeneralFunc(httpMsg, xICAPMetadata),
-		//verifyServerCert:           HashlocalConfig.verifyServerCert,
 		BypassOnApiError:          HashlocalConfig.BypassOnApiError,
 		CaseBlockHttpResponseCode: HashlocalConfig.CaseBlockHttpResponseCode,
 		CaseBlockHttpBody:         HashlocalConfig.CaseBlockHttpBody,
