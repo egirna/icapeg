@@ -1,4 +1,4 @@
-<h1 align="center">Go ICAP Server</h1>
+<h1 align="center">Go ICAPeg Server</h1>
 <p align="center">
     <em>ICAPeg Server.</em>
 </p>
@@ -25,7 +25,7 @@
 
 Open Source multi-vendor ICAP server
 
-Scan files requested via a proxy server using ICAPeg ICAP server, ICAPeg is an ICAP server connecting web proxies with API-based scanning services and more soon. ICAPeg currently supports [**hashlocal**], [**clhashlookup**] & [**Clamav**](https://www.clamav.net/)  for scanning the files following the ICAP protocol. If you don't know about the ICAP protocol, here is a bit about it: 
+Scan files requested via a proxy server using ICAPeg ICAP server, ICAPeg is an ICAP server connecting web proxies with API-based scanning services and more soon. ICAPeg currently supports [**hashlocal**#], [**clhashlookup**] & [**Clamav**](https://www.clamav.net/)  for scanning the files following the ICAP protocol. If you don't know about the ICAP protocol, here is a bit about it: 
 
 ## What is ICAP?
 
@@ -37,12 +37,14 @@ To know more about the ICAP protocol, [check this out](https://tools.ietf.org/ht
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)
+- [Service Describtion](#Service Describtion)
 - [Configuration](#configuration)
 - [Adding a new vendor to ICAPeg](#adding-a-new-vendor-to-ICAPeg)
 - [Developer Guide](#developer-guide)
 - [How to Setup Existed Services](#how-to-setup-existed-services)
   - [Echo](#echo)
   - [ClamAV](#clamav)
+  
   
 - [Things to keep in mind](#things-to-keep-in-mind)
 - [More on ICAPeg](#more-on-icapeg)
@@ -90,6 +92,20 @@ $ ./icapeg
 ```
 
 You should see something like, ```ICAP server is running on localhost:1344 ...```. This tells you the ICAP server is up and running.
+## Service Describtion
+
+- **echo**
+> simply it's like when you bing url,so what we send will be received 
+
+- **clamav**
+> ClamAV is an open source (GPLv2) anti-virus toolkit, designed especially for e-mail scanning on mail gateways. It provides a number of utilities including a flexible and scalable multi-threaded daemon also helps to scan file quickly.
+
+- **clhashlookup**
+> simply it helps to scan each file we need to check before we send to Api.
+
+- **hashlocal**
+>  we will pretend that you want to download a file. Still, you don't know if it is safe or not, so     using this service helps you calculate the hash value of any file you download through the icapeg, then it checks if this hash value is available or not in hash_file if it is in the hash_file returns back an exception page, so if you tried to downloadany file of eicar test vrius it will appear an exception page,cause the hash file of thosefile is foun in our hash_file.
+
 
 ## Configuration
 
@@ -318,9 +334,6 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
         http_exception_has_body = true
         exception_page = "./temp/exception-page.html" # Location of the exception page for this service
         ```
-      - ### **Description of hashlocal service**
-      > - we will pretend that you want to download a file. Still, you don't know if it is safe or not, so     using this service helps you calculate the hash value of any file you download through the icapeg, then it checks if this hash value is available or not in hash_file if it is in the hash_file returns back an exception page, so if you tried to downloadany file of eicar test vrius it will appear an exception page,cause the hash file of thosefile is foun in our hash_file.
-
     - ### **New used variables **
 
     - **HashFile**
@@ -339,15 +352,14 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
 
   This is a developer guide which includes a lot of functions to help the developer while implementing his new service.
 
-## How to Setup Existed Services
+## How to Setup Existing Services
 
 - #### **Echo**: It doesn't need setup, it takes the HTTP message and returns it as it is. **Echo** is just an example service.
 
-- #### [**Virustotal**](/vendors-markdowns/virustotal/VIRUSTOTALAPI.md).
+
 
 - #### [**ClamAV**](/vendors-markdowns/clamav/CLAMAVSETUP.md).
 
-- #### [**Cloudmersive**](/vendors-markdowns/cloudmersive/CLOUDMERSIVEAPI.md).
 
 ## Testing
 

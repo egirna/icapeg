@@ -80,7 +80,7 @@ preview_enabled = true# options send preview header or not
 bypass_extensions = ["*"]
 process_extensions = ["pdf","exe", "zip"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
 reject_extensions = ["docx"]
-Hash_File = "./hash_file/hash_file_path.txt" #
+hash_file = "./hash_file/hash_file_path.txt" #
 max_filesize = 0 #bytes
 return_original_if_max_file_size_exceeded=true
 return_400_if_file_ext_rejected=false
