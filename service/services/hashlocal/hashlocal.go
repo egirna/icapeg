@@ -231,6 +231,10 @@ func checkValueInFile(filePath, targetValue string) (bool, error) {
 		line := scanner.Text()
 		// for triming white space
 		trimmedLine := strings.TrimSpace(line)
+		// to help userr write comment as he wish , so just make code to skip ; at all
+		if (strings.HasPrefix)(trimmedLine, ";") || (strings.HasSuffix)(trimmedLine, ";") {
+			continue
+		}
 		//for converting into lowwercase
 		convtolowercase := strings.ToLower(targetValue)
 		// Check if the target value is present in the line
