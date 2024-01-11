@@ -25,7 +25,7 @@
 
 Open Source multi-vendor ICAP server
 
-Scan files requested via a proxy server using ICAPeg ICAP server, ICAPeg is an ICAP server connecting web proxies with API-based scanning services and more soon. ICAPeg currently supports [**hashlocal**#], [**clhashlookup**] & [**Clamav**](https://www.clamav.net/)  for scanning the files following the ICAP protocol. If you don't know about the ICAP protocol, here is a bit about it: 
+Scan files requested via a proxy server using ICAPeg ICAP server, ICAPeg is an ICAP server connecting web proxies with API-based scanning services and more soon. ICAPeg currently supports [**hashlocal**](#hashlocal), [**clhashlookup**](#clhashlookup) & [**Clamav**](https://www.clamav.net/)  for scanning the files following the ICAP protocol. If you don't know about the ICAP protocol, here is a bit about it: 
 
 ## What is ICAP?
 
@@ -37,7 +37,7 @@ To know more about the ICAP protocol, [check this out](https://tools.ietf.org/ht
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)
-- [Service Describtion](#Service Describtion)
+- [Service Describtion](#Service_Describtion)
 - [Configuration](#configuration)
 - [Adding a new vendor to ICAPeg](#adding-a-new-vendor-to-ICAPeg)
 - [Developer Guide](#developer-guide)
@@ -92,18 +92,19 @@ $ ./icapeg
 ```
 
 You should see something like, ```ICAP server is running on localhost:1344 ...```. This tells you the ICAP server is up and running.
-## Service Describtion
+
+## Service_Describtion
 
 - **echo**
 > simply it's like when you bing url,so what we send will be received 
 
-- **clamav**
+- ## clamav**
 > ClamAV is an open source (GPLv2) anti-virus toolkit, designed especially for e-mail scanning on mail gateways. It provides a number of utilities including a flexible and scalable multi-threaded daemon also helps to scan file quickly.
 
-- **clhashlookup**
+- ## clhashlookup**
 > simply it helps to scan each file we need to check before we send to Api.
 
-- **hashlocal**
+- ## hashlocal**
 >  we will pretend that you want to download a file. Still, you don't know if it is safe or not, so     using this service helps you calculate the hash value of any file you download through the icapeg, then it checks if this hash value is available or not in hash_file if it is in the hash_file returns back an exception page, so if you tried to downloadany file of eicar test vrius it will appear an exception page,cause the hash file of thosefile is foun in our hash_file.
 
 
@@ -152,7 +153,9 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
           - **false**: Debugging headers should not be displayed with ICAP headers.
         
           - Any port number that isn't used in your machine.
-        
+
+      ## echo
+
       - **[echo] section** 
       
         >  **Note**: Variables explained in **echo** service are mandatory with any service integrated with **ICAPeg**.
@@ -293,7 +296,6 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
         - ### **Optional variables** (Variables that depends on the service)
         
           > **Notes:** 
-          >
           > - You may not use these variables in your service and you may use them, It depends on your service and It's up to you.
           > - We will pretend that this service is for file processing and it sends that file to an external API to process it then it gets it back again, So all optional variables depend on that scenario in this service. (It's just a fake scenario service that can do anything not just for processing files).
         
@@ -312,7 +314,9 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
         
             Get more details about **request mode** from [here](https://datatracker.ietf.org/doc/html/rfc3507#section-3.1).
 
-    - **[hashlocal] section**
+      ## hashlocal
+
+      - **[hashlocal] section**
         ```toml
         [hashlocal]
         vendor = "hashlocal"
@@ -334,11 +338,79 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
         http_exception_has_body = true
         exception_page = "./temp/exception-page.html" # Location of the exception page for this service
         ```
-    - ### **New used variables **
+       - ### **New used variables **
 
-    - **HashFile**
-     It is a string variable has the link of the hash_file_path.txt ,where we save the hashes value we want to be compared with any file we try to download through icapeg.
+       - **HashFile**
+       It is a string variable has the link of the hash_file_path.txt ,where we save the hashes value we want to be compared with any file we try to download through icapeg.
     
+      ## clhashlookup
+
+      - **[clhashlookup] section**
+
+        ```toml
+       [clhashlookup]
+        vendor = "clhashlookup"
+        service_caption= "cl-hashlookup"   #Service
+        service_tag = "cl-hashlookup ICAP"  #ISTAG
+        req_mode=true
+        resp_mode=true
+        shadow_service=false
+        preview_bytes = "1024" #byte
+        preview_enabled = true# options send preview header or not
+        bypass_extensions = ["*"]
+        process_extensions = ["pdf","exe", "zip"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
+        reject_extensions = ["docx"]
+        scan_url = "https://hashlookup.circl.lu/lookup/sha256/" #
+        timeout  = 300 #seconds , ICAP will return 408 - Request timeout
+        fail_threshold = 2
+        max_filesize = 0 #bytes
+        return_original_if_max_file_size_exceeded=true
+        return_400_if_file_ext_rejected=false
+        verify_server_cert=true
+        bypass_on_api_error=false
+        http_exception_response_code = 403
+        http_exception_has_body = true
+        exception_page = "./temp/exception-page.html" # Location of the exception page for this service
+        ```
+        - ### **New used variables **
+
+       - **Scan_url**
+       It is a string variable has the link of Api ,where we send the files we scanned to.
+
+       ## clamav
+
+      - **[clamav] section**
+
+        ```toml
+        [clamav]
+        vendor = "clamav"
+        service_caption= "clamav service"   #Service
+        service_tag = "CLAMAV ICAP"  #ISTAG
+        req_mode=true
+        resp_mode=true
+        shadow_service=false
+        preview_bytes = "1024" #byte
+        preview_enabled = true# options send preview header or not
+        process_extensions = ["pdf", "zip", "com"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
+        reject_extensions = ["docx"]
+        bypass_extensions = ["*"]
+        socket_path = "/var/run/clamav/clamd.ctl"
+        fail_threshold = 2
+        timeout = 10 #seconds, the time upto which the server will wait for clamav to scan the results
+        #max file size value from 1 to 9223372036854775807, and value of zero means unlimited
+        max_filesize = 0 #bytes
+        return_original_if_max_file_size_exceeded=false
+        return_400_if_file_ext_rejected=false
+        verify_server_cert=true
+        bypass_on_api_error=false
+        http_exception_response_code = 403
+        http_exception_has_body = true
+        exception_page = "./temp/exception-page.html" # Location of the exception page for this service
+        ```
+      - ### **New used variables **
+
+       - **socket_path**
+       It is a string variable it helps sending the HTTP msg body to the ClamAV through antivirus socket.
 
 ## Adding a new vendor to ICAPeg
 
@@ -356,10 +428,7 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
 
 - #### **Echo**: It doesn't need setup, it takes the HTTP message and returns it as it is. **Echo** is just an example service.
 
-
-
 - #### [**ClamAV**](/vendors-markdowns/clamav/CLAMAVSETUP.md).
-
 
 ## Testing
 

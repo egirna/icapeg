@@ -242,7 +242,7 @@ func checkValueInFile(filePath, targetValue string) (bool, error) {
 			return true, nil
 		}
 	}
-
+	
 	// Check for errors during scanning
 	if err := scanner.Err(); err != nil {
 		return false, err
