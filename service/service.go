@@ -6,6 +6,7 @@ import (
 	"icapeg/service/services/clamav"
 	"icapeg/service/services/clhashlookup"
 	"icapeg/service/services/echo"
+	"icapeg/service/services/hashlocal"
 	"net/textproto"
 )
 
@@ -14,6 +15,7 @@ const (
 	VendorEcho       = "echo"
 	VendorClamav     = "clamav"
 	VendorHashlookup = "clhashlookup"
+	VendorHashlocal  = "hashlocal"
 )
 
 type (
@@ -32,12 +34,13 @@ func GetService(vendor, serviceName, methodName string, httpMsg *http_message.Ht
 	switch vendor {
 	case VendorEcho:
 		return echo.NewEchoService(serviceName, methodName, httpMsg, xICAPMetadata)
-	case VendorClamav:
-		return clamav.NewClamavService(serviceName, methodName, httpMsg, xICAPMetadata)
 	case VendorHashlookup:
 		return clhashlookup.NewHashlookupService(serviceName, methodName, httpMsg, xICAPMetadata)
+	case VendorClamav:
+		return clamav.NewClamavService(serviceName, methodName, httpMsg, xICAPMetadata)
+	case VendorHashlocal:
+		return hashlocal.NewHashlocalService(serviceName, methodName, httpMsg, xICAPMetadata)
 	}
-
 	return nil
 }
 
@@ -47,9 +50,11 @@ func InitServiceConfig(vendor, serviceName string) {
 	switch vendor {
 	case VendorEcho:
 		echo.InitEchoConfig(serviceName)
-	case VendorClamav:
-		clamav.InitClamavConfig(serviceName)
 	case VendorHashlookup:
 		clhashlookup.InitHashlookupConfig(serviceName)
+	case VendorClamav:
+		clamav.InitClamavConfig(serviceName)
+	case VendorHashlocal:
+		hashlocal.InitHashlocalConfig(serviceName)
 	}
 }
