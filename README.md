@@ -128,14 +128,14 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
 
         ```toml
         [app]
-        ip="0.0.0.0"
+       IP="0.0.0.0"
         port = 1344
         services= ["echo", "virustotal", "clamav", "cloudmersive"]
         debugging_headers=true
         ```
         
         - **ip**
-        The ip number that **ICAPeg** runs on. we put the default ip **0.0.0.0** in order to acess any ip.
+        The IP number that **ICAPeg** runs on. we put the default IP **0.0.0.0** in order to acess any ip.
 
         - **port**
         

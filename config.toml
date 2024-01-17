@@ -18,7 +18,7 @@
 title = "ICAP configuration file"
 
 [app]
-ip="0.0.0.0"
+IP="0.0.0.0"
 port = 1344
 log_level="debug"
 write_logs_to_console= false

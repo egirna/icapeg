@@ -42,7 +42,7 @@ func StartServer() error {
 
 	go func() {
 		fmt.Println("Starting the ICAP server")
-		if err := icap.ListenAndServe(fmt.Sprintf("%s:%d", config.App().Ip, config.App().Port), nil); err != nil {
+		if err := icap.ListenAndServe(fmt.Sprintf("%s:%d", config.App().IP, config.App().Port), nil); err != nil {
 			logging.Logger.Fatal(err.Error())
 		}
 	}()

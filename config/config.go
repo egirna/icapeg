@@ -22,7 +22,7 @@ type serviceIcapInfo struct {
 
 // AppConfig represents the app configuration
 type AppConfig struct {
-	Ip                 string
+	IP                 string
 	Port               int
 	LogLevel           string
 	WriteLogsToConsole bool
@@ -49,7 +49,7 @@ func Init() {
 		fmt.Println("app section doesn't exist in config file")
 	}
 	AppCfg = AppConfig{
-		Ip:                 readValues.ReadValuesString("app.ip"),
+		IP:                 readValues.ReadValuesString("app.IP"),
 		Port:               readValues.ReadValuesInt("app.port"),
 		LogLevel:           readValues.ReadValuesString("app.log_level"),
 		WriteLogsToConsole: readValues.ReadValuesBool("app.write_logs_to_console"),
@@ -98,7 +98,7 @@ func Init() {
 			if bypass[i] == "*" {
 				asterisks++
 			}
-			if !ext[bypass[i]] {
+			if ext[bypass[i]] == false {
 				ext[bypass[i]] = true
 			} else {
 				logging.Logger.Fatal("This extension \"" + bypass[i] + "\" was " +
@@ -121,7 +121,7 @@ func Init() {
 			if process[i] == "*" {
 				asterisks++
 			}
-			if !ext[process[i]] {
+			if ext[process[i]] == false {
 				ext[process[i]] = true
 			} else {
 				logging.Logger.Fatal("This extension \"" + process[i] + "\" is stored in multiple arrays")
