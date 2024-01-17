@@ -341,10 +341,10 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
         http_exception_has_body = true
         exception_page = "./temp/exception-page.html" # Location of the exception page for this service
         ```
-       - ### **New used variables **
+       - ## New used variables
 
-       - **HashFile**
-       It is a string variable has the link of the hash_file_path.txt ,where we save the hashes value we want to be compared with any file we try to download through icapeg.
+        - **HashFile**
+        It is a string variable has the link of the hash_file_path.txt ,where we save the hashes value we want to be compared with any file we try to download through icapeg.
     
     
       - **[clhashlookup] section**
@@ -383,7 +383,7 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
       - **[clamav] section**
 
         ```toml
-       [clamav]
+        [clamav]
         vendor = "clamav"
         service_caption= "clamav service"   #Service
         service_tag = "CLAMAV ICAP"  #ISTAG
