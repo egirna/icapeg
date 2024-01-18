@@ -35,7 +35,7 @@ Before starting using ICAP with NGINX, make sure you have the following things i
 
 1. **NGINX**
 
-     You should install the latest Stable version of NGINX Open Source **nginx-1.24.0**.
+     You should install the latest stable version of NGINX Open Source **nginx-1.24.0**.
 
      You can download **NGINX** from [here](https://nginx.org/en/download.html).
 
@@ -86,10 +86,10 @@ Before starting using ICAP with NGINX, make sure you have the following things i
     - Download NGINX from NGINX site [here](https://nginx.org/en/download.html).
     - Extract NGINX zip file in path **C:\\** for Windows.
     - Rename the extracted folder to **nginx**.
-    - From Windows search box; search for **Edit the system environment variables**, Select:
+    - From Windows search box; search for **Edit the System Environment Variables**, Select:
         - **Advanced**
         - **Environment Variables**
-        - Under **system variables**, select **Path** then click **Edit**
+        - Under **System Variables**, select **Path** then click **Edit**
         - Click **New** to add NGINX path **c:\nginx** 
         - Click **OK** 
     - Open Windows CMD to check NGINX version and start the NGINX.
@@ -113,7 +113,7 @@ Before starting using ICAP with NGINX, make sure you have the following things i
 
         You can change the default configuration file **nginx.conf** whatever you want to customize the application. 
 
-        In this scenario we will add a new section in **nginx.conf** to enable the NGINX server accept the ICAP server connection with SSL  
+        In this scenario we will add a new section in **nginx.conf** to enable the NGINX accept the ICAP server connection with SSL  
         Certificate and Key.
 
     - Add this section as a separate section in **nginx.conf** file, not under http section in the nginx.conf file:
@@ -148,6 +148,7 @@ Before starting using ICAP with NGINX, make sure you have the following things i
     - Reload NGINX in new CMD window using this command: 
 
     ```bash
+      cd C:\nginx
       c:\nginx>nginx -s reload
       ``` 
   
