@@ -1,21 +1,14 @@
 <h1 align="center">Configure NGINX with ICAPeg</h1>
 <p align="center">
     <em>Secure ICAP.</em>
+     
 </p>
 
-# Secure ICAPeg
+# Secure ICAP
 
-Open Source multi-vendor ICAP server over NGINX.
-
-If you don't know about the ICAP protocol, here is a bit about it: 
-
-## What is ICAP?
-
-**ICAP** stands for **Internet Content Adaptation Protocol**. If a **content** (for example: file) you've requested over the internet
-to download or whatever, needs **adaptation**(some kind of modification or analysis), the proxy server sends the content to the ICAP server for adaptation and after performing the required tasks on the content, the ICAP server sends it back to the proxy server so that it may return the adapted content to the destination. This can occur both during request and response.
-
-To know more about the ICAP protocol, [check this out](https://tools.ietf.org/html/rfc3507).
-
+Secure ICAP is ICAP over TLS. 
+By using the **NGINX** we can convert the plain ICAP connection to secure connection using SSL/TLS certificate and key.
+ 
 ## What is NGINX?
 
 **NGINX** is **open source software** for web serving, reverse proxying, caching, load balancing, media streaming, and more. It started out as a web server designed for maximum performance and stability. In addition to its HTTP server capabilities, NGINX can also function as a proxy server for email (IMAP, POP3, and SMTP) and a reverse proxy and load balancer for HTTP, TCP, and UDP servers.
