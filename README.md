@@ -451,6 +451,8 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
 
 3. [Monitoring ICAPeg logs with ELK](Monitoring.md)
 
+4. [Configure NGINX with ICAPeg](ICAPeg.md)
+
 ## Contributing
 
 This project is still a WIP. So you can contribute as well. See the contributions guide [here](CONTRIBUTING.md).
