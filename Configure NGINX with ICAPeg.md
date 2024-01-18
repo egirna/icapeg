@@ -31,7 +31,7 @@ To know more about the NGINX, [check this out](https://www.nginx.com/resources/g
 
 ## Prerequisites
 
-Before starting to use ICAP with NGINX, make sure you have the following things in your machine:
+Before starting using ICAP with NGINX, make sure you have the following things in your machine:
 
 1. **NGINX**
 
