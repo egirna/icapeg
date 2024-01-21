@@ -98,15 +98,14 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
 - **echo**
 > simply it's like when you bing url,so what we send will be received 
 
-- ## clamav**
+- ## clamav
 > ClamAV is an open source (GPLv2) anti-virus toolkit, designed especially for e-mail scanning on mail gateways. It provides a number of utilities including a flexible and scalable multi-threaded daemon also helps to scan file quickly.
 
-- ## clhashlookup**
+- ## clhashlookup
 > simply it helps to scan each file we need to check before we send to Api.
 
-- ## hashlocal**
->  we will pretend that you want to download a file. Still, you don't know if it is safe or not, so     using this service helps you calculate the hash value of any file you download through the icapeg, then it checks if this hash value is available or not in hash_file if it is in the hash_file returns back an exception page, so if you tried to downloadany file of eicar test vrius it will appear an exception page,cause the hash file of thosefile is foun in our hash_file.
-
+- ## hashlocal
+>  we will pretend that you want to download a file. Still, you don't know if it is safe or not, so using this service helps you calculate the hash value of any file you download through the icapeg, then it checks if this hash value is available or not in hash_file if it is in the hash_file returns back an exception page, so if you tried to download any file of eicar test vrius it will appear an exception page,cause the hash file of those file is found in our hash_file_path.txt, Also you can make a comment in has_file_path.txt by using **;** for example **;eicar**.
 
 ## Configuration
 
@@ -128,11 +127,17 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
 
         ```toml
         [app]
+
+        IP="0.0.0.0"
         port = 1344
         services= ["echo", "virustotal", "clamav", "cloudmersive"]
         debugging_headers=true
+
         ```
         
+        - **ip**
+        The IP number that **ICAPeg** runs on. we put the default IP **0.0.0.0** in order to acess any ip.
+
         - **port**
         
           The port number that **ICAPeg** runs on. The default port number for any ICAP server is **1344**, possible values:
@@ -154,8 +159,7 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
         
           - Any port number that isn't used in your machine.
 
-      ## echo
-
+    
       - **[echo] section** 
       
         >  **Note**: Variables explained in **echo** service are mandatory with any service integrated with **ICAPeg**.
@@ -314,7 +318,6 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
         
             Get more details about **request mode** from [here](https://datatracker.ietf.org/doc/html/rfc3507#section-3.1).
 
-      ## hashlocal
 
       - **[hashlocal] section**
         ```toml
@@ -338,17 +341,16 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
         http_exception_has_body = true
         exception_page = "./temp/exception-page.html" # Location of the exception page for this service
         ```
-       - ### **New used variables **
+       - ## New used variables
 
-       - **HashFile**
-       It is a string variable has the link of the hash_file_path.txt ,where we save the hashes value we want to be compared with any file we try to download through icapeg.
+        - **HashFile**
+        It is a string variable has the link of the hash_file_path.txt ,where we save the hashes value we want to be compared with any file we try to download through icapeg.
     
-      ## clhashlookup
-
+    
       - **[clhashlookup] section**
 
         ```toml
-       [clhashlookup]
+        [clhashlookup]
         vendor = "clhashlookup"
         service_caption= "cl-hashlookup"   #Service
         service_tag = "cl-hashlookup ICAP"  #ISTAG
@@ -372,12 +374,11 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
         http_exception_has_body = true
         exception_page = "./temp/exception-page.html" # Location of the exception page for this service
         ```
-        - ### **New used variables **
+      - ### New used variables 
 
        - **Scan_url**
        It is a string variable has the link of Api ,where we send the files we scanned to.
 
-       ## clamav
 
       - **[clamav] section**
 
@@ -407,7 +408,7 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
         http_exception_has_body = true
         exception_page = "./temp/exception-page.html" # Location of the exception page for this service
         ```
-      - ### **New used variables **
+      - ### New used variables
 
        - **socket_path**
        It is a string variable it helps sending the HTTP msg body to the ClamAV through antivirus socket.
@@ -449,6 +450,8 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
 2. [Logging](LOGS.md)
 
 3. [Monitoring ICAPeg logs with ELK](Monitoring.md)
+
+4. [ICAP over TLS](ICAPeg.md)
 
 ## Contributing
 
