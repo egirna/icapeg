@@ -1,6 +1,6 @@
 <h1 align="center">Configure NGINX with ICAPeg</h1>
 <p align="center">
-    <em>Secure ICAP.</em>
+    <em>Secure ICAP</em>
      
 </p>
 
