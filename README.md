@@ -36,20 +36,20 @@ To know more about the ICAP protocol, [check this out](https://tools.ietf.org/ht
 
 ## Table of Contents
 
-- [Prerequisites](#prerequisites)
-- [Service Describtion](#Service_Describtion)
-- [Configuration](#configuration)
-- [Adding a new vendor to ICAPeg](#adding-a-new-vendor-to-ICAPeg)
-- [Developer Guide](#developer-guide)
-- [How to Setup Existed Services](#how-to-setup-existed-services)
-  - [Echo](#echo)
-  - [ClamAV](#clamav)
-  
-  
-- [Things to keep in mind](#things-to-keep-in-mind)
-- [More on ICAPeg](#more-on-icapeg)
-- [Contributing](#contributing)
-- [License](#license)
+- [ICAPeg](#icapeg)
+  - [What is ICAP?](#what-is-icap)
+  - [Table of Contents](#table-of-contents)
+  - [Prerequisites](#prerequisites)
+  - [Service\_Describtion](#service_describtion)
+  - [Configuration](#configuration)
+  - [Adding a new vendor to ICAPeg](#adding-a-new-vendor-to-icapeg)
+  - [Developer Guide](#developer-guide)
+  - [How to Setup Existing Services](#how-to-setup-existing-services)
+  - [Testing](#testing)
+  - [Things to keep in mind](#things-to-keep-in-mind)
+  - [More on ICAPeg](#more-on-icapeg)
+  - [Contributing](#contributing)
+  - [License](#license)
 
 ## Prerequisites
 
@@ -348,7 +348,8 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
       - **[clhashlookup] section**
 
         ```toml
-       [clhashlookup]
+        [clhashlookup]
+       
         vendor = "clhashlookup"
         service_caption= "cl-hashlookup"   #Service
         service_tag = "cl-hashlookup ICAP"  #ISTAG
@@ -372,7 +373,7 @@ You should see something like, ```ICAP server is running on localhost:1344 ...``
         http_exception_has_body = true
         exception_page = "./temp/exception-page.html" # Location of the exception page for this service
         ```
-        - ### **New used variables **
+      - ### **New used variables**
 
        - **Scan_url**
        It is a string variable has the link of Api ,where we send the files we scanned to.
