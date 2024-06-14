@@ -1,7 +1,7 @@
 package services_utilities
 
 import (
-	"icapeg/consts"
+	utils "icapeg/consts"
 	"icapeg/logging"
 )
 
@@ -36,25 +36,29 @@ func InitExtsArr(processExts, rejectExts, bypassExts []string) []Extension {
 	process := Extension{Name: utils.ProcessExts, Exts: processExts}
 	reject := Extension{Name: utils.RejectExts, Exts: rejectExts}
 	bypass := Extension{Name: utils.BypassExts, Exts: bypassExts}
-	extArrs := make([]Extension, 3)
-	ind := 0
+	extArrs := make([]Extension, 0, 3)
+
+	// Determine order for non-asterisk extensions
+	if !(len(process.Exts) == 1 && process.Exts[0] == utils.Any) {
+		extArrs = append(extArrs, process)
+	}
+	if !(len(reject.Exts) == 1 && reject.Exts[0] == utils.Any) {
+		extArrs = append(extArrs, reject)
+	}
+	if !(len(bypass.Exts) == 1 && bypass.Exts[0] == utils.Any) {
+		extArrs = append(extArrs, bypass)
+	}
+
+	// Add asterisk extensions at the end
 	if len(process.Exts) == 1 && process.Exts[0] == utils.Any {
-		extArrs[2] = process
-	} else {
-		extArrs[ind] = process
-		ind++
+		extArrs = append(extArrs, process)
 	}
 	if len(reject.Exts) == 1 && reject.Exts[0] == utils.Any {
-		extArrs[2] = reject
-	} else {
-		extArrs[ind] = reject
-		ind++
+		extArrs = append(extArrs, reject)
 	}
 	if len(bypass.Exts) == 1 && bypass.Exts[0] == utils.Any {
-		extArrs[2] = bypass
-	} else {
-		extArrs[ind] = bypass
-		ind++
+		extArrs = append(extArrs, bypass)
 	}
+
 	return extArrs
 }
