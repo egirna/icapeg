@@ -265,9 +265,8 @@ func (f *GeneralFunc) IfMaxFileSizeExc(returnOrigIfMaxSizeExc bool, serviceName,
 	}
 }
 
-// GetFileName returns the filename from the http request
+// GetFileName returns the filename from the http request or response
 func (f *GeneralFunc) GetFileName(serviceName string, xICAPMetadata string) string {
-
 	logging.Logger.Info(utils.PrepareLogMsg(f.xICAPMetadata, "getting the file name"))
 	var filename string
 	if f.httpMsg.Response != nil {
@@ -276,39 +275,27 @@ func (f *GeneralFunc) GetFileName(serviceName string, xICAPMetadata string) stri
 			_, params, _ := mime.ParseMediaType(dispositionHeader)
 			fileName, ok := params["filename"]
 			if ok && fileName != "" {
-				logging.Logger.Info(utils.PrepareLogMsg(xICAPMetadata, serviceName+" file name get form  disposition header: "+fileName))
-
+				logging.Logger.Info(utils.PrepareLogMsg(xICAPMetadata, serviceName+" file name get from disposition header: "+fileName))
 				return fileName
 			}
 		}
-	}
-	if f.httpMsg.Response != nil && f.httpMsg.Response.Request != nil {
-		if f.httpMsg.Response.Request.RequestURI != "" {
-			r := f.httpMsg.Response.Request.URL
-			filename = path.Base(r.Path)
+		if f.httpMsg.Response.Request != nil && f.httpMsg.Response.Request.URL != nil {
+			filename = path.Base(f.httpMsg.Response.Request.URL.Path)
+			logging.Logger.Info(utils.PrepareLogMsg(xICAPMetadata, serviceName+" file name get from httpMsg Response.Request.RequestURI: "+filename))
+			if filename != "" && filename != "." {
+				return filename
+			}
 		}
-		logging.Logger.Info(utils.PrepareLogMsg(xICAPMetadata, serviceName+" file name get form httpMsg Response.Request.RequestURI  : "+filename))
-
-	} else if f.httpMsg.Request != nil {
-		if f.httpMsg.Request.RequestURI != "" {
-			r := f.httpMsg.Request.URL
-			filename = path.Base(r.Path)
-			logging.Logger.Info(utils.PrepareLogMsg(xICAPMetadata, serviceName+" file name  get form httpMsg Request.RequestURI  : "+filename))
-
+	}
+	if f.httpMsg.Request != nil && f.httpMsg.Request.URL != nil {
+		filename = path.Base(f.httpMsg.Request.URL.Path)
+		logging.Logger.Info(utils.PrepareLogMsg(xICAPMetadata, serviceName+" file name get from httpMsg Request.RequestURI: "+filename))
+		if filename != "" && filename != "." {
+			return filename
 		}
-
-	} else {
-		logging.Logger.Info(utils.PrepareLogMsg(xICAPMetadata, serviceName+" file name  get form httpMsg return unnamed_file  : "+filename))
-
-		return "unnamed_file"
 	}
-
-	if len(filename) < 2 {
-		return "unnamed_file"
-	}
-
-	return filename
-
+	logging.Logger.Info(utils.PrepareLogMsg(xICAPMetadata, serviceName+" file name get from httpMsg return unnamed_file: "+filename))
+	return "unnamed_file"
 }
 
 // CompressFileGzip is a func which used for compress files in gzip
