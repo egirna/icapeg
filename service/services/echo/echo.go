@@ -32,6 +32,7 @@ func (e *Echo) Processing(partial bool, IcapHeader textproto.MIMEHeader) (int, i
 
 	//extracting the file from http message
 	file, reqContentType, err := e.generalFunc.CopyingFileToTheBuffer(e.methodName)
+	file, _ = e.httpMsg.StorageClient.Load(e.httpMsg.StorageKey)
 	if err != nil {
 		logging.Logger.Error(utils.PrepareLogMsg(e.xICAPMetadata, e.serviceName+" error: "+err.Error()))
 		logging.Logger.Info(utils.PrepareLogMsg(e.xICAPMetadata, e.serviceName+" service has stopped processing"))
