@@ -49,12 +49,14 @@ def icap_client(command):
     subprocess.run(['touch ./testing/output && rm -f ./testing/output'],shell=True)
     proc = subprocess.run([command], stderr=subprocess.PIPE, shell=True)
     output = str(proc.stderr).strip().replace('\\t','').replace("\n","\\n").split("\\n")
+    icap_status = None
+    http_status = None
     for i in output:
         if i.startswith('ICAP/1.0'):
-            statusCode = i[9:12]
-            statusMessage = i[13:]
-            return statusCode, statusMessage
-    return 'No output','No output'
+            icap_status = i[9:12]
+        elif i.startswith('HTTP/1.1'):
+            http_status = i[9:12]
+    return icap_status, http_status
 
 def hashfile(file):
 	# A arbitrary (but fixed) buffer
@@ -168,27 +170,26 @@ def reconfigure_multi(*arr):
     subprocess.run(['./icapeg 2> /dev/null &'],shell=True)
     time.sleep(10)
 
-def is_mode_working(test_filename,test_result, command):
+def is_mode_working(test_filename, test_result, command):
     global passed_tests, failed_tests
-    subprocess.run(['touch ./testing/output && rm ./testing/output'],shell=True)
+    subprocess.run(['touch ./testing/output && rm ./testing/output'], shell=True)
 
-    result_statusCode, result_statusMessage = icap_client(command)
+    icap_status, http_status = icap_client(command)
     ismatched = Compare_files('./testing/'+test_filename, './testing/output')
-    if (ismatched):
-        result = "OK"
-    else : 
-        result = "FAILED"
-    if (result == "OK"):
-        resultMessage = "File Recieved and status code " + result_statusCode + " " + result_statusMessage
-    else:
-        resultMessage = "File Not Recieved and status code " + result_statusCode + " " + result_statusMessage
-
-    out = " -->File: " + test_filename +" result: " + resultMessage + " " + "; expected: " + test_result 
     
-    if (result == test_result.strip() and result_statusCode + result_statusMessage == "200OK"):
+    if ismatched and icap_status == "200" and http_status != "403":
+        result = "OK"
+    else:
+        result = "FAILED"
+
+    resultMessage = f"File {'Received' if ismatched else 'Not Received'}, ICAP status: {icap_status}, HTTP status: {http_status}"
+
+    out = f" -->File: {test_filename} result: {resultMessage}; expected: {test_result}"
+    
+    if result == test_result.strip():
         style.ok("Test passed", out)
-        passed_tests = passed_tests + 1
-    else : 
+        passed_tests += 1
+    else:
         style.fail("Test Failed", out)
         failed_tests += 1
 
@@ -278,7 +279,27 @@ def test_mode(mode=''):
         command = 'c-icap-client -i 127.0.0.1  -p 1344 -s '+ service + ' -f '+ inputfile +' -o ./testing/output '+ options +' -nopreview -v -no204'
         is_mode_working(fileName,expected, command)
 
-
+def test_oversized_file():
+    style.header("***** Test oversized file *****")
+    command = 'c-icap-client -i 127.0.0.1 -p 1344 -s echo -f ./testing/large_file.txt -o ./testing/output -v -no204'
+    icap_status, http_status = icap_client(command)
+    
+    expected_icap = "200"
+    expected_http = "403"
+    
+    result = f"ICAP: {icap_status}, HTTP: {http_status}"
+    expected = f"ICAP: {expected_icap}, HTTP: {expected_http}"
+    
+    out = f" --> result: {result}; expected: {expected}"
+    
+    if icap_status == expected_icap and http_status == expected_http:
+        style.ok("Test passed", out)
+        global passed_tests
+        passed_tests += 1
+    else:
+        style.fail("Test Failed", out)
+        global failed_tests
+        failed_tests += 1
     # test  With Preview 0 (client Side) 
     # style.header("***** Test " + modeName + " mode echo service With Preview 0 (client Side) *****")
     # for row in data:
@@ -479,6 +500,7 @@ time.sleep(10)
 # test_service_name()
 test_mode('resp')
 test_mode('req')
+test_oversized_file()
 # test_istag()
 
 # =====================================
