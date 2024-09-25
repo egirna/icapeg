@@ -41,16 +41,21 @@ func (d *Hashlookup) Processing(partial bool, IcapHeader textproto.MIMEHeader) (
 	ExceptionPagePath := utils.BlockPagePath
 	// fileExtension := d.generalFunc.GetMimeExtension(file, contentType[0], fileName)
 	var fileExtension string
-	filehead, err := d.httpMsg.StorageClient.ReadFileHeader(d.httpMsg.StorageKey)
-	if err != nil {
-		// Handle the error by extracting the file extension from the filename
-		logging.Logger.Warn(utils.PrepareLogMsg(d.xICAPMetadata,
-			"failed to read file header, falling back to file extension from filename: "+err.Error()))
-		fileExtension = filepath.Ext(fileName)[1:]
+	if d.methodName == utils.ICAPModeReq {
+		fileExtension = d.generalFunc.GetMimeExtension(file, contentType[0], fileName)
 	} else {
-		// Determine the file extension using the header data
-		fileExtension = d.generalFunc.GetMimeExtension(filehead, contentType[0], fileName)
+		filehead, err := d.httpMsg.StorageClient.ReadFileHeader(d.httpMsg.StorageKey)
+		if err != nil {
+			// Handle the error by extracting the file extension from the filename
+			logging.Logger.Warn(utils.PrepareLogMsg(d.xICAPMetadata,
+				"failed to read file header, falling back to file extension from filename: "+err.Error()))
+			fileExtension = filepath.Ext(fileName)[1:]
+		} else {
+			// Determine the file extension using the header data
+			fileExtension = d.generalFunc.GetMimeExtension(filehead, contentType[0], fileName)
+		}
 	}
+
 	d.FileHash, err = d.calculateFileHash(file)
 	if err != nil {
 		logging.Logger.Error(utils.PrepareLogMsg(d.xICAPMetadata, d.serviceName+" calculateFileHash error : "+err.Error()))

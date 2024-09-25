@@ -155,3 +155,11 @@ func (ds *DiskStorage) CloseFile(key string) error {
 	delete(ds.openFile, key)
 	return nil
 }
+func (ds *DiskStorage) LoadAsReader(key string) (io.ReadCloser, error) {
+	path := filepath.Join(ds.basePath, key)
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	return file, nil // Return io.ReadCloser to stream the file
+}

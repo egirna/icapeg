@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -261,7 +262,7 @@ func (as *AutoStorage) ReplaceAndDelete(keyFrom, keyTo string) error {
 // ReadFileHeader reads the first 262 bytes of the file identified by the given key.
 // If the file is smaller than 262 bytes, it reads the entire file.
 func (as *AutoStorage) ReadFileHeader(key string) ([]byte, error) {
-	const maxHeaderSize = 262 // Maximum file header size to read
+	const maxHeaderSize = 2048 // Maximum file header size to read
 
 	var header []byte
 	var err error
@@ -295,4 +296,17 @@ func (as *AutoStorage) ReadFileHeader(key string) ([]byte, error) {
 	}
 
 	return header, err
+}
+
+// Add the LoadAsReader method to AutoStorage
+func (as *AutoStorage) LoadAsReader(key string) (io.ReadCloser, error) {
+	data, err := as.memoryStorage.Load(key)
+	if err == nil {
+		// Use memory-backed reader if the file is in memory
+		return io.NopCloser(bytes.NewReader(data)), nil
+	}
+	if errors.Is(err, os.ErrNotExist) {
+		return as.diskStorage.LoadAsReader(key)
+	}
+	return nil, err
 }

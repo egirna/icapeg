@@ -5,7 +5,7 @@ import (
 	"fmt"
 	utils "icapeg/consts"
 	"icapeg/logging"
-	"icapeg/service/services-utilities/ContentTypes"
+
 	"io"
 	"net/http"
 	"net/textproto"
@@ -32,7 +32,7 @@ func (e *Echo) Processing(partial bool, IcapHeader textproto.MIMEHeader) (int, i
 	isGzip := false
 
 	//extracting the file from http message
-	file, reqContentType, err := e.CopyingFileToTheBuffer(e.methodName)
+	file, reqContentType, err := e.generalFunc.CopyingFileToTheBuffer(e.methodName)
 	if err != nil {
 		logging.Logger.Error(utils.PrepareLogMsg(e.xICAPMetadata, e.serviceName+" error: "+err.Error()))
 		logging.Logger.Info(utils.PrepareLogMsg(e.xICAPMetadata, e.serviceName+" service has stopped processing"))
@@ -76,10 +76,16 @@ func (e *Echo) Processing(partial bool, IcapHeader textproto.MIMEHeader) (int, i
 		return icapStatus, httpMsg, serviceHeaders, msgHeadersBeforeProcessing,
 			msgHeadersAfterProcessing, vendorMsgs
 	}
-
+	var size int
+	if e.methodName == utils.ICAPModeResp {
+		size64, _ := e.httpMsg.StorageClient.Size(e.httpMsg.StorageKey)
+		size = int(size64) // Convert int64 to int
+	} else {
+		size = len(file)
+	}
 	//check if the file size is greater than max file size of the service
 	//if yes we will return 200 ok or 204 no modification, it depends on the configuration of the service
-	if e.maxFileSize != 0 && e.maxFileSize < len(file) && isProcess {
+	if e.maxFileSize != 0 && e.maxFileSize < size && isProcess {
 		status, file, httpMsgAfter := e.generalFunc.IfMaxFileSizeExc(e.returnOrigIfMaxSizeExc, e.serviceName, e.methodName, bytes.NewBuffer(file), e.maxFileSize, utils.BlockPagePath, fileSize)
 		fileAfterPrep, httpMsgAfter := e.generalFunc.IfStatusIs204WithFile(e.methodName, status, file, isGzip, reqContentType, httpMsgAfter, true)
 		if fileAfterPrep == nil && httpMsgAfter == nil {
@@ -108,6 +114,7 @@ func (e *Echo) Processing(partial bool, IcapHeader textproto.MIMEHeader) (int, i
 
 	//returning the scanned file if everything is ok
 	scannedFile = e.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, e.methodName)
+
 	msgHeadersAfterProcessing = e.generalFunc.LogHTTPMsgHeaders(e.methodName)
 	logging.Logger.Info(utils.PrepareLogMsg(e.xICAPMetadata, e.serviceName+" service has stopped processing"))
 	return utils.OkStatusCodeStr, e.generalFunc.ReturningHttpMessageWithFile(e.methodName, scannedFile),
@@ -117,43 +124,4 @@ func (e *Echo) Processing(partial bool, IcapHeader textproto.MIMEHeader) (int, i
 func (e *Echo) ISTagValue() string {
 	epochTime := strconv.FormatInt(time.Now().Unix(), 10)
 	return "epoch-" + epochTime
-}
-
-// CopyingFileToTheBuffer is a func which used for extracting a file from the body of the http message
-func (e *Echo) CopyingFileToTheBuffer(methodName string) ([]byte, ContentTypes.ContentType, error) {
-	logging.Logger.Info(utils.PrepareLogMsg(e.xICAPMetadata, "extracting the body of HTTP message"))
-	var file []byte
-	var err error
-	var reqContentType ContentTypes.ContentType
-	reqContentType = nil
-	switch methodName {
-	case utils.ICAPModeReq:
-		file, reqContentType, err = e.copyingFileToTheBufferReq()
-	case utils.ICAPModeResp:
-		file, err = e.copyingFileToTheBufferResp()
-	}
-	if err != nil {
-		return nil, nil, err
-	}
-	return file, reqContentType, nil
-}
-
-// copyingFileToTheBufferResp is a utility function for CopyingFileToTheBuffer func
-// it's used for extracting a file from the body of the http response
-func (e *Echo) copyingFileToTheBufferResp() ([]byte, error) {
-	file, err := e.httpMsg.StorageClient.Load(e.httpMsg.StorageKey)
-	if err != nil {
-		return file, err
-	}
-	return file, nil
-}
-
-// copyingFileToTheBufferReq is a utility function for CopyingFileToTheBuffer func
-// it's used for extracting a file from the body of the http request
-func (e *Echo) copyingFileToTheBufferReq() ([]byte, ContentTypes.ContentType, error) {
-	reqContentType := ContentTypes.GetContentType(e.httpMsg.Request)
-	// getting the file from request and store it in buf as a type of bytes.Buffer
-	file := reqContentType.GetFileFromRequest()
-	return file.Bytes(), reqContentType, nil
-
 }

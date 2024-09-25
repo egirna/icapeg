@@ -14,4 +14,5 @@ type StorageClient interface {
 	ComputeHash(key string) (string, error)
 	ReplaceAndDelete(keyFrom, keyTo string) error
 	ReadFileHeader(key string) ([]byte, error)
+	LoadAsReader(key string) (io.ReadCloser, error)
 }
