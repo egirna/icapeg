@@ -61,12 +61,10 @@ func (f *GeneralFunc) CopyingFileToTheBuffer(methodName string) ([]byte, Content
 	switch methodName {
 	case utils.ICAPModeReq:
 		file, reqContentType, err = f.copyingFileToTheBufferReq()
-		break
 	case utils.ICAPModeResp:
-		// file, err = f.copyingFileToTheBufferResp()
-		// no need we will get file form storgeclient
-
-		break
+		file, err = f.copyingFileToTheBufferResp()
+	default:
+		logging.Logger.Error(utils.PrepareLogMsg(f.xICAPMetadata, "unknown method name: "+methodName))
 	}
 	if err != nil {
 		return nil, nil, err
@@ -308,10 +306,14 @@ func (f *GeneralFunc) GetFileName(serviceName string, xICAPMetadata string) stri
 
 	} else {
 		logging.Logger.Info(utils.PrepareLogMsg(xICAPMetadata, serviceName+" file name  get form httpMsg return unnamed_file  : "+filename))
-
-		return "unnamed_file"
 	}
 
+	if filename == "" || filename == "/" || filename == "." || filename == ".." {
+		if f.httpMsg.Response.Header.Get("X-C-Icap-Client-Original-File") != "" {
+			filename = f.httpMsg.Response.Header.Get("X-C-Icap-Client-Original-File")
+			logging.Logger.Info(utils.PrepareLogMsg(xICAPMetadata, serviceName+" file name  get form X-C-Icap-Client-Original-File  : "+filename))
+		}
+	}
 	if len(filename) < 2 {
 		return "unnamed_file"
 	}
@@ -493,36 +495,67 @@ func (f *GeneralFunc) InitSecure(VerifyServerCert bool) bool {
 }
 
 // GetMimeExtension returns the mime type extension of the data
-func (f *GeneralFunc) GetMimeExtension(data []byte, contentType string, filename string) string {
+func (f *GeneralFunc) GetMimeExtension(data []byte, contentType string, filename string, allfile bool) string {
 	filename = strings.ToLower(filename)
+
 	logging.Logger.Info(utils.PrepareLogMsg(f.xICAPMetadata,
 		"getting the mime extension of the HTTP message body"))
+
 	kind, _ := filetype.Match(data)
-	exts := map[string]string{"application/xml": "xml", "application/html": "html", "text/html": "html", "text/json": "html", "application/json": "json", "text/plain": "txt"}
+
+	exts := map[string]string{
+
+		"application/xml":    "xml",
+		"application/html":   "html",
+		"text/html":          "html",
+		"text/json":          "html",
+		"application/json":   "json",
+		"text/plain":         "txt",
+		"application/msword": "doc",
+		"application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+		"application/vnd.ms-excel": "xls",
+		"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":         "xlsx",
+		"application/vnd.ms-powerpoint":                                             "ppt",
+		"application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
+	}
+
+	if allfile {
+		logging.Logger.Debug(utils.PrepareLogMsg(f.xICAPMetadata,
+			"HTTP message body mime extension (from all file bytes) is "+kind.Extension))
+	}
+
 	contentType = strings.Split(contentType, ";")[0]
-	if kind == filetype.Unknown {
-		if _, ok := exts[contentType]; ok {
-			logging.Logger.Debug(utils.PrepareLogMsg(f.xICAPMetadata,
-				"HTTP message body mime extension is "+kind.Extension))
-			return exts[contentType]
-		}
+	filenameArr := strings.Split(filename, ".")
+
+	// Handle .docx/.xlsx/.pptx disguised as zip or .doc as ppt .
+	if kind.Extension == "zip" && !allfile {
+		return "zip-partial"
+
 	}
 
 	if kind == filetype.Unknown {
-		filenameArr := strings.Split(filename, ".")
+		if ext, ok := exts[contentType]; ok {
+			logging.Logger.Debug(utils.PrepareLogMsg(f.xICAPMetadata,
+				"HTTP message body mime extension (from contentType) is "+ext))
+			return ext
+		}
+
 		if len(filenameArr) > 1 {
+			logging.Logger.Debug(utils.PrepareLogMsg(f.xICAPMetadata,
+				"HTTP message body mime extension (from filename) is "+filenameArr[len(filenameArr)-1]))
 			return filenameArr[len(filenameArr)-1]
 		}
-	}
-	if kind == filetype.Unknown {
+
 		logging.Logger.Debug(utils.PrepareLogMsg(f.xICAPMetadata,
-			"HTTP message body mime extension is "+kind.Extension))
+			"HTTP message body mime extension is unknown"))
 		return utils.Unknown
 	}
-	logging.Logger.Debug(utils.PrepareLogMsg(f.xICAPMetadata,
-		"HTTP message body mime extension is "+kind.Extension))
-	return kind.Extension
+	if !allfile {
+		logging.Logger.Debug(utils.PrepareLogMsg(f.xICAPMetadata,
+			"HTTP message body mime extension (from the first 262 bytes) is "+kind.Extension))
+	}
 
+	return kind.Extension
 }
 
 func (f *GeneralFunc) LogHTTPMsgHeaders(methodName string) map[string]interface{} {

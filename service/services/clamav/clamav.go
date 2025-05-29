@@ -84,7 +84,7 @@ func (c *Clamav) Processing(partial bool, IcapHeader textproto.MIMEHeader) (int,
 
 	logging.Logger.Info(utils.PrepareLogMsg(c.xICAPMetadata, c.serviceName+" file name : "+fileName))
 
-	fileExtension := c.generalFunc.GetMimeExtension(file, contentType[0], fileName)
+	fileExtension := c.generalFunc.GetMimeExtension(file, contentType[0], fileName, true)
 
 	//check if the file extension is a bypass extension
 	//if yes we will not modify the file, and we will return 204 No modifications

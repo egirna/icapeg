@@ -51,17 +51,20 @@ func (h *Hashlocal) Processing(partial bool, IcapHeader textproto.MIMEHeader) (i
 		fileExtension = filepath.Ext(fileName)[1:]
 	} else {
 		// Determine the file extension using the header data
-		fileExtension = h.generalFunc.GetMimeExtension(filehead, contentType[0], fileName)
+		fileExtension = h.generalFunc.GetMimeExtension(filehead, contentType[0], fileName, false)
+		// If the file extension is "zip-partial", we need to send all file to handle .docx disguised as zip
+		if fileExtension == "zip-partial" {
+			fileExtension = h.generalFunc.GetMimeExtension(file, contentType[0], fileName, true)
+		}
 	}
 	h.FileHash, err = h.calculateFileHash(file)
 	if err != nil {
 		logging.Logger.Error(utils.PrepareLogMsg(h.xICAPMetadata, h.serviceName+" calculateFileHash error : "+err.Error()))
 	}
 	/////////////////////////////////
-	isProcess, _, _ := h.generalFunc.CheckTheExtension(fileExtension, h.extArrs,
+	isProcess, StatusCodeStr, _ := h.generalFunc.CheckTheExtension(fileExtension, h.extArrs,
 		h.processExts, h.rejectExts, h.bypassExts, h.return400IfFileExtRejected, h.isGzip(),
 		h.serviceName, h.methodName, h.FileHash, h.httpMsg.Request.RequestURI, reqContentType, bytes.NewBuffer(file), ExceptionPagePath, fmt.Sprint(fileSize))
-
 
 	///////////////////////////////////
 
@@ -81,7 +84,7 @@ func (h *Hashlocal) Processing(partial bool, IcapHeader textproto.MIMEHeader) (i
 	if isMal {
 		return h.handleMaliciousFile(fileSize)
 	}
-	return h.handleSuccessfulScan(file, fileSize, reqContentType)
+	return h.handleSuccessfulScan(StatusCodeStr, file, fileSize, reqContentType)
 }
 
 func (h *Hashlocal) initProcessing(IcapHeader textproto.MIMEHeader) {
@@ -138,6 +141,10 @@ func (h *Hashlocal) getFileNameAndContentType() (string, []string) {
 		fileName += utils.Unknown
 	}
 	logging.Logger.Info(utils.PrepareLogMsg(h.xICAPMetadata, h.serviceName+" file name : "+fileName))
+	if h.httpMsg.Response != nil {
+		logging.Logger.Info(utils.PrepareLogMsg(h.xICAPMetadata,
+			h.serviceName+" full response headers: "+fmt.Sprintf("%v", h.httpMsg.Response.Header)))
+	}
 	return fileName, contentType
 }
 
@@ -197,17 +204,23 @@ func (h *Hashlocal) handleMaliciousFile(fileSize int) (int, interface{}, map[str
 	}
 }
 
-func (h *Hashlocal) handleSuccessfulScan(scannedFile []byte, fileSize int, reqContentType ContentTypes.ContentType) (int, interface{}, map[string]string, map[string]interface{}, map[string]interface{}, map[string]interface{}) {
+func (h *Hashlocal) handleSuccessfulScan(StatusCodeStr int, scannedFile []byte, fileSize int, reqContentType ContentTypes.ContentType) (int, interface{}, map[string]string, map[string]interface{}, map[string]interface{}, map[string]interface{}) {
 	// Log headers and processing stop
 	h.generalFunc.LogHTTPMsgHeaders(h.methodName)
-	logging.Logger.Info(utils.PrepareLogMsg(h.xICAPMetadata, h.serviceName+" service has stopped processing"))
+
 	h.msgHeadersAfterProcessing = h.generalFunc.LogHTTPMsgHeaders(h.methodName)
 
 	// Process the scanned file
 	scannedFile = h.generalFunc.PreparingFileAfterScanning(scannedFile, reqContentType, h.methodName)
+	logging.Logger.Info(utils.PrepareLogMsg(h.xICAPMetadata, h.serviceName+" service has stopped processing"))
 
-	return utils.NoModificationStatusCodeStr, h.generalFunc.ReturningHttpMessageWithFile(h.methodName, scannedFile),
+	// The file was processed successfully with no changes
+	if StatusCodeStr == 0 {
+		StatusCodeStr = utils.NoModificationStatusCodeStr
+	}
+	return StatusCodeStr, h.generalFunc.ReturningHttpMessageWithFile(h.methodName, scannedFile),
 		h.serviceHeaders, h.msgHeadersBeforeProcessing, h.msgHeadersAfterProcessing, h.vendorMsgs
+
 }
 
 func (h *Hashlocal) saveErrorPageBody(body []byte) {
@@ -270,7 +283,7 @@ func (h *Hashlocal) calculateFileHash(file []byte) (string, error) {
 func mapToString(m map[string]string) string {
 	var sb strings.Builder
 	for key, value := range m {
-		sb.WriteString(fmt.Sprintf("\r\n"))
+		sb.WriteString("\r\n")
 		sb.WriteString(fmt.Sprintf("%s: %s", key, value))
 	}
 	return sb.String()

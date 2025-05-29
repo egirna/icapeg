@@ -37,9 +37,9 @@ resp_mode=true
 shadow_service=false
 preview_bytes = "1024" #byte
 preview_enabled = true# options send preview header or not
-process_extensions = ["pdf", "zip", "com"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
-reject_extensions = ["docx"]
 bypass_extensions = ["*"]
+process_extensions = ["zip","exe","com"]# * = everything except the ones in bypass, unknown = system couldn't find out the type of>
+reject_extensions = ["docx","pdf"] 
 #max file size value from 1 to 9223372036854775807, and value of zero means unlimited
 max_filesize = 0 #bytes
 return_original_if_max_file_size_exceeded=false
@@ -56,8 +56,8 @@ shadow_service=false
 preview_bytes = "1024" #byte
 preview_enabled = true# options send preview header or not
 bypass_extensions = ["*"]
-process_extensions = ["pdf","exe", "zip"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
-reject_extensions = ["docx"]
+process_extensions = ["zip","exe","com"]# * = everything except the ones in bypass, unknown = system couldn't find out the type of>
+reject_extensions = ["docx","pdf"]  
 scan_url = "https://hashlookup.circl.lu/lookup/sha256/" #
 timeout  = 300 #seconds , ICAP will return 408 - Request timeout
 fail_threshold = 2
@@ -78,10 +78,10 @@ req_mode=true
 resp_mode=true
 shadow_service=false
 preview_bytes = "1024" #byte
-preview_enabled = true# options send preview header or not
+preview_enabled = true# options send preview hea der or not  
 bypass_extensions = ["*"]
-process_extensions = ["pdf","exe", "zip"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
-reject_extensions = ["docx"]
+process_extensions = ["zip","exe","com"]# * = everything except the ones in bypass, unknown = system couldn't find out the type of>
+reject_extensions = ["docx","pdf"] 
 hash_file = "./hash_file/hash_file_path.txt" #
 max_filesize = 0 #bytes
 return_original_if_max_file_size_exceeded=true
@@ -99,8 +99,8 @@ resp_mode=true
 shadow_service=false
 preview_bytes = "1024" #byte
 preview_enabled = true# options send preview header or not
-process_extensions = ["pdf", "zip", "com"] # * = everything except the ones in bypass, unknown = system couldn't find out the type of the file
-reject_extensions = ["docx"]
+process_extensions = ["zip","exe","com"]# * = everything except the ones in bypass, unknown = system couldn't find out the type of>
+reject_extensions = ["docx","pdf"] 
 bypass_extensions = ["*"]
 socket_path = "/var/run/clamav/clamd.ctl"
 fail_threshold = 2
